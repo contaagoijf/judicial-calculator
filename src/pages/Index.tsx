@@ -75,9 +75,16 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
+
+        <div className="text-center mt-8">
+          <Button variant="ghost" onClick={() => navigate('/parametros')} className="gap-2 text-muted-foreground">
+            <Settings className="w-4 h-4" /> Gerenciar Parâmetros IR
+          </Button>
+        </div>
       </div>
     </div>
   );
+};
 };
 
 export default Index;
