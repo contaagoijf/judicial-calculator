@@ -40,7 +40,6 @@ const ParametrosPage = () => {
   useEffect(() => {
     if (faixas) {
       setEditFaixas(faixas.map(f => ({
-        id: f.id as any,
         limite_inferior: f.limite_inferior,
         limite_superior: f.limite_superior,
         aliquota: f.aliquota,
