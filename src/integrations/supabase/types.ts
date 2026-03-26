@@ -14,7 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      calculos: {
+        Row: {
+          ano_calendario: number
+          criado_em: string
+          dados_entrada: Json
+          id: string
+          nome_autor: string
+          numero_processo: string
+          resultado: Json | null
+          tipo_calculo: Database["public"]["Enums"]["tipo_calculo_enum"]
+          tipo_declaracao: Database["public"]["Enums"]["tipo_declaracao_enum"]
+        }
+        Insert: {
+          ano_calendario: number
+          criado_em?: string
+          dados_entrada: Json
+          id?: string
+          nome_autor: string
+          numero_processo: string
+          resultado?: Json | null
+          tipo_calculo: Database["public"]["Enums"]["tipo_calculo_enum"]
+          tipo_declaracao: Database["public"]["Enums"]["tipo_declaracao_enum"]
+        }
+        Update: {
+          ano_calendario?: number
+          criado_em?: string
+          dados_entrada?: Json
+          id?: string
+          nome_autor?: string
+          numero_processo?: string
+          resultado?: Json | null
+          tipo_calculo?: Database["public"]["Enums"]["tipo_calculo_enum"]
+          tipo_declaracao?: Database["public"]["Enums"]["tipo_declaracao_enum"]
+        }
+        Relationships: []
+      }
+      ir_faixas: {
+        Row: {
+          aliquota: number
+          ano_calendario: number
+          deducao: number
+          id: number
+          limite_inferior: number
+          limite_superior: number | null
+        }
+        Insert: {
+          aliquota: number
+          ano_calendario: number
+          deducao: number
+          id?: number
+          limite_inferior: number
+          limite_superior?: number | null
+        }
+        Update: {
+          aliquota?: number
+          ano_calendario?: number
+          deducao?: number
+          id?: number
+          limite_inferior?: number
+          limite_superior?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ir_faixas_ano_calendario_fkey"
+            columns: ["ano_calendario"]
+            isOneToOne: false
+            referencedRelation: "ir_parametros"
+            referencedColumns: ["ano_calendario"]
+          },
+        ]
+      }
+      ir_parametros: {
+        Row: {
+          ano_calendario: number
+          inicio_correcao: string
+          teto: number
+        }
+        Insert: {
+          ano_calendario: number
+          inicio_correcao: string
+          teto: number
+        }
+        Update: {
+          ano_calendario?: number
+          inicio_correcao?: string
+          teto?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +111,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      tipo_calculo_enum: "ajuste_anual" | "retificacao"
+      tipo_declaracao_enum: "completa" | "simplificada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +239,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      tipo_calculo_enum: ["ajuste_anual", "retificacao"],
+      tipo_declaracao_enum: ["completa", "simplificada"],
+    },
   },
 } as const
