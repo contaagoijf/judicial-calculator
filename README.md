@@ -1,4 +1,4 @@
-# Judicial Calculator
+# Ferramenta para Cálculos Judiciais
 
 Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física (IRPF), especificamente projetada para processos judiciais envolvendo ajustes anuais de imposto.
 
@@ -34,7 +34,12 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
    ```
 
 3. Configure as variáveis de ambiente:
-   Crie um arquivo `.env` com suas credenciais do Supabase.
+   Copie `.env.example` para `.env` e preencha com suas credenciais do Supabase:
+   ```bash
+   VITE_SUPABASE_PROJECT_ID="seu-project-id"
+   VITE_SUPABASE_PUBLISHABLE_KEY="sua-anon-key"
+   VITE_SUPABASE_URL="https://seu-project-id.supabase.co"
+   ```
 
 4. Execute o servidor de desenvolvimento:
    ```bash
@@ -65,5 +70,3 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
 ## Licença
 
 [Adicione a licença se aplicável]
-
-## TESTE DE VÍNCULO
