@@ -8,6 +8,8 @@ import type { ResultadoCalculo, DadosEntradaAjusteAnual } from '@/services/calcu
 import TabelaAlteracoes from '@/components/TabelaAlteracoes';
 import BlocoCalculo from '@/components/BlocoCalculo';
 
+const AJUSTE_ANUAL_EDIT_DRAFT_KEY = 'ajuste-anual-edit-draft';
+
 const ResultadoPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +37,21 @@ const ResultadoPage = () => {
 
   const { resultado, dados, processo, nomeAutor, anoCalendario, tipoDeclaracao } = state;
 
+  const handleEditar = () => {
+    const editDraft = {
+      processo,
+      nomeAutor,
+      anoCalendario,
+      tipoDeclaracao,
+      dados,
+    };
+
+    sessionStorage.setItem(AJUSTE_ANUAL_EDIT_DRAFT_KEY, JSON.stringify(editDraft));
+    navigate('/calculo/ajuste-anual', {
+      state: { editDraft },
+    });
+  };
+
   const handleFinalizar = async () => {
     try {
       const { data, error } = await supabase
@@ -53,6 +70,7 @@ const ResultadoPage = () => {
 
       if (error) throw error;
 
+      sessionStorage.removeItem(AJUSTE_ANUAL_EDIT_DRAFT_KEY);
       toast({ title: 'Cálculo finalizado', description: `ID: ${data.id}` });
       navigate(`/relatorio/${data.id}?calculo_novo=sim`);
     } catch (err: any) {
@@ -66,7 +84,7 @@ const ResultadoPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="page-container">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2">
+        <Button variant="ghost" onClick={handleEditar} className="mb-6 gap-2">
           <ArrowLeft className="w-4 h-4" /> Voltar ao Formulário
         </Button>
 
@@ -91,7 +109,7 @@ const ResultadoPage = () => {
         <BlocoCalculo resultado={resultado} />
 
         <div className="flex gap-4 justify-end mt-6">
-          <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
+          <Button variant="outline" onClick={handleEditar} className="gap-2">
             <Edit className="w-4 h-4" /> Editar
           </Button>
           <Button onClick={handleFinalizar} className="gap-2">

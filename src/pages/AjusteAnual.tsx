@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useParametrosIR, useFaixasIR, useCalculo } from '@/hooks/useIRData';
-import { calcularAjusteAnual, type DadosEntradaAjusteAnual, type ResultadoCalculo } from '@/services/calculoIRPF';
+import { calcularAjusteAnual, type DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
 
 const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) => (
   <div className="space-y-1.5">
@@ -25,8 +25,19 @@ const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: s
   </div>
 );
 
+const AJUSTE_ANUAL_EDIT_DRAFT_KEY = 'ajuste-anual-edit-draft';
+
+type AjusteAnualEditDraft = {
+  processo: string;
+  nomeAutor: string;
+  anoCalendario: number;
+  tipoDeclaracao: 'completa' | 'simplificada';
+  dados: DadosEntradaAjusteAnual;
+};
+
 const AjusteAnualPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const idParam = searchParams.get('id');
   const { toast } = useToast();
@@ -53,31 +64,56 @@ const AjusteAnualPage = () => {
   const [rraSomar, setRraSomar] = useState(0);
   const [rraSub, setRraSub] = useState(0);
 
+  const preencherFormulario = (draft: AjusteAnualEditDraft) => {
+    setProcesso(draft.processo);
+    setNomeAutor(draft.nomeAutor);
+    setTipoDeclaracao(draft.tipoDeclaracao);
+    setAnoCalendario(draft.anoCalendario);
+    setRendTrib(draft.dados.rendimentos_tributaveis || 0);
+    setDeducoesLegais(draft.dados.deducoes_legais || 0);
+    setDeducoesIncentivo(draft.dados.deducoes_incentivo || 0);
+    setImpostoRRA(draft.dados.imposto_rra || 0);
+    setImpostoPago(draft.dados.imposto_pago || 0);
+    setRendSomar(draft.dados.rend_somar || 0);
+    setRendSub(draft.dados.rend_sub || 0);
+    setDedSomar(draft.dados.ded_somar || 0);
+    setDedSub(draft.dados.ded_sub || 0);
+    setIncentivoSomar(draft.dados.incentivo_somar || 0);
+    setIncentivoSub(draft.dados.incentivo_sub || 0);
+    setRraSomar(draft.dados.rra_somar || 0);
+    setRraSub(draft.dados.rra_sub || 0);
+  };
+
   // Load previous calculation data
   useEffect(() => {
     if (calculoAnterior) {
-      const d = calculoAnterior.dados_entrada as any;
-      setProcesso(calculoAnterior.numero_processo);
-      setNomeAutor(calculoAnterior.nome_autor);
-      setTipoDeclaracao(calculoAnterior.tipo_declaracao);
-      setAnoCalendario(calculoAnterior.ano_calendario);
-      if (d) {
-        setRendTrib(d.rendimentos_tributaveis || 0);
-        setDeducoesLegais(d.deducoes_legais || 0);
-        setDeducoesIncentivo(d.deducoes_incentivo || 0);
-        setImpostoRRA(d.imposto_rra || 0);
-        setImpostoPago(d.imposto_pago || 0);
-        setRendSomar(d.rend_somar || 0);
-        setRendSub(d.rend_sub || 0);
-        setDedSomar(d.ded_somar || 0);
-        setDedSub(d.ded_sub || 0);
-        setIncentivoSomar(d.incentivo_somar || 0);
-        setIncentivoSub(d.incentivo_sub || 0);
-        setRraSomar(d.rra_somar || 0);
-        setRraSub(d.rra_sub || 0);
-      }
+      preencherFormulario({
+        processo: calculoAnterior.numero_processo,
+        nomeAutor: calculoAnterior.nome_autor,
+        tipoDeclaracao: calculoAnterior.tipo_declaracao,
+        anoCalendario: calculoAnterior.ano_calendario,
+        dados: calculoAnterior.dados_entrada as unknown as DadosEntradaAjusteAnual,
+      });
+      sessionStorage.removeItem(AJUSTE_ANUAL_EDIT_DRAFT_KEY);
     }
   }, [calculoAnterior]);
+
+  useEffect(() => {
+    if (idParam) return;
+
+    const state = location.state as { editDraft?: AjusteAnualEditDraft } | null;
+    const draftFromState = state?.editDraft;
+    const draftFromStorage = !draftFromState
+      ? sessionStorage.getItem(AJUSTE_ANUAL_EDIT_DRAFT_KEY)
+      : null;
+    const draft = draftFromState
+      ?? (draftFromStorage ? JSON.parse(draftFromStorage) as AjusteAnualEditDraft : null);
+
+    if (draft) {
+      preencherFormulario(draft);
+      sessionStorage.removeItem(AJUSTE_ANUAL_EDIT_DRAFT_KEY);
+    }
+  }, [idParam, location.state]);
 
   const isCompleta = tipoDeclaracao === 'completa';
 
