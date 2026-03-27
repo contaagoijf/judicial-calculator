@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useParametrosIR, useFaixasIR } from '@/hooks/useIRData';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/externalClient';
 import { useQueryClient } from '@tanstack/react-query';
 
 const ParametrosPage = () => {
