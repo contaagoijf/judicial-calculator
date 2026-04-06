@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useParametrosIR, useFaixasIR, useCalculo } from '@/hooks/useIRData';
-import { calcularAjusteAnual, type DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
+import { calcularAjusteAnual, validarConsistenciaAjusteAnual, type DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
 
 const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) => (
   <div className="space-y-1.5">
@@ -54,6 +54,7 @@ const AjusteAnualPage = () => {
   const [deducoesLegais, setDeducoesLegais] = useState(0);
   const [deducoesIncentivo, setDeducoesIncentivo] = useState(0);
   const [impostoRRA, setImpostoRRA] = useState(0);
+  const [ajusteAnual, setAjusteAnual] = useState(0);
   const [impostoPago, setImpostoPago] = useState(0);
   const [rendSomar, setRendSomar] = useState(0);
   const [rendSub, setRendSub] = useState(0);
@@ -73,6 +74,7 @@ const AjusteAnualPage = () => {
     setDeducoesLegais(draft.dados.deducoes_legais || 0);
     setDeducoesIncentivo(draft.dados.deducoes_incentivo || 0);
     setImpostoRRA(draft.dados.imposto_rra || 0);
+    setAjusteAnual(draft.dados.ajuste_anual || 0);
     setImpostoPago(draft.dados.imposto_pago || 0);
     setRendSomar(draft.dados.rend_somar || 0);
     setRendSub(draft.dados.rend_sub || 0);
@@ -148,6 +150,7 @@ const AjusteAnualPage = () => {
       deducoes_legais: deducoesLegais,
       deducoes_incentivo: deducoesIncentivo,
       imposto_rra: impostoRRA,
+      ajuste_anual: ajusteAnual,
       imposto_pago: impostoPago,
       rend_somar: rendSomar,
       rend_sub: rendSub,
@@ -160,6 +163,20 @@ const AjusteAnualPage = () => {
     };
 
     const resultado = calcularAjusteAnual(dados, faixas, param);
+    const validacaoConsistencia = validarConsistenciaAjusteAnual(
+      resultado.imposto_devido,
+      dados.ajuste_anual,
+      dados.imposto_pago
+    );
+
+    if (!validacaoConsistencia.consistente) {
+      toast({
+        title: 'Valores inconsistentes',
+        description: `O Imposto Devido original (${resultado.imposto_devido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) deve ser igual à soma de Ajuste Anual e Imposto Pago (${validacaoConsistencia.total_informado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}). Corrija os dados de entrada para continuar.`,
+        variant: 'destructive'
+      });
+      return;
+    }
 
     // Navigate to resultado with state
     navigate('/resultado', {
@@ -238,6 +255,7 @@ const AjusteAnualPage = () => {
             <CampoMonetario label="Deduções Legais" value={deducoesLegais} onChange={setDeducoesLegais} disabled={!isCompleta} />
             <CampoMonetario label="Deduções de Incentivo" value={deducoesIncentivo} onChange={setDeducoesIncentivo} disabled={!isCompleta} />
             <CampoMonetario label="Imposto Devido RRA" value={impostoRRA} onChange={setImpostoRRA} />
+            <CampoMonetario label="Ajuste Anual" value={ajusteAnual} onChange={setAjusteAnual} />
             <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} />
           </div>
         </div>

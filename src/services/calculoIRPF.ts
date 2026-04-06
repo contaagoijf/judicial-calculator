@@ -23,6 +23,7 @@ export interface DadosEntradaAjusteAnual {
   deducoes_legais: number;
   deducoes_incentivo: number;
   imposto_rra: number;
+  ajuste_anual: number;
   imposto_pago: number;
   rend_somar: number;
   rend_sub: number;
@@ -64,6 +65,13 @@ export interface ResultadoCalculo {
   };
 }
 
+export interface ValidacaoConsistenciaAjusteAnual {
+  consistente: boolean;
+  imposto_devido_original: number;
+  total_informado: number;
+  diferenca: number;
+}
+
 function normalizarAliquota(aliquota: number): number {
   // Accepts either decimal form (0.275) or percent form (27.5).
   return aliquota <= 1 ? aliquota * 100 : aliquota;
@@ -88,6 +96,22 @@ function buscarFaixa(baseCalculo: number, faixas: FaixaIR[]): { aliquota: number
 
 function round2(val: number): number {
   return Math.round(val * 100) / 100;
+}
+
+export function validarConsistenciaAjusteAnual(
+  impostoDevidoOriginal: number,
+  ajusteAnual: number,
+  impostoPago: number
+): ValidacaoConsistenciaAjusteAnual {
+  const total_informado = round2(ajusteAnual + impostoPago);
+  const diferenca = round2(impostoDevidoOriginal - total_informado);
+
+  return {
+    consistente: Math.abs(diferenca) < 0.01,
+    imposto_devido_original: impostoDevidoOriginal,
+    total_informado,
+    diferenca,
+  };
 }
 
 export function calcularAjusteAnual(

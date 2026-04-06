@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { calcularAjusteAnual, type DadosEntradaAjusteAnual, type FaixaIR, type ParametrosIR } from "@/services/calculoIRPF";
+import {
+  calcularAjusteAnual,
+  validarConsistenciaAjusteAnual,
+  type DadosEntradaAjusteAnual,
+  type FaixaIR,
+  type ParametrosIR
+} from "@/services/calculoIRPF";
 
 describe("calcularAjusteAnual", () => {
   it("reproduz corretamente o caso de ajuste anual de 2020", () => {
@@ -10,6 +16,7 @@ describe("calcularAjusteAnual", () => {
       deducoes_legais: 30000,
       deducoes_incentivo: 10000,
       imposto_rra: 5000,
+      ajuste_anual: 0,
       imposto_pago: 3817.68,
       rend_somar: 5000,
       rend_sub: 0,
@@ -46,5 +53,21 @@ describe("calcularAjusteAnual", () => {
     expect(resultado.imposto_rra_recalc).toBe(3000);
     expect(resultado.imposto_devido_recalc).toBe(2742.68);
     expect(resultado.imposto_a_pagar).toBe(1075);
+  });
+
+  it("valida a consistência entre imposto devido original, ajuste anual e imposto pago", () => {
+    const validacao = validarConsistenciaAjusteAnual(3817.68, 0, 3817.68);
+
+    expect(validacao.consistente).toBe(true);
+    expect(validacao.total_informado).toBe(3817.68);
+    expect(validacao.diferenca).toBe(0);
+  });
+
+  it("identifica inconsistência quando ajuste anual e imposto pago não fecham com o imposto devido original", () => {
+    const validacao = validarConsistenciaAjusteAnual(3817.68, 100, 3817.68);
+
+    expect(validacao.consistente).toBe(false);
+    expect(validacao.total_informado).toBe(3917.68);
+    expect(validacao.diferenca).toBe(-100);
   });
 });
