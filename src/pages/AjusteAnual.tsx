@@ -254,9 +254,9 @@ const AjusteAnualPage = () => {
             <CampoMonetario label="Rendimentos Tributáveis" value={rendTrib} onChange={setRendTrib} />
             <CampoMonetario label="Deduções Legais" value={deducoesLegais} onChange={setDeducoesLegais} disabled={!isCompleta} />
             <CampoMonetario label="Deduções de Incentivo" value={deducoesIncentivo} onChange={setDeducoesIncentivo} disabled={!isCompleta} />
+            <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} />
             <CampoMonetario label="Imposto Devido RRA" value={impostoRRA} onChange={setImpostoRRA} />
             <CampoMonetario label="Ajuste Anual" value={ajusteAnual} onChange={setAjusteAnual} />
-            <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} />
           </div>
         </div>
 
