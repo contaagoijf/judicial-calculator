@@ -7,7 +7,8 @@ function formatCurrency(val: number): string {
 }
 
 function formatPercent(val: number): string {
-  return val.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+  const normalized = val <= 1 ? val * 100 : val;
+  return normalized.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
 }
 
 export function gerarRelatorioPDF(

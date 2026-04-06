@@ -78,8 +78,8 @@ const ResultadoPage = () => {
     }
   };
 
-  const isPagar = resultado.imposto_a_pagar > 0;
-  const isRestituir = resultado.imposto_a_pagar < 0;
+  const isRestituir = resultado.imposto_a_pagar > 0;
+  const isPagar = resultado.imposto_a_pagar < 0;
 
   return (
     <div className="min-h-screen bg-background">

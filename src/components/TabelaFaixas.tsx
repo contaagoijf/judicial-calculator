@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { FaixaIR } from '@/services/calculoIRPF';
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtPct = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+const fmtPct = (v: number) => (v <= 1 ? v * 100 : v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
 
 const TabelaFaixas = ({ faixas, ano }: { faixas: FaixaIR[]; ano: number }) => {
   const sorted = [...faixas].sort((a, b) => a.limite_inferior - b.limite_inferior);

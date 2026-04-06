@@ -32,8 +32,8 @@ const RelatorioPage = () => {
   }
 
   const resultado = calculo.resultado as unknown as ResultadoCalculo;
-  const isPagar = resultado.imposto_a_pagar > 0;
-  const isRestituir = resultado.imposto_a_pagar < 0;
+  const isRestituir = resultado.imposto_a_pagar > 0;
+  const isPagar = resultado.imposto_a_pagar < 0;
 
   const handleExportPDF = () => {
     if (!faixas) return;

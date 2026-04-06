@@ -64,6 +64,11 @@ export interface ResultadoCalculo {
   };
 }
 
+function normalizarAliquota(aliquota: number): number {
+  // Accepts either decimal form (0.275) or percent form (27.5).
+  return aliquota <= 1 ? aliquota * 100 : aliquota;
+}
+
 function buscarFaixa(baseCalculo: number, faixas: FaixaIR[]): { aliquota: number; deducao: number } {
   // Sort faixas by limite_inferior
   const sorted = [...faixas].sort((a, b) => a.limite_inferior - b.limite_inferior);
@@ -72,7 +77,7 @@ function buscarFaixa(baseCalculo: number, faixas: FaixaIR[]): { aliquota: number
     const limSup = faixa.limite_superior;
     if (limSup === null || baseCalculo <= limSup) {
       if (baseCalculo >= faixa.limite_inferior) {
-        return { aliquota: faixa.aliquota, deducao: faixa.deducao };
+        return { aliquota: normalizarAliquota(faixa.aliquota), deducao: faixa.deducao };
       }
     }
   }
@@ -129,7 +134,7 @@ export function calcularAjusteAnual(
     (base_calculo_recalc * aliquota_recalc / 100) - deducao_recalc - incentivo_recalc + imposto_rra_recalc
   ));
 
-  const imposto_a_pagar = round2(imposto_devido_recalc - dados.imposto_pago);
+  const imposto_a_pagar = round2(dados.imposto_pago - imposto_devido_recalc);
 
   // Tabela de alterações
   const alteracoes = {
