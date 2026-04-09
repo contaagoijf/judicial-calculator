@@ -9,25 +9,39 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="page-container">
-        <div className="text-center mb-12 pt-8">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-            <Scale className="w-4 h-4" />
-            Ferramenta Judicial
+        <div className="mb-10 pt-6 sm:mb-12 sm:pt-8">
+          <div className="mb-6 flex flex-col gap-3 sm:mb-7 sm:flex-row sm:items-start sm:justify-between">
+            <img
+              src="/calcjud.png"
+              alt="CALCJUD - Sistema de Cálculos Judiciais"
+              className="mx-auto h-auto w-full max-w-[300px] sm:mx-0 sm:max-w-[340px] lg:max-w-[360px]"
+            />
+
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary sm:mx-0 sm:mt-2">
+              <Scale className="h-4 w-4" />
+              Ferramenta Judicial
+            </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            Cálculo para Ajuste e Retificação de IRPF
-          </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-base leading-relaxed">
-            Ferramenta automatizada para cálculos judiciais de Imposto de Renda da Pessoa Física.
-            Realize cálculos padronizados, confiáveis e rastreáveis para juntada em processos judiciais.
-          </p>
+
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="mb-3 text-2xl font-bold leading-tight text-foreground sm:mb-4 sm:text-3xl">
+              Cálculo para Ajuste e Retificação de IRPF
+            </h1>
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-[1.05rem]">
+              Ferramenta automatizada para cálculos judiciais de Imposto de Renda da Pessoa Física.
+              Realize cálculos padronizados, confiáveis e rastreáveis para juntada em processos judiciais.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <Card className="group hover:shadow-md transition-shadow cursor-pointer border-2 hover:border-primary/30" onClick={() => navigate('/calculo/ajuste-anual')}>
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <Calculator className="w-6 h-6 text-primary" />
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
+          <Card
+            className="group cursor-pointer border-2 transition-shadow hover:border-primary/30 hover:shadow-md"
+            onClick={() => navigate('/calculo/ajuste-anual')}
+          >
+            <CardHeader className="pb-2 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
+                <Calculator className="h-6 w-6 text-primary" />
               </div>
               <CardTitle className="text-lg">Ajuste Anual</CardTitle>
             </CardHeader>
@@ -35,16 +49,16 @@ const Index = () => {
               <CardDescription className="text-center">
                 Cálculo de ajuste anual do Imposto de Renda com base nas faixas de IR do ano calendário.
               </CardDescription>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="mt-4 w-full">
                 Iniciar Cálculo
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-md transition-shadow border-2 opacity-60">
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto w-12 h-12 bg-muted rounded-xl flex items-center justify-center mb-3">
-                <Calculator className="w-6 h-6 text-muted-foreground" />
+          <Card className="group border-2 opacity-60 transition-shadow hover:shadow-md">
+            <CardHeader className="pb-2 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                <Calculator className="h-6 w-6 text-muted-foreground" />
               </div>
               <CardTitle className="text-lg text-muted-foreground">Retificação</CardTitle>
             </CardHeader>
@@ -52,16 +66,19 @@ const Index = () => {
               <CardDescription className="text-center">
                 Cálculo de retificação de declaração anual de IRPF. Em breve.
               </CardDescription>
-              <Button variant="outline" className="w-full mt-4" disabled>
+              <Button variant="outline" className="mt-4 w-full" disabled>
                 Em Breve
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="group hover:shadow-md transition-shadow cursor-pointer border-2 hover:border-primary/30" onClick={() => navigate('/consulta')}>
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                <FileSearch className="w-6 h-6 text-primary" />
+          <Card
+            className="group cursor-pointer border-2 transition-shadow hover:border-primary/30 hover:shadow-md"
+            onClick={() => navigate('/consulta')}
+          >
+            <CardHeader className="pb-2 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
+                <FileSearch className="h-6 w-6 text-primary" />
               </div>
               <CardTitle className="text-lg">Buscar por ID</CardTitle>
             </CardHeader>
@@ -69,16 +86,16 @@ const Index = () => {
               <CardDescription className="text-center">
                 Consulte a autenticidade de um cálculo realizado anteriormente pelo seu ID.
               </CardDescription>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="mt-4 w-full">
                 Consultar
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        <div className="text-center mt-8">
+        <div className="mt-8 text-center">
           <Button variant="ghost" onClick={() => navigate('/parametros')} className="gap-2 text-muted-foreground">
-            <Settings className="w-4 h-4" /> Gerenciar Parâmetros IR
+            <Settings className="h-4 w-4" /> Gerenciar Parâmetros IR
           </Button>
         </div>
       </div>
