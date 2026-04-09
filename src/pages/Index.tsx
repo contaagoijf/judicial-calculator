@@ -9,12 +9,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="page-container">
-        <div className="mb-10 pt-6 sm:mb-12 sm:pt-8">
-          <div className="mb-6 flex flex-col gap-3 sm:mb-7 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-10 pt-3 sm:mb-12 sm:pt-4">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
             <img
               src="/calcjud.png"
               alt="CALCJUD - Sistema de Cálculos Judiciais"
-              className="mx-auto h-auto w-full max-w-[300px] sm:mx-0 sm:max-w-[340px] lg:max-w-[360px]"
+              className="mx-auto h-auto w-full max-w-[150px] sm:mx-0 sm:max-w-[170px] lg:max-w-[180px]"
             />
 
             <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary sm:mx-0 sm:mt-2">
