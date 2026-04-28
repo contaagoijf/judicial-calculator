@@ -1,196 +1,365 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, MailPlus, Save, Shield, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useParametrosIR, useFaixasIR } from '@/hooks/useIRData';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/externalClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useAuth } from '@/contexts/AuthContext';
+import { AdminAuthDialog } from '@/components/AdminAuthDialog';
+import { AdminTableManager } from '@/components/AdminTableManager';
+import { adminTableConfigs } from '@/lib/adminTables';
 
 const ParametrosPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: parametros, isLoading } = useParametrosIR();
-  const [anoSelecionado, setAnoSelecionado] = useState<number | null>(null);
-  const { data: faixas } = useFaixasIR(anoSelecionado);
+  const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
+  const { data: settings } = useSystemSettings();
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [pendingSettings, setPendingSettings] = useState({
+    system_enabled: settings?.system_enabled ?? true,
+    ajuste_anual_enabled: settings?.ajuste_anual_enabled ?? true,
+    retificacao_enabled: settings?.retificacao_enabled ?? false,
+  });
 
-  const [teto, setTeto] = useState(0);
-  const [inicioCorrecao, setInicioCorrecao] = useState('');
-  const [editFaixas, setEditFaixas] = useState<Array<{
-    id?: number;
-    limite_inferior: number;
-    limite_superior: number | null;
-    aliquota: number;
-    deducao: number;
-  }>>([]);
+  const adminsQuery = useQuery({
+    queryKey: ['admin_users'],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-  useEffect(() => {
-    if (anoSelecionado && parametros) {
-      const p = parametros.find(x => x.ano_calendario === anoSelecionado);
-      if (p) {
-        setTeto(p.teto);
-        setInicioCorrecao(p.inicio_correcao);
+      if (error) {
+        throw error;
       }
-    }
-  }, [anoSelecionado, parametros]);
 
-  useEffect(() => {
-    if (faixas) {
-      setEditFaixas(faixas.map(f => ({
-        limite_inferior: f.limite_inferior,
-        limite_superior: f.limite_superior,
-        aliquota: f.aliquota,
-        deducao: f.deducao,
-      })));
-    }
-  }, [faixas]);
+      return data ?? [];
+    },
+  });
 
-  const handleSalvar = async () => {
-    if (!anoSelecionado) return;
+  const invitesQuery = useQuery({
+    queryKey: ['admin_invites'],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_invites')
+        .select('*')
+        .order('created_at', { ascending: false });
 
+      if (error) {
+        throw error;
+      }
+
+      return data ?? [];
+    },
+  });
+
+  const pendingInvites = (invitesQuery.data ?? []).filter((invite) => !invite.accepted_at);
+
+  const handleInviteAdmin = async () => {
     try {
-      // Update parametros
-      const { error: pErr } = await supabase
-        .from('ir_parametros')
-        .upsert({ ano_calendario: anoSelecionado, teto, inicio_correcao: inicioCorrecao });
-      if (pErr) throw pErr;
+      const normalizedEmail = inviteEmail.trim().toLowerCase();
 
-      // Delete old faixas and insert new
-      await supabase.from('ir_faixas').delete().eq('ano_calendario', anoSelecionado);
-
-      if (editFaixas.length > 0) {
-        const { error: fErr } = await supabase
-          .from('ir_faixas')
-          .insert(editFaixas.map(f => ({
-            ano_calendario: anoSelecionado,
-            limite_inferior: f.limite_inferior,
-            limite_superior: f.limite_superior,
-            aliquota: f.aliquota,
-            deducao: f.deducao,
-          })));
-        if (fErr) throw fErr;
+      if (!normalizedEmail) {
+        toast({ title: 'Informe um email', description: 'Digite o email do novo administrador.', variant: 'destructive' });
+        return;
       }
 
-      queryClient.invalidateQueries({ queryKey: ['ir_parametros'] });
-      queryClient.invalidateQueries({ queryKey: ['ir_faixas'] });
-      toast({ title: 'Salvo', description: 'Parâmetros atualizados com sucesso.' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+      const { error } = await supabase.from('admin_invites').upsert(
+        {
+          email: normalizedEmail,
+          created_by: user?.id ?? null,
+        },
+        {
+          onConflict: 'email',
+        },
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      setInviteEmail('');
+      await queryClient.invalidateQueries({ queryKey: ['admin_invites'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin_users'] });
+      toast({
+        title: 'Convite criado',
+        description: 'O novo admin ja pode usar a aba de primeiro acesso para definir a senha.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao convidar admin',
+        description: error.message ?? 'Nao foi possivel cadastrar o convite.',
+        variant: 'destructive',
+      });
     }
   };
 
-  const addFaixa = () => {
-    setEditFaixas([...editFaixas, { limite_inferior: 0, limite_superior: null, aliquota: 0, deducao: 0 }]);
+  const handleSaveSettings = async () => {
+    try {
+      setSavingSettings(true);
+
+      const { error } = await supabase.from('system_settings').upsert({
+        id: true,
+        ...pendingSettings,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['system_settings'] });
+      toast({ title: 'Disponibilidade atualizada', description: 'As novas regras de acesso ja estao valendo.' });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao salvar disponibilidade',
+        description: error.message ?? 'Nao foi possivel atualizar as chaves do sistema.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingSettings(false);
+    }
   };
 
-  const removeFaixa = (idx: number) => {
-    setEditFaixas(editFaixas.filter((_, i) => i !== idx));
-  };
-
-  const updateFaixa = (idx: number, field: string, value: any) => {
-    setEditFaixas(editFaixas.map((f, i) => i === idx ? { ...f, [field]: value } : f));
-  };
+  useEffect(() => {
+    setPendingSettings({
+      system_enabled: settings?.system_enabled ?? true,
+      ajuste_anual_enabled: settings?.ajuste_anual_enabled ?? true,
+      retificacao_enabled: settings?.retificacao_enabled ?? false,
+    });
+  }, [settings]);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="page-container">
-        <Button variant="ghost" onClick={() => navigate('/')} className="mb-6 gap-2">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Button>
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <Button variant="ghost" onClick={() => navigate('/')} className="mb-4 gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar
+            </Button>
+            <h1 className="text-2xl font-bold">Parametros e administracao</h1>
+            <p className="mt-2 max-w-3xl text-muted-foreground">
+              As tabelas abaixo ficam visiveis para qualquer pessoa. A edicao, os convites de admin e o controle de disponibilidade ficam liberados apenas em sessao administrativa.
+            </p>
+          </div>
 
-        <h1 className="text-2xl font-bold mb-6">Parâmetros do IRPF</h1>
-
-        {/* Year selector */}
-        <div className="form-section mb-6">
-          <div className="flex flex-wrap gap-2">
-            {isLoading ? (
-              <p className="text-muted-foreground">Carregando...</p>
-            ) : (
-              parametros?.map(p => (
-                <Button
-                  key={p.ano_calendario}
-                  variant={anoSelecionado === p.ano_calendario ? 'default' : 'outline'}
-                  onClick={() => setAnoSelecionado(p.ano_calendario)}
-                >
-                  {p.ano_calendario}
-                </Button>
-              ))
-            )}
+          <div className="flex flex-col items-start gap-3 md:items-end">
+            <AdminAuthDialog compact />
+            {isAdmin && <Badge>Admin ativo</Badge>}
           </div>
         </div>
 
-        {anoSelecionado && (
-          <>
-            <div className="form-section mb-6">
-              <h2 className="text-lg font-semibold mb-4">Parâmetros — {anoSelecionado}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Teto (Desconto Simplificado)</Label>
-                  <Input type="number" value={teto} onChange={(e) => setTeto(parseFloat(e.target.value) || 0)} className="font-mono" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Início da Correção</Label>
-                  <Input type="date" value={inicioCorrecao} onChange={(e) => setInicioCorrecao(e.target.value)} />
-                </div>
-              </div>
-            </div>
-
-            <div className="form-section mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Faixas de IR — {anoSelecionado}</h2>
-                <Button variant="outline" size="sm" onClick={addFaixa} className="gap-1">
-                  <Plus className="w-3 h-3" /> Adicionar
-                </Button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">De</th>
-                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">Até</th>
-                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">Alíquota (%)</th>
-                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">Dedução</th>
-                      <th className="py-2 px-2 w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {editFaixas.map((f, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="py-1 px-1">
-                          <Input type="number" value={f.limite_inferior} onChange={(e) => updateFaixa(idx, 'limite_inferior', parseFloat(e.target.value) || 0)} className="font-mono h-8 text-xs" />
-                        </td>
-                        <td className="py-1 px-1">
-                          <Input type="number" value={f.limite_superior ?? ''} onChange={(e) => updateFaixa(idx, 'limite_superior', e.target.value ? parseFloat(e.target.value) : null)} placeholder="∞" className="font-mono h-8 text-xs" />
-                        </td>
-                        <td className="py-1 px-1">
-                          <Input type="number" step="0.1" value={f.aliquota} onChange={(e) => updateFaixa(idx, 'aliquota', parseFloat(e.target.value) || 0)} className="font-mono h-8 text-xs" />
-                        </td>
-                        <td className="py-1 px-1">
-                          <Input type="number" value={f.deducao} onChange={(e) => updateFaixa(idx, 'deducao', parseFloat(e.target.value) || 0)} className="font-mono h-8 text-xs" />
-                        </td>
-                        <td className="py-1 px-1">
-                          <Button variant="ghost" size="sm" onClick={() => removeFaixa(idx)} className="h-8 w-8 p-0 text-destructive">
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSalvar} className="gap-2">
-                <Save className="w-4 h-4" /> Salvar Alterações
-              </Button>
-            </div>
-          </>
+        {!isAdmin && (
+          <Alert className="mb-6">
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Modo publico</AlertTitle>
+            <AlertDescription>
+              Voce pode consultar todas as tabelas, mas as acoes de cadastro, edicao e exclusao ficam bloqueadas ate um admin entrar.
+            </AlertDescription>
+          </Alert>
         )}
+
+        <Tabs defaultValue="tabelas" className="space-y-6">
+          <TabsList className="grid h-auto w-full grid-cols-1 gap-2 bg-transparent p-0 md:grid-cols-3">
+            <TabsTrigger value="tabelas" className="rounded-md border bg-muted/50 px-4 py-2 data-[state=active]:border-primary">
+              Tabelas
+            </TabsTrigger>
+            <TabsTrigger value="acesso" className="rounded-md border bg-muted/50 px-4 py-2 data-[state=active]:border-primary">
+              Acesso admin
+            </TabsTrigger>
+            <TabsTrigger value="disponibilidade" className="rounded-md border bg-muted/50 px-4 py-2 data-[state=active]:border-primary">
+              Disponibilidade
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tabelas" className="space-y-6">
+            {adminTableConfigs.map((config) => (
+              <AdminTableManager key={config.table} config={config} canEdit={isAdmin} />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="acesso" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Criar novo admin</CardTitle>
+                <CardDescription>
+                  Informe apenas o email. No primeiro acesso, a pessoa usara a aba propria para definir a senha.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isAdmin ? (
+                  <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label>Email do novo admin</Label>
+                      <Input
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        placeholder="novo.admin@exemplo.com"
+                        type="email"
+                      />
+                    </div>
+                    <Button onClick={handleInviteAdmin} className="gap-2">
+                      <MailPlus className="h-4 w-4" />
+                      Criar convite
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Entre com um admin para liberar o cadastro de novos acessos administrativos.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-6 xl:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Administradores ativos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!isAdmin ? (
+                    <p className="text-sm text-muted-foreground">Lista visivel apenas em sessao administrativa.</p>
+                  ) : adminsQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">Carregando administradores...</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Criado em</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(adminsQuery.data ?? []).map((admin) => (
+                            <TableRow key={admin.user_id}>
+                              <TableCell>{admin.email}</TableCell>
+                              <TableCell>{admin.created_at ? new Date(admin.created_at).toLocaleString('pt-BR') : '-'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Convites pendentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!isAdmin ? (
+                    <p className="text-sm text-muted-foreground">Os convites pendentes aparecem apenas para admins.</p>
+                  ) : invitesQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">Carregando convites...</p>
+                  ) : pendingInvites.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhum convite pendente no momento.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Criado em</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingInvites.map((invite) => (
+                            <TableRow key={invite.id}>
+                              <TableCell>{invite.email}</TableCell>
+                              <TableCell>{invite.created_at ? new Date(invite.created_at).toLocaleString('pt-BR') : '-'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="disponibilidade" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Chaves de disponibilidade</CardTitle>
+                <CardDescription>
+                  Use estas chaves para desabilitar o sistema inteiro ou cada ferramenta de calculo individualmente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-medium">Sistema inteiro</p>
+                    <p className="text-sm text-muted-foreground">
+                      Desligando aqui, o publico perde acesso as ferramentas e a consulta por ID.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={pendingSettings.system_enabled}
+                    onCheckedChange={(checked) => setPendingSettings((current) => ({ ...current, system_enabled: checked }))}
+                    disabled={!isAdmin}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-medium">Ajuste anual</p>
+                    <p className="text-sm text-muted-foreground">Liga ou desliga apenas a calculadora de ajuste anual.</p>
+                  </div>
+                  <Switch
+                    checked={pendingSettings.ajuste_anual_enabled}
+                    onCheckedChange={(checked) => setPendingSettings((current) => ({ ...current, ajuste_anual_enabled: checked }))}
+                    disabled={!isAdmin}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-medium">Retificacao</p>
+                    <p className="text-sm text-muted-foreground">Mantem a chave pronta para quando a ferramenta for liberada.</p>
+                  </div>
+                  <Switch
+                    checked={pendingSettings.retificacao_enabled}
+                    onCheckedChange={(checked) => setPendingSettings((current) => ({ ...current, retificacao_enabled: checked }))}
+                    disabled={!isAdmin}
+                  />
+                </div>
+
+                {isAdmin ? (
+                  <div className="flex justify-end">
+                    <Button onClick={handleSaveSettings} disabled={savingSettings} className="gap-2">
+                      <Save className="h-4 w-4" />
+                      Salvar disponibilidade
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Entre com um admin para alterar a disponibilidade do sistema.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

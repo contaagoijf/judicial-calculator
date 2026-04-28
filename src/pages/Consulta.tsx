@@ -6,12 +6,36 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/externalClient';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ConsultaPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
+  const { data: settings } = useSystemSettings();
   const [idCalculo, setIdCalculo] = useState('');
   const [loading, setLoading] = useState(false);
+  const systemEnabled = isAdmin || (settings?.system_enabled ?? true);
+
+  if (!systemEnabled) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="page-container">
+          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6 gap-2">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+
+          <div className="form-section max-w-2xl">
+            <h1 className="mb-3 text-2xl font-bold">Consulta indisponivel</h1>
+            <p className="text-muted-foreground">
+              O sistema esta temporariamente desabilitado. Administradores ainda podem entrar para revisar as configuracoes.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleBuscar = async () => {
     if (!idCalculo.trim()) {

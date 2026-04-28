@@ -74,7 +74,8 @@ export interface ValidacaoConsistenciaAjusteAnual {
 
 function normalizarAliquota(aliquota: number): number {
   // Accepts either decimal form (0.275) or percent form (27.5).
-  return aliquota <= 1 ? aliquota * 100 : aliquota;
+  const percentual = aliquota <= 1 ? aliquota * 100 : aliquota;
+  return Math.round(percentual * 1000) / 1000;
 }
 
 function buscarFaixa(baseCalculo: number, faixas: FaixaIR[]): { aliquota: number; deducao: number } {

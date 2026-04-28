@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useParametrosIR, useFaixasIR, useCalculo } from '@/hooks/useIRData';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { useAuth } from '@/contexts/AuthContext';
 import { calcularAjusteAnual, validarConsistenciaAjusteAnual, type DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
 
 const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) => (
@@ -41,6 +43,8 @@ const AjusteAnualPage = () => {
   const [searchParams] = useSearchParams();
   const idParam = searchParams.get('id');
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
+  const { data: settings } = useSystemSettings();
 
   const { data: parametros } = useParametrosIR();
   const [anoCalendario, setAnoCalendario] = useState<number | null>(null);
@@ -118,6 +122,27 @@ const AjusteAnualPage = () => {
   }, [idParam, location.state]);
 
   const isCompleta = tipoDeclaracao === 'completa';
+  const toolEnabled = isAdmin || ((settings?.system_enabled ?? true) && (settings?.ajuste_anual_enabled ?? true));
+
+  if (!toolEnabled) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="page-container">
+          <Button variant="ghost" onClick={() => navigate('/')} className="mb-6 gap-2">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+
+          <div className="form-section max-w-2xl">
+            <h1 className="mb-3 text-2xl font-bold">Ferramenta temporariamente indisponivel</h1>
+            <p className="text-muted-foreground">
+              O calculo de ajuste anual foi desabilitado no painel administrativo. Quando a liberacao for retomada,
+              a ferramenta voltara a funcionar normalmente para qualquer pessoa, mesmo sem login.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSimular = () => {
     if (!processo.trim()) {
