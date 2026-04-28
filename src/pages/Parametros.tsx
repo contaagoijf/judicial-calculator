@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -27,11 +28,13 @@ const ParametrosPage = () => {
   const { data: settings } = useSystemSettings();
   const [inviteEmail, setInviteEmail] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+  const [selectedTableName, setSelectedTableName] = useState(adminTableConfigs[0]?.table ?? '');
   const [pendingSettings, setPendingSettings] = useState({
     system_enabled: settings?.system_enabled ?? true,
     ajuste_anual_enabled: settings?.ajuste_anual_enabled ?? true,
     retificacao_enabled: settings?.retificacao_enabled ?? false,
   });
+  const selectedTableConfig = adminTableConfigs.find((config) => config.table === selectedTableName) ?? adminTableConfigs[0];
 
   const adminsQuery = useQuery({
     queryKey: ['admin_users'],
@@ -187,9 +190,33 @@ const ParametrosPage = () => {
           </TabsList>
 
           <TabsContent value="tabelas" className="space-y-6">
-            {adminTableConfigs.map((config) => (
-              <AdminTableManager key={config.table} config={config} canEdit={isAdmin} />
-            ))}
+            <Card>
+              <CardHeader>
+                <CardTitle>Selecione a tabela</CardTitle>
+                <CardDescription>
+                  Escolha qual conjunto de dados deseja consultar. Em sessao administrativa, a tabela escolhida tambem pode ser editada.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="max-w-xl">
+                <div className="space-y-2">
+                  <Label>Tabela</Label>
+                  <Select value={selectedTableName} onValueChange={setSelectedTableName}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma tabela" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {adminTableConfigs.map((config) => (
+                        <SelectItem key={config.table} value={config.table}>
+                          {config.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {selectedTableConfig && <AdminTableManager config={selectedTableConfig} canEdit={isAdmin} />}
           </TabsContent>
 
           <TabsContent value="acesso" className="space-y-6">

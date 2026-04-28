@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Calculator, FileSearch, Lock, Scale, Settings, ShieldAlert } from 'lucide-react';
+import { Calculator, FileSearch, Lock, Settings, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,11 +29,6 @@ const Index = () => {
                   alt="CALCJUD - Sistema de Calculos Judiciais"
                   className="mx-auto h-auto w-full max-w-[150px] sm:mx-0 sm:max-w-[170px] lg:max-w-[180px]"
                 />
-
-                <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary sm:mx-0 sm:mt-2">
-                  <Scale className="h-4 w-4" />
-                  Ferramenta Judicial
-                </div>
               </div>
 
               <div className="mx-auto max-w-3xl text-center sm:mx-0 sm:text-left">
