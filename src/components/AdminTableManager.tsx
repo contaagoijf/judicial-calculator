@@ -214,7 +214,9 @@ export function AdminTableManager({
                     {visibleFields.map((field) => (
                       <TableCell key={field.key} className="align-top">
                         {canEdit ? (
-                          field.type === 'boolean' ? (
+                          field.editable === false ? (
+                            <span className="text-sm text-muted-foreground">{String(row[field.key] ?? '-')}</span>
+                          ) : field.type === 'boolean' ? (
                             <div className="flex min-h-10 items-center">
                               <Switch
                                 checked={Boolean(row[field.key])}

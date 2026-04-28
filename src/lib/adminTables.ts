@@ -4,6 +4,7 @@ export type TableField = {
   key: string;
   label: string;
   type: FieldType;
+  editable?: boolean;
   nullable?: boolean;
   placeholder?: string;
   step?: string;
@@ -114,15 +115,15 @@ export const adminTableConfigs: AdminTableConfig[] = [
       { key: 'id_indice', label: 'ID indice', type: 'text' },
       { key: 'data_referencia', label: 'Data referencia', type: 'date' },
       { key: 'valor_percentual', label: 'Valor percentual', type: 'number', step: '0.000001' },
-      { key: 'fator_multiplicador', label: 'Fator multiplicador', type: 'number', step: '0.0000000001' },
-      { key: 'fator_acumulado', label: 'Fator acumulado', type: 'number', step: '0.000000000001' },
+      { key: 'fator_multiplicador', label: 'Fator multiplicador', type: 'number', step: '0.0000000001', editable: false },
+      { key: 'fator_acumulado', label: 'Fator acumulado', type: 'number', step: '0.000000000001', editable: false },
     ],
     createRow: () => ({
       id_indice: '',
       data_referencia: '',
       valor_percentual: 0,
-      fator_multiplicador: 0,
-      fator_acumulado: 0,
+      fator_multiplicador: null,
+      fator_acumulado: null,
     }),
   },
   {

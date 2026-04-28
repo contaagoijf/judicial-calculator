@@ -257,6 +257,100 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.recalculate_taxas_historicas(target_indice UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+  indice_natureza TEXT;
+  acumulado NUMERIC(20, 12);
+  current_row RECORD;
+  multiplicador NUMERIC(16, 10);
+BEGIN
+  IF target_indice IS NULL THEN
+    RETURN;
+  END IF;
+
+  SELECT natureza
+  INTO indice_natureza
+  FROM public.indices_economicos
+  WHERE id = target_indice;
+
+  IF indice_natureza IS NULL THEN
+    RETURN;
+  END IF;
+
+  acumulado := CASE WHEN indice_natureza = 'JUROS' THEN 0 ELSE 1 END;
+
+  FOR current_row IN
+    SELECT id, valor_percentual
+    FROM public.taxas_historicas
+    WHERE id_indice = target_indice
+    ORDER BY data_referencia, criado_em, id
+  LOOP
+    multiplicador := ROUND((1 + (COALESCE(current_row.valor_percentual, 0) / 100.0))::numeric, 10);
+
+    IF indice_natureza = 'JUROS' THEN
+      acumulado := acumulado + multiplicador;
+    ELSE
+      acumulado := acumulado * multiplicador;
+    END IF;
+
+    UPDATE public.taxas_historicas
+    SET fator_multiplicador = multiplicador,
+        fator_acumulado = ROUND(acumulado, 12)
+    WHERE id = current_row.id;
+  END LOOP;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.handle_taxas_historicas_write()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF pg_trigger_depth() > 1 THEN
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.recalculate_taxas_historicas(OLD.id_indice);
+    RETURN OLD;
+  END IF;
+
+  NEW.fator_multiplicador := ROUND((1 + (COALESCE(NEW.valor_percentual, 0) / 100.0))::numeric, 10);
+  NEW.fator_acumulado := COALESCE(NEW.fator_acumulado, 0);
+
+  IF TG_OP = 'UPDATE'
+     AND OLD.id_indice IS DISTINCT FROM NEW.id_indice
+     AND OLD.id_indice IS NOT NULL THEN
+    PERFORM public.recalculate_taxas_historicas(OLD.id_indice);
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.handle_taxas_historicas_after_write()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF pg_trigger_depth() > 1 THEN
+    RETURN NEW;
+  END IF;
+
+  PERFORM public.recalculate_taxas_historicas(NEW.id_indice);
+  RETURN NEW;
+END;
+$$;
+
 DROP TRIGGER IF EXISTS on_auth_user_admin_sync ON auth.users;
 CREATE TRIGGER on_auth_user_admin_sync
 AFTER INSERT ON auth.users
@@ -274,6 +368,24 @@ CREATE TRIGGER on_system_settings_touch
 BEFORE UPDATE ON public.system_settings
 FOR EACH ROW
 EXECUTE FUNCTION public.touch_system_settings();
+
+DROP TRIGGER IF EXISTS on_taxas_historicas_before_write ON public.taxas_historicas;
+CREATE TRIGGER on_taxas_historicas_before_write
+BEFORE INSERT OR UPDATE ON public.taxas_historicas
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_taxas_historicas_write();
+
+DROP TRIGGER IF EXISTS on_taxas_historicas_after_write ON public.taxas_historicas;
+CREATE TRIGGER on_taxas_historicas_after_write
+AFTER INSERT OR UPDATE ON public.taxas_historicas
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_taxas_historicas_after_write();
+
+DROP TRIGGER IF EXISTS on_taxas_historicas_after_delete ON public.taxas_historicas;
+CREATE TRIGGER on_taxas_historicas_after_delete
+AFTER DELETE ON public.taxas_historicas
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_taxas_historicas_write();
 
 DO $$
 DECLARE

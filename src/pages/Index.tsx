@@ -34,7 +34,6 @@ const Index = () => {
               <div className="mx-auto max-w-3xl text-center sm:mx-0 sm:text-left">
                 <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-[1.05rem]">
                   Ferramenta automatizada para calculos de ajuste e retificacao de Imposto de Renda da Pessoa Fisica.
-                  Os calculos permanecem acessiveis sem login, enquanto a administracao do sistema fica restrita aos perfis de admin.
                 </p>
               </div>
             </div>
@@ -86,7 +85,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center">
-                Calculo de retificacao de declaracao anual de IRPF. Controle de liberacao feito pelo painel administrativo.
+                Calculo de retificacao de declaracao anual de IRPF (vários anos)
               </CardDescription>
               <Button variant="outline" className="mt-4 w-full" disabled>
                 {retificacaoEnabled || isAdmin ? 'Em implantacao' : 'Desabilitado'}
