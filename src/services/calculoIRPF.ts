@@ -17,6 +17,24 @@ export interface ParametrosIR {
   inicio_correcao: string;
 }
 
+export type TipoCorrecao = 'SELIC' | 'SELIC_POUPANCA' | 'SEM_CORRECAO';
+export type TipoLimitaAjuiz = 'SIM' | 'NAO';
+
+export interface AlteracaoRetificacao {
+  id: string;
+  data_alt: string;
+  num_folha?: number;
+  rend_somar: number;
+  rend_sub: number;
+  ded_somar: number;
+  ded_sub: number;
+  incentivo_somar: number;
+  incentivo_sub: number;
+  rra_somar: number;
+  rra_sub: number;
+  motivo?: string;
+}
+
 export interface DadosEntradaAjusteAnual {
   tipo_declaracao: 'completa' | 'simplificada';
   ano_calendario: number;
@@ -34,6 +52,7 @@ export interface DadosEntradaAjusteAnual {
   incentivo_sub: number;
   rra_somar: number;
   rra_sub: number;
+  alteracoes?: AlteracaoRetificacao[];
 }
 
 export interface ResultadoCalculo {
@@ -74,6 +93,14 @@ export interface ValidacaoConsistenciaAjusteAnual {
 }
 
 export interface DadosEntradaRetificacao {
+  numero_processo: string;
+  nome_autor: string;
+  data_ajuizamento: string;
+  tipo_correcao: TipoCorrecao;
+  percentual_honorarios: number;
+  limita_ajuiz?: TipoLimitaAjuiz;
+  data_fim?: string;
+  informacoes?: string;
   periodos: DadosEntradaAjusteAnual[];
 }
 
@@ -254,7 +281,42 @@ export function calcularRetificacao(
       throw new Error(`Faixas de IR não encontradas para o ano ${periodo.ano_calendario}`);
     }
 
-    const resultado = calcularAjusteAnual(periodo, faixasAno, parametro);
+    const totals = (periodo.alteracoes ?? []).reduce(
+      (acc, item) => ({
+        rend_somar: acc.rend_somar + item.rend_somar,
+        rend_sub: acc.rend_sub + item.rend_sub,
+        ded_somar: acc.ded_somar + item.ded_somar,
+        ded_sub: acc.ded_sub + item.ded_sub,
+        incentivo_somar: acc.incentivo_somar + item.incentivo_somar,
+        incentivo_sub: acc.incentivo_sub + item.incentivo_sub,
+        rra_somar: acc.rra_somar + item.rra_somar,
+        rra_sub: acc.rra_sub + item.rra_sub,
+      }),
+      {
+        rend_somar: 0,
+        rend_sub: 0,
+        ded_somar: 0,
+        ded_sub: 0,
+        incentivo_somar: 0,
+        incentivo_sub: 0,
+        rra_somar: 0,
+        rra_sub: 0,
+      }
+    );
+
+    const periodoComTotais: DadosEntradaAjusteAnual = {
+      ...periodo,
+      rend_somar: totals.rend_somar,
+      rend_sub: totals.rend_sub,
+      ded_somar: totals.ded_somar,
+      ded_sub: totals.ded_sub,
+      incentivo_somar: totals.incentivo_somar,
+      incentivo_sub: totals.incentivo_sub,
+      rra_somar: totals.rra_somar,
+      rra_sub: totals.rra_sub,
+    };
+
+    const resultado = calcularAjusteAnual(periodoComTotais, faixasAno, parametro);
     const validacao = validarConsistenciaAjusteAnual(resultado.imposto_devido, periodo.ajuste_anual, periodo.imposto_pago);
 
     return {
