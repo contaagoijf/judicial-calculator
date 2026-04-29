@@ -463,176 +463,184 @@ const RetificacaoPage = () => {
         </div>
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingPeriodoIndex === null ? 'Adicionar ano' : 'Editar ano'}</DialogTitle>
-              <DialogDescription>Preencha os dados originais e as alterações para o ano selecionado.</DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden">
+            <div className="flex h-full flex-col overflow-hidden">
+              <div className="overflow-y-auto px-0 py-0">
+                <DialogHeader>
+                  <DialogTitle>{editingPeriodoIndex === null ? 'Adicionar ano' : 'Editar ano'}</DialogTitle>
+                  <DialogDescription>Preencha os dados originais e as alterações para o ano selecionado.</DialogDescription>
+                </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div className="space-y-1.5">
-                <Label>Ano calendário</Label>
-                <Select value={periodoDraft.ano_calendario.toString()} onValueChange={(value) => setPeriodoDraft({ ...periodoDraft, ano_calendario: parseInt(value) })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {anosOptions.map((ano) => (
-                      <SelectItem key={ano} value={ano.toString()}>{ano}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Tipo de declaração</Label>
-                <Select value={periodoDraft.tipo_declaracao} onValueChange={(value) => setPeriodoDraft({ ...periodoDraft, tipo_declaracao: value as 'completa' | 'simplificada' })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="completa">Completa</SelectItem>
-                    <SelectItem value="simplificada">Simplificada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-              <CampoMonetario label="Rendimentos tributáveis" value={periodoDraft.rendimentos_tributaveis} onChange={(v) => setPeriodoDraft({ ...periodoDraft, rendimentos_tributaveis: v })} />
-              <CampoMonetario
-                label="Total das deduções"
-                value={periodoDraft.deducoes_legais}
-                onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_legais: v })}
-                disabled={periodoDraft.tipo_declaracao === 'simplificada'}
-              />
-              <CampoMonetario
-                label="Deduções de incentivo"
-                value={periodoDraft.deducoes_incentivo}
-                onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_incentivo: v })}
-                disabled={periodoDraft.tipo_declaracao === 'simplificada'}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-              <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} />
-              <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} />
-              <CampoMonetario label="Valor do ajuste anual" value={periodoDraft.ajuste_anual} onChange={(v) => setPeriodoDraft({ ...periodoDraft, ajuste_anual: v })} />
-            </div>
-
-            <div className="mt-6 border-t pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-base font-semibold">Alterações da Declaração</h3>
-                  <p className="text-sm text-muted-foreground">Cada ano pode ter várias alterações.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-1.5">
+                    <Label>Ano calendário</Label>
+                    <Select value={periodoDraft.ano_calendario.toString()} onValueChange={(value) => setPeriodoDraft({ ...periodoDraft, ano_calendario: parseInt(value) })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {anosOptions.map((ano) => (
+                          <SelectItem key={ano} value={ano.toString()}>{ano}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tipo de declaração</Label>
+                    <Select value={periodoDraft.tipo_declaracao} onValueChange={(value) => setPeriodoDraft({ ...periodoDraft, tipo_declaracao: value as 'completa' | 'simplificada' })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="completa">Completa</SelectItem>
+                        <SelectItem value="simplificada">Simplificada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Button variant="outline" onClick={openNovaAlteracao} className="gap-2">
-                  <Plus className="w-4 h-4" /> Nova alteração
-                </Button>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                  <CampoMonetario label="Rendimentos tributáveis" value={periodoDraft.rendimentos_tributaveis} onChange={(v) => setPeriodoDraft({ ...periodoDraft, rendimentos_tributaveis: v })} />
+                  <CampoMonetario
+                    label="Total das deduções"
+                    value={periodoDraft.deducoes_legais}
+                    onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_legais: v })}
+                    disabled={periodoDraft.tipo_declaracao === 'simplificada'}
+                  />
+                  <CampoMonetario
+                    label="Deduções de incentivo"
+                    value={periodoDraft.deducoes_incentivo}
+                    onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_incentivo: v })}
+                    disabled={periodoDraft.tipo_declaracao === 'simplificada'}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                  <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} />
+                  <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} />
+                  <CampoMonetario label="Valor do ajuste anual" value={periodoDraft.ajuste_anual} onChange={(v) => setPeriodoDraft({ ...periodoDraft, ajuste_anual: v })} />
+                </div>
+
+                <div className="mt-6 border-t pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base font-semibold">Alterações da Declaração</h3>
+                      <p className="text-sm text-muted-foreground">Cada ano pode ter várias alterações.</p>
+                    </div>
+                    <Button variant="outline" onClick={openNovaAlteracao} className="gap-2">
+                      <Plus className="w-4 h-4" /> Nova alteração
+                    </Button>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg border bg-background">
+                    <table className="min-w-full text-sm">
+                      <thead className="border-b bg-slate-100 text-left">
+                        <tr>
+                          <th className="px-3 py-2">Data</th>
+                          <th className="px-3 py-2">Folha</th>
+                          <th className="px-3 py-2 text-right">Rend. +</th>
+                          <th className="px-3 py-2 text-right">Rend. -</th>
+                          <th className="px-3 py-2 text-right">Ded. +</th>
+                          <th className="px-3 py-2 text-right">Ded. -</th>
+                          <th className="px-3 py-2 text-right">RRA +</th>
+                          <th className="px-3 py-2 text-right">RRA -</th>
+                          <th className="px-3 py-2 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(periodoDraft.alteracoes ?? []).map((alteracao) => (
+                          <tr key={alteracao.id} className="border-b even:bg-slate-50">
+                            <td className="px-3 py-2">{alteracao.data_alt}</td>
+                            <td className="px-3 py-2">{alteracao.num_folha ?? '-'}</td>
+                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rend_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rend_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.ded_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.ded_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rra_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rra_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-center space-x-1">
+                              <Button size="sm" variant="outline" onClick={() => openEditarAlteracao(alteracao.id)} className="gap-1">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleRemoverAlteracao(alteracao.id)} className="text-destructive">
+                                Excluir
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                        {(periodoDraft.alteracoes ?? []).length === 0 && (
+                          <tr>
+                            <td colSpan={9} className="px-3 py-3 text-sm text-muted-foreground">Nenhuma alteração cadastrada.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
 
-              <div className="overflow-x-auto rounded-lg border bg-background">
-                <table className="min-w-full text-sm">
-                  <thead className="border-b bg-slate-100 text-left">
-                    <tr>
-                      <th className="px-3 py-2">Data</th>
-                      <th className="px-3 py-2">Folha</th>
-                      <th className="px-3 py-2 text-right">Rend. +</th>
-                      <th className="px-3 py-2 text-right">Rend. -</th>
-                      <th className="px-3 py-2 text-right">Ded. +</th>
-                      <th className="px-3 py-2 text-right">Ded. -</th>
-                      <th className="px-3 py-2 text-right">RRA +</th>
-                      <th className="px-3 py-2 text-right">RRA -</th>
-                      <th className="px-3 py-2 text-center">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(periodoDraft.alteracoes ?? []).map((alteracao) => (
-                      <tr key={alteracao.id} className="border-b even:bg-slate-50">
-                        <td className="px-3 py-2">{alteracao.data_alt}</td>
-                        <td className="px-3 py-2">{alteracao.num_folha ?? '-'}</td>
-                        <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rend_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rend_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-mono">R$ {alteracao.ded_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-mono">R$ {alteracao.ded_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rra_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rra_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-2 text-center space-x-1">
-                          <Button size="sm" variant="outline" onClick={() => openEditarAlteracao(alteracao.id)} className="gap-1">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleRemoverAlteracao(alteracao.id)} className="text-destructive">
-                            Excluir
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {(periodoDraft.alteracoes ?? []).length === 0 && (
-                      <tr>
-                        <td colSpan={9} className="px-3 py-3 text-sm text-muted-foreground">Nenhuma alteração cadastrada.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <DialogFooter className="sticky bottom-0 z-10 mt-4 flex justify-end gap-2 border-t bg-background/90 px-0 py-4 backdrop-blur">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancelar</Button>
+                </DialogClose>
+                <Button onClick={handleSalvarPeriodo}>Salvar</Button>
+              </DialogFooter>
             </div>
-
-            <DialogFooter className="mt-6 flex justify-end gap-2">
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button onClick={handleSalvarPeriodo}>Salvar</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
         <Dialog open={alteracaoDialogOpen} onOpenChange={setAlteracaoDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingAlteracaoId ? 'Editar alteração' : 'Nova alteração'}</DialogTitle>
-              <DialogDescription>Preencha os campos de soma/subtração e motivo.</DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
+            <div className="flex h-full flex-col overflow-hidden">
+              <div className="overflow-y-auto px-0 py-0">
+                <DialogHeader>
+                  <DialogTitle>{editingAlteracaoId ? 'Editar alteração' : 'Nova alteração'}</DialogTitle>
+                  <DialogDescription>Preencha os campos de soma/subtração e motivo.</DialogDescription>
+                </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div className="space-y-1.5">
-                <Label>Data da alteração</Label>
-                <Input type="date" value={alteracaoDraft.data_alt} onChange={(e) => setAlteracaoDraft({ ...alteracaoDraft, data_alt: e.target.value })} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-1.5">
+                    <Label>Data da alteração</Label>
+                    <Input type="date" value={alteracaoDraft.data_alt} onChange={(e) => setAlteracaoDraft({ ...alteracaoDraft, data_alt: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Número da folha</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={alteracaoDraft.num_folha ?? ''}
+                      onChange={(e) => setAlteracaoDraft({ ...alteracaoDraft, num_folha: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
+                  <CampoMonetario label="Rendimentos a somar" value={alteracaoDraft.rend_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rend_somar: v })} />
+                  <CampoMonetario label="Rendimentos a subtrair" value={alteracaoDraft.rend_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rend_sub: v })} />
+                  <CampoMonetario label="Imposto RRA a somar" value={alteracaoDraft.rra_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rra_somar: v })} />
+                  <CampoMonetario label="Imposto RRA a subtrair" value={alteracaoDraft.rra_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rra_sub: v })} />
+                </div>
+
+                {periodoDraft.tipo_declaracao === 'completa' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
+                    <CampoMonetario label="Deduções legais a somar" value={alteracaoDraft.ded_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, ded_somar: v })} />
+                    <CampoMonetario label="Deduções legais a subtrair" value={alteracaoDraft.ded_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, ded_sub: v })} />
+                    <CampoMonetario label="Deduções de incentivo a somar" value={alteracaoDraft.incentivo_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, incentivo_somar: v })} />
+                    <CampoMonetario label="Deduções de incentivo a subtrair" value={alteracaoDraft.incentivo_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, incentivo_sub: v })} />
+                  </div>
+                )}
+
+                <div className="space-y-1.5 mt-4">
+                  <Label>Motivo / Observação</Label>
+                  <Textarea value={alteracaoDraft.motivo ?? ''} onChange={(e) => setAlteracaoDraft({ ...alteracaoDraft, motivo: e.target.value })} placeholder="Digite uma observação..." />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Número da folha</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={alteracaoDraft.num_folha ?? ''}
-                  onChange={(e) => setAlteracaoDraft({ ...alteracaoDraft, num_folha: e.target.value ? parseInt(e.target.value, 10) : undefined })}
-                  placeholder="Opcional"
-                />
-              </div>
+
+              <DialogFooter className="sticky bottom-0 z-10 mt-4 flex justify-end gap-2 border-t bg-background/90 px-0 py-4 backdrop-blur">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancelar</Button>
+                </DialogClose>
+                <Button onClick={handleSalvarAlteracao}>Salvar</Button>
+              </DialogFooter>
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
-              <CampoMonetario label="Rendimentos a somar" value={alteracaoDraft.rend_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rend_somar: v })} />
-              <CampoMonetario label="Rendimentos a subtrair" value={alteracaoDraft.rend_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rend_sub: v })} />
-              <CampoMonetario label="Imposto RRA a somar" value={alteracaoDraft.rra_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rra_somar: v })} />
-              <CampoMonetario label="Imposto RRA a subtrair" value={alteracaoDraft.rra_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, rra_sub: v })} />
-            </div>
-
-            {periodoDraft.tipo_declaracao === 'completa' && (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-4">
-                <CampoMonetario label="Deduções legais a somar" value={alteracaoDraft.ded_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, ded_somar: v })} />
-                <CampoMonetario label="Deduções legais a subtrair" value={alteracaoDraft.ded_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, ded_sub: v })} />
-                <CampoMonetario label="Deduções de incentivo a somar" value={alteracaoDraft.incentivo_somar} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, incentivo_somar: v })} />
-                <CampoMonetario label="Deduções de incentivo a subtrair" value={alteracaoDraft.incentivo_sub} onChange={(v) => setAlteracaoDraft({ ...alteracaoDraft, incentivo_sub: v })} />
-              </div>
-            )}
-
-            <div className="space-y-1.5 mt-4">
-              <Label>Motivo / Observação</Label>
-              <Textarea value={alteracaoDraft.motivo ?? ''} onChange={(e) => setAlteracaoDraft({ ...alteracaoDraft, motivo: e.target.value })} placeholder="Digite uma observação..." />
-            </div>
-
-            <DialogFooter className="mt-6 flex justify-end gap-2">
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button onClick={handleSalvarAlteracao}>Salvar</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
