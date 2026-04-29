@@ -464,8 +464,8 @@ const RetificacaoPage = () => {
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden">
-            <div className="flex h-full flex-col overflow-hidden">
-              <div className="overflow-y-auto px-0 py-0">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto px-0 py-0">
                 <DialogHeader>
                   <DialogTitle>{editingPeriodoIndex === null ? 'Adicionar ano' : 'Editar ano'}</DialogTitle>
                   <DialogDescription>Preencha os dados originais e as alterações para o ano selecionado.</DialogDescription>
@@ -587,8 +587,8 @@ const RetificacaoPage = () => {
 
         <Dialog open={alteracaoDialogOpen} onOpenChange={setAlteracaoDialogOpen}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
-            <div className="flex h-full flex-col overflow-hidden">
-              <div className="overflow-y-auto px-0 py-0">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto px-0 py-0">
                 <DialogHeader>
                   <DialogTitle>{editingAlteracaoId ? 'Editar alteração' : 'Nova alteração'}</DialogTitle>
                   <DialogDescription>Preencha os campos de soma/subtração e motivo.</DialogDescription>
