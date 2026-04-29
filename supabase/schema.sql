@@ -102,7 +102,6 @@ CREATE TABLE IF NOT EXISTS public.regras_subperiodo (
   data_fim_vigencia DATE,
   id_indice_correcao UUID REFERENCES public.indices_economicos(id),
   id_indice_juros UUID REFERENCES public.indices_economicos(id),
-  tipo_juros TEXT CHECK (tipo_juros IN ('SIMPLES', 'COMPOSTO')),
   aplicar_correcao BOOLEAN DEFAULT true,
   aplicar_juros BOOLEAN DEFAULT true,
   ordem INT NOT NULL DEFAULT 1,

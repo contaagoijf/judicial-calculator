@@ -22,6 +22,7 @@ export function gerarRelatorioPDF(
     calculo_id: string;
     inicio_correcao: string;
     tipo_calculo: 'ajuste_anual' | 'retificacao';
+    dados_entrada?: any;
   },
   faixas: FaixaIR[]
 ): jsPDF {
@@ -64,12 +65,14 @@ export function gerarRelatorioPDF(
 
     autoTable(doc, {
       startY: y,
-      head: [['Ano', 'Declaração', 'Imposto Devido', 'Imposto Pago', 'Resultado', 'Consistente']],
+      head: [['Ano', 'Declaração', 'Imposto Devido', 'Imposto Pago', 'Valor Devido', 'Valor Atualizado', 'Resultado', 'Consistente']],
       body: resultadoRetificacao.periodos.map((periodo) => [
         `${periodo.ano_calendario}`,
         periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada',
         formatCurrency(periodo.resultado.imposto_devido),
         formatCurrency(periodo.resultado.alteracoes.imposto_pago.original),
+        formatCurrency(periodo.valor_devido),
+        formatCurrency(periodo.valor_atualizado),
         formatCurrency(periodo.resultado.imposto_a_pagar),
         periodo.validacao.consistente ? 'Sim' : 'Não',
       ]),
@@ -87,14 +90,104 @@ export function gerarRelatorioPDF(
       startY: y,
       head: [['Descrição', 'Valor']],
       body: [
-        ['Total de imposto devido original', formatCurrency(resultadoRetificacao.total_imposto_devido_original)],
-        ['Total do imposto pago', formatCurrency(resultadoRetificacao.total_imposto_pago)],
-        ['Base de cálculo recalculada total', formatCurrency(resultadoRetificacao.total_base_calculo_recalc)],
+        ['Total principal devido', formatCurrency(resultadoRetificacao.total_principal_devido)],
+        ['Total juros devido', formatCurrency(resultadoRetificacao.total_juros_devido)],
+        ['Total da execução', formatCurrency(resultadoRetificacao.total_execucao)],
         ['Imposto a pagar / restituir', formatCurrency(resultadoRetificacao.total_imposto_a_pagar)],
       ],
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [59, 130, 195], textColor: 255 },
       theme: 'grid',
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+    doc.addPage();
+    y = 20;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('C - PARCIAIS DO CÁLCULO', pageWidth / 2, y, { align: 'center' });
+    y += 12;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    const periodosEntrada = (dados.dados_entrada?.periodos ?? []) as any[];
+    const entradasPorAnoTipo = periodosEntrada.reduce<Record<string, any>>((acc, periodo) => {
+      acc[`${periodo.ano_calendario}|${periodo.tipo_declaracao}`] = periodo;
+      return acc;
+    }, {});
+
+    const periodosPorAno = resultadoRetificacao.periodos.reduce<Record<number, PeriodoRetificacao[]>>((acc, periodo) => {
+      (acc[periodo.ano_calendario] ??= []).push(periodo);
+      return acc;
+    }, {} as Record<number, PeriodoRetificacao[]>);
+
+    const anosOrdenados = Object.keys(periodosPorAno)
+      .map((key) => Number(key))
+      .sort((a, b) => a - b);
+
+    anosOrdenados.forEach((ano) => {
+      const periodos = periodosPorAno[ano];
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(`Ano ${ano}`, 14, y);
+      y += 8;
+
+      periodos.forEach((periodo, index) => {
+        const periodoInput = entradasPorAnoTipo[`${periodo.ano_calendario}|${periodo.tipo_declaracao}`] ?? {};
+        const rows = [
+          ['Tipo de declaração', periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'],
+          ['Rendimentos tributáveis originais', formatCurrency(periodoInput.rendimentos_tributaveis ?? periodo.resultado.alteracoes.rendimentos.original)],
+          ['Deduções legais originais', formatCurrency(periodoInput.deducoes_legais ?? periodo.resultado.alteracoes.deducoes.original)],
+          ['Deduções de incentivo originais', formatCurrency(periodoInput.deducoes_incentivo ?? periodo.resultado.alteracoes.incentivo.original)],
+          ['Imposto RRA original', formatCurrency(periodoInput.imposto_rra ?? periodo.resultado.alteracoes.rra.original)],
+          ['Imposto pago informado', formatCurrency(periodoInput.imposto_pago ?? periodo.resultado.alteracoes.imposto_pago.original)],
+          ['Total de deduções originais', formatCurrency(periodo.resultado.total_deducoes)],
+          ['Base de cálculo original', formatCurrency(periodo.resultado.base_calculo)],
+          ['Alíquota original', formatPercent(periodo.resultado.aliquota_inicial)],
+          ['Dedução original', formatCurrency(periodo.resultado.deducao_inicial)],
+          ['Imposto devido original', formatCurrency(periodo.resultado.imposto_devido)],
+          ['Rendimentos recalculados', formatCurrency(periodo.resultado.rend_trib_recalc)],
+          ['Total de deduções recalculadas', formatCurrency(periodo.resultado.total_deducoes_recalc)],
+          ['Base de cálculo recalculada', formatCurrency(periodo.resultado.base_calculo_recalc)],
+          ['Alíquota recalculada', formatPercent(periodo.resultado.aliquota_recalc)],
+          ['Dedução recalculada', formatCurrency(periodo.resultado.deducao_recalc)],
+          ['Incentivo recalculado', formatCurrency(periodo.resultado.incentivo_recalc)],
+          ['Imposto RRA recalculado', formatCurrency(periodo.resultado.imposto_rra_recalc)],
+          ['Imposto devido recalculado', formatCurrency(periodo.resultado.imposto_devido_recalc)],
+          ['Imposto a pagar / restituir', formatCurrency(periodo.resultado.imposto_a_pagar)],
+          ['Valor devido', formatCurrency(periodo.valor_devido)],
+          ['Valor atualizado', formatCurrency(periodo.valor_atualizado)],
+        ];
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(`Declaração ${periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}`, 14, y);
+        y += 7;
+        doc.setFont('helvetica', 'normal');
+
+        autoTable(doc, {
+          startY: y,
+          head: [['Variável', 'Valor']],
+          body: rows,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [59, 130, 195], textColor: 255 },
+          theme: 'grid',
+        });
+
+        y = (doc as any).lastAutoTable.finalY + 10;
+        if (index < periodos.length - 1 && y > 230) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      if (ano !== anosOrdenados[anosOrdenados.length - 1]) {
+        y += 4;
+        if (y > 230) {
+          doc.addPage();
+          y = 20;
+        }
+      }
     });
   } else {
     // A - Tabela de Alterações

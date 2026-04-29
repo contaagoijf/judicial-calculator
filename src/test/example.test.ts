@@ -136,8 +136,13 @@ describe("calcularRetificacao", () => {
 
     expect(resultado.total_imposto_a_pagar).toBe(1075);
     expect(resultado.total_imposto_devido_original).toBe(5560.11);
+    expect(resultado.total_principal_devido).toBe(0);
+    expect(resultado.total_juros_devido).toBe(1075);
+    expect(resultado.total_execucao).toBe(1075);
     expect(resultado.periodos).toHaveLength(2);
     expect(resultado.periodos[0].validacao.consistente).toBe(true);
     expect(resultado.periodos[1].validacao.consistente).toBe(true);
+    expect(resultado.periodos[0].valor_devido).toBe(0);
+    expect(resultado.periodos[0].valor_atualizado).toBe(1075);
   });
 });

@@ -109,6 +109,8 @@ export interface PeriodoRetificacao {
   tipo_declaracao: 'completa' | 'simplificada';
   resultado: ResultadoCalculo;
   validacao: ValidacaoConsistenciaAjusteAnual;
+  valor_devido: number;
+  valor_atualizado: number;
 }
 
 export interface ResultadoRetificacao {
@@ -119,6 +121,9 @@ export interface ResultadoRetificacao {
   total_rend_trib_recalc: number;
   total_total_deducoes_recalc: number;
   total_base_calculo_recalc: number;
+  total_principal_devido: number;
+  total_juros_devido: number;
+  total_execucao: number;
 }
 
 function normalizarAliquota(aliquota: number): number {
@@ -264,6 +269,21 @@ function round2(val: number): number {
   return Math.round(val * 100) / 100;
 }
 
+function calcularValoresRetificacao(periodo: PeriodoRetificacao) {
+  const valor_devido = round2(Math.max(0, periodo.resultado.imposto_devido - periodo.resultado.alteracoes.imposto_pago.original));
+  const valor_atualizado = round2(Math.max(0, periodo.resultado.imposto_a_pagar));
+
+  return { valor_devido, valor_atualizado };
+}
+
+function calcularTotaisRetificacao(periodos: PeriodoRetificacao[]) {
+  const total_principal_devido = round2(periodos.reduce((sum, periodo) => sum + periodo.valor_devido, 0));
+  const total_execucao = round2(periodos.reduce((sum, periodo) => sum + periodo.valor_atualizado, 0));
+  const total_juros_devido = round2(total_execucao - total_principal_devido);
+
+  return { total_principal_devido, total_juros_devido, total_execucao };
+}
+
 export function calcularRetificacao(
   dados: DadosEntradaRetificacao,
   faixas: FaixaIR[],
@@ -293,14 +313,14 @@ export function calcularRetificacao(
         rra_sub: acc.rra_sub + item.rra_sub,
       }),
       {
-        rend_somar: 0,
-        rend_sub: 0,
-        ded_somar: 0,
-        ded_sub: 0,
-        incentivo_somar: 0,
-        incentivo_sub: 0,
-        rra_somar: 0,
-        rra_sub: 0,
+        rend_somar: periodo.rend_somar,
+        rend_sub: periodo.rend_sub,
+        ded_somar: periodo.ded_somar,
+        ded_sub: periodo.ded_sub,
+        incentivo_somar: periodo.incentivo_somar,
+        incentivo_sub: periodo.incentivo_sub,
+        rra_somar: periodo.rra_somar,
+        rra_sub: periodo.rra_sub,
       }
     );
 
@@ -318,14 +338,26 @@ export function calcularRetificacao(
 
     const resultado = calcularAjusteAnual(periodoComTotais, faixasAno, parametro);
     const validacao = validarConsistenciaAjusteAnual(resultado.imposto_devido, periodo.ajuste_anual, periodo.imposto_pago);
+    const { valor_devido, valor_atualizado } = calcularValoresRetificacao({
+      ano_calendario: periodo.ano_calendario,
+      tipo_declaracao: periodo.tipo_declaracao,
+      resultado,
+      validacao,
+      valor_devido: 0,
+      valor_atualizado: 0,
+    });
 
     return {
       ano_calendario: periodo.ano_calendario,
       tipo_declaracao: periodo.tipo_declaracao,
       resultado,
       validacao,
+      valor_devido,
+      valor_atualizado,
     };
   });
+
+  const { total_principal_devido, total_juros_devido, total_execucao } = calcularTotaisRetificacao(periodos);
 
   return {
     periodos,
@@ -335,5 +367,8 @@ export function calcularRetificacao(
     total_rend_trib_recalc: round2(periodos.reduce((sum, item) => sum + item.resultado.rend_trib_recalc, 0)),
     total_total_deducoes_recalc: round2(periodos.reduce((sum, item) => sum + item.resultado.total_deducoes_recalc, 0)),
     total_base_calculo_recalc: round2(periodos.reduce((sum, item) => sum + item.resultado.base_calculo_recalc, 0)),
+    total_principal_devido,
+    total_juros_devido,
+    total_execucao,
   };
 }

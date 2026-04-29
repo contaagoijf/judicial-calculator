@@ -49,10 +49,11 @@ const RelatorioPage = () => {
       nome_autor: calculo.nome_autor,
       tipo_declaracao: calculo.tipo_declaracao,
       calculo_id: calculo.id,
-      inicio_correcao: faixas.length > 0 ? '' : '',
+      inicio_correcao: isRetificacao ? (calculo.dados_entrada as any)?.data_ajuizamento ?? '' : '',
       tipo_calculo: calculo.tipo_calculo,
       ano_calendario: calculo.ano_calendario,
       anos: isRetificacao ? (calculo.dados_entrada as any)?.periodos?.map((p: any) => p.ano_calendario) : undefined,
+      dados_entrada: isRetificacao ? calculo.dados_entrada as any : undefined,
     };
 
     const doc = gerarRelatorioPDF(isRetificacao ? resultadoRetificacao : resultadoAjuste, data, faixas);
@@ -104,6 +105,8 @@ const RelatorioPage = () => {
                     <th className="border px-3 py-2">Declaração</th>
                     <th className="border px-3 py-2 text-right">Imposto Devido</th>
                     <th className="border px-3 py-2 text-right">Imposto Pago</th>
+                    <th className="border px-3 py-2 text-right">Valor Devido</th>
+                    <th className="border px-3 py-2 text-right">Valor Atualizado</th>
                     <th className="border px-3 py-2 text-right">Resultado</th>
                     <th className="border px-3 py-2 text-center">Consistente</th>
                   </tr>
@@ -115,6 +118,8 @@ const RelatorioPage = () => {
                       <td className="border px-3 py-2">{periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}</td>
                       <td className="border px-3 py-2 text-right font-mono">R$ {periodo.resultado.imposto_devido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td className="border px-3 py-2 text-right font-mono">R$ {periodo.resultado.alteracoes.imposto_pago.original.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {periodo.valor_devido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {periodo.valor_atualizado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td className="border px-3 py-2 text-right font-mono">R$ {periodo.resultado.imposto_a_pagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                       <td className="border px-3 py-2 text-center">{periodo.validacao.consistente ? 'Sim' : 'Não'}</td>
                     </tr>
@@ -125,16 +130,16 @@ const RelatorioPage = () => {
 
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Total de imposto devido original</p>
-                <p className="text-2xl font-mono mt-2">R$ {resultadoRetificacao.total_imposto_devido_original.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="text-sm text-muted-foreground">Total principal devido</p>
+                <p className="text-2xl font-mono mt-2">R$ {(resultadoRetificacao.total_principal_devido ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Total do imposto pago</p>
-                <p className="text-2xl font-mono mt-2">R$ {resultadoRetificacao.total_imposto_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="text-sm text-muted-foreground">Total juros devido</p>
+                <p className="text-2xl font-mono mt-2">R$ {(resultadoRetificacao.total_juros_devido ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Total base de cálculo recalculada</p>
-                <p className="text-2xl font-mono mt-2">R$ {resultadoRetificacao.total_base_calculo_recalc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="text-sm text-muted-foreground">Total da execução</p>
+                <p className="text-2xl font-mono mt-2">R$ {(resultadoRetificacao.total_execucao ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
           </div>
