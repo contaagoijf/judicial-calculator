@@ -4,6 +4,7 @@
  */
 
 export interface FaixaIR {
+  ano_calendario: number;
   limite_inferior: number;
   limite_superior: number | null;
   aliquota: number; // percentage, e.g. 7.5
@@ -72,6 +73,27 @@ export interface ValidacaoConsistenciaAjusteAnual {
   diferenca: number;
 }
 
+export interface DadosEntradaRetificacao {
+  periodos: DadosEntradaAjusteAnual[];
+}
+
+export interface PeriodoRetificacao {
+  ano_calendario: number;
+  tipo_declaracao: 'completa' | 'simplificada';
+  resultado: ResultadoCalculo;
+  validacao: ValidacaoConsistenciaAjusteAnual;
+}
+
+export interface ResultadoRetificacao {
+  periodos: PeriodoRetificacao[];
+  total_imposto_a_pagar: number;
+  total_imposto_devido_original: number;
+  total_imposto_pago: number;
+  total_rend_trib_recalc: number;
+  total_total_deducoes_recalc: number;
+  total_base_calculo_recalc: number;
+}
+
 function normalizarAliquota(aliquota: number): number {
   // Accepts either decimal form (0.275) or percent form (27.5).
   const percentual = aliquota <= 1 ? aliquota * 100 : aliquota;
@@ -93,10 +115,6 @@ function buscarFaixa(baseCalculo: number, faixas: FaixaIR[]): { aliquota: number
   
   // Fallback: first bracket (isento)
   return { aliquota: 0, deducao: 0 };
-}
-
-function round2(val: number): number {
-  return Math.round(val * 100) / 100;
 }
 
 export function validarConsistenciaAjusteAnual(
@@ -212,5 +230,48 @@ export function calcularAjusteAnual(
     imposto_devido_recalc,
     imposto_a_pagar,
     alteracoes
+  };
+}
+
+function round2(val: number): number {
+  return Math.round(val * 100) / 100;
+}
+
+export function calcularRetificacao(
+  dados: DadosEntradaRetificacao,
+  faixas: FaixaIR[],
+  parametros: ParametrosIR[]
+): ResultadoRetificacao {
+  const periodos: PeriodoRetificacao[] = dados.periodos.map((periodo) => {
+    const parametro = parametros.find((p) => p.ano_calendario === periodo.ano_calendario);
+    const faixasAno = faixas.filter((f) => f.ano_calendario === periodo.ano_calendario);
+
+    if (!parametro) {
+      throw new Error(`Parâmetros não encontrados para o ano ${periodo.ano_calendario}`);
+    }
+
+    if (faixasAno.length === 0) {
+      throw new Error(`Faixas de IR não encontradas para o ano ${periodo.ano_calendario}`);
+    }
+
+    const resultado = calcularAjusteAnual(periodo, faixasAno, parametro);
+    const validacao = validarConsistenciaAjusteAnual(resultado.imposto_devido, periodo.ajuste_anual, periodo.imposto_pago);
+
+    return {
+      ano_calendario: periodo.ano_calendario,
+      tipo_declaracao: periodo.tipo_declaracao,
+      resultado,
+      validacao,
+    };
+  });
+
+  return {
+    periodos,
+    total_imposto_a_pagar: round2(periodos.reduce((sum, item) => sum + item.resultado.imposto_a_pagar, 0)),
+    total_imposto_devido_original: round2(periodos.reduce((sum, item) => sum + item.resultado.imposto_devido, 0)),
+    total_imposto_pago: round2(periodos.reduce((sum, item) => sum + item.resultado.alteracoes.imposto_pago.original, 0)),
+    total_rend_trib_recalc: round2(periodos.reduce((sum, item) => sum + item.resultado.rend_trib_recalc, 0)),
+    total_total_deducoes_recalc: round2(periodos.reduce((sum, item) => sum + item.resultado.total_deducoes_recalc, 0)),
+    total_base_calculo_recalc: round2(periodos.reduce((sum, item) => sum + item.resultado.base_calculo_recalc, 0)),
   };
 }

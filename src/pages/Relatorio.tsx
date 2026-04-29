@@ -7,7 +7,7 @@ import TabelaAlteracoes from '@/components/TabelaAlteracoes';
 import BlocoCalculo from '@/components/BlocoCalculo';
 import TabelaFaixas from '@/components/TabelaFaixas';
 import { gerarRelatorioPDF } from '@/services/pdfGenerator';
-import type { ResultadoCalculo } from '@/services/calculoIRPF';
+import type { ResultadoCalculo, ResultadoRetificacao } from '@/services/calculoIRPF';
 
 const RelatorioPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,24 +31,39 @@ const RelatorioPage = () => {
     );
   }
 
-  const resultado = calculo.resultado as unknown as ResultadoCalculo;
-  const isRestituir = resultado.imposto_a_pagar > 0;
-  const isPagar = resultado.imposto_a_pagar < 0;
+  const isRetificacao = calculo.tipo_calculo === 'retificacao';
+  const resultadoRetificacao = calculo.resultado as unknown as ResultadoRetificacao;
+  const resultadoAjuste = calculo.resultado as unknown as ResultadoCalculo;
+  const resultado = isRetificacao ? null : resultadoAjuste;
+  const isRestituir = isRetificacao
+    ? resultadoRetificacao.total_imposto_a_pagar > 0
+    : resultadoAjuste.imposto_a_pagar > 0;
+  const isPagar = isRetificacao
+    ? resultadoRetificacao.total_imposto_a_pagar < 0
+    : resultadoAjuste.imposto_a_pagar < 0;
 
   const handleExportPDF = () => {
     if (!faixas) return;
-    const doc = gerarRelatorioPDF(resultado, {
+    const data = {
       numero_processo: calculo.numero_processo,
       nome_autor: calculo.nome_autor,
-      ano_calendario: calculo.ano_calendario,
       tipo_declaracao: calculo.tipo_declaracao,
       calculo_id: calculo.id,
-      inicio_correcao: faixas.length > 0 ? '' : '', // will be fetched
-    }, faixas);
+      inicio_correcao: faixas.length > 0 ? '' : '',
+      tipo_calculo: calculo.tipo_calculo,
+      ano_calendario: calculo.ano_calendario,
+      anos: isRetificacao ? (calculo.dados_entrada as any)?.periodos?.map((p: any) => p.ano_calendario) : undefined,
+    };
+
+    const doc = gerarRelatorioPDF(isRetificacao ? resultadoRetificacao : resultadoAjuste, data, faixas);
     doc.save(`relatorio-${calculo.id}.pdf`);
   };
 
   const handleRefazer = () => {
+    if (isRetificacao) {
+      navigate(`/calculo/retificacao?id=${calculo.id}`);
+      return;
+    }
     navigate(`/calculo/ajuste-anual?id=${calculo.id}`);
   };
 
@@ -59,7 +74,9 @@ const RelatorioPage = () => {
           <ArrowLeft className="w-4 h-4" /> Início
         </Button>
 
-        <h1 className="text-2xl font-bold mb-2">Relatório Final — Ajuste Anual IRPF</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          Relatório Final — {isRetificacao ? 'Retificação' : 'Ajuste Anual'} IRPF
+        </h1>
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground mb-6">
           <span>Processo: <strong className="text-foreground">{calculo.numero_processo}</strong></span>
           <span>Autor: <strong className="text-foreground">{calculo.nome_autor}</strong></span>
@@ -73,13 +90,61 @@ const RelatorioPage = () => {
             {isPagar ? 'Imposto a Pagar' : isRestituir ? 'Valor a Restituir' : 'Sem diferença'}
           </p>
           <p className={`text-3xl font-bold font-mono ${isPagar ? 'text-destructive' : isRestituir ? 'text-green-600' : 'text-foreground'}`}>
-            R$ {Math.abs(resultado.imposto_a_pagar).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {Math.abs((isRetificacao ? resultadoRetificacao.total_imposto_a_pagar : resultadoAjuste.imposto_a_pagar)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
 
-        <TabelaAlteracoes alteracoes={resultado.alteracoes} />
-        <BlocoCalculo resultado={resultado} />
-        {faixas && faixas.length > 0 && <TabelaFaixas faixas={faixas} ano={calculo.ano_calendario} />}
+        {isRetificacao ? (
+          <div className="space-y-6">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-slate-100 text-left">
+                    <th className="border px-3 py-2">Ano</th>
+                    <th className="border px-3 py-2">Declaração</th>
+                    <th className="border px-3 py-2 text-right">Imposto Devido</th>
+                    <th className="border px-3 py-2 text-right">Imposto Pago</th>
+                    <th className="border px-3 py-2 text-right">Resultado</th>
+                    <th className="border px-3 py-2 text-center">Consistente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resultadoRetificacao.periodos.map((periodo) => (
+                    <tr key={`${periodo.ano_calendario}-${periodo.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
+                      <td className="border px-3 py-2">{periodo.ano_calendario}</td>
+                      <td className="border px-3 py-2">{periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {periodo.resultado.imposto_devido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {periodo.resultado.alteracoes.imposto_pago.original.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {periodo.resultado.imposto_a_pagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="border px-3 py-2 text-center">{periodo.validacao.consistente ? 'Sim' : 'Não'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Total de imposto devido original</p>
+                <p className="text-2xl font-mono mt-2">R$ {resultadoRetificacao.total_imposto_devido_original.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Total do imposto pago</p>
+                <p className="text-2xl font-mono mt-2">R$ {resultadoRetificacao.total_imposto_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Total base de cálculo recalculada</p>
+                <p className="text-2xl font-mono mt-2">R$ {resultadoRetificacao.total_base_calculo_recalc.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <TabelaAlteracoes alteracoes={resultadoAjuste.alteracoes} />
+            <BlocoCalculo resultado={resultadoAjuste} />
+            {faixas && faixas.length > 0 && <TabelaFaixas faixas={faixas} ano={calculo.ano_calendario} />}
+          </>
+        )}
 
         <div className="flex gap-4 justify-end mt-6">
           {!isNovo && (

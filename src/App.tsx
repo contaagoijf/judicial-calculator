@@ -8,7 +8,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 const Index = lazy(() => import("./pages/Index.tsx"));
 const AjusteAnualPage = lazy(() => import("./pages/AjusteAnual.tsx"));
+const RetificacaoPage = lazy(() => import("./pages/Retificacao.tsx"));
 const ResultadoPage = lazy(() => import("./pages/Resultado.tsx"));
+const ResultadoRetificacaoPage = lazy(() => import("./pages/ResultadoRetificacao.tsx"));
 const RelatorioPage = lazy(() => import("./pages/Relatorio.tsx"));
 const ConsultaPage = lazy(() => import("./pages/Consulta.tsx"));
 const ParametrosPage = lazy(() => import("./pages/Parametros.tsx"));
@@ -33,7 +35,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/calculo/ajuste-anual" element={<AjusteAnualPage />} />
+              <Route path="/calculo/retificacao" element={<RetificacaoPage />} />
               <Route path="/resultado" element={<ResultadoPage />} />
+              <Route path="/resultado-retificacao" element={<ResultadoRetificacaoPage />} />
               <Route path="/relatorio/:id" element={<RelatorioPage />} />
               <Route path="/consulta" element={<ConsultaPage />} />
               <Route path="/parametros" element={<ParametrosPage />} />

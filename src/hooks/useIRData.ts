@@ -33,6 +33,22 @@ export function useFaixasIR(anoCalendario: number | null) {
   });
 }
 
+export function useFaixasIRAll() {
+  return useQuery({
+    queryKey: ['ir_faixas', 'all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ir_faixas')
+        .select('*')
+        .order('ano_calendario', { ascending: false })
+        .order('limite_inferior');
+      if (error) throw error;
+      return data as FaixaIR[];
+    },
+    enabled: true,
+  });
+}
+
 export function useCalculo(id: string | null) {
   return useQuery({
     queryKey: ['calculo', id],

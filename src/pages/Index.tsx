@@ -76,7 +76,10 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className={`group border-2 transition-shadow ${retificacaoEnabled || isAdmin ? 'cursor-pointer hover:border-primary/30 hover:shadow-md' : 'opacity-60'}`}>
+          <Card
+            className={`group border-2 transition-shadow ${retificacaoEnabled || isAdmin ? 'cursor-pointer hover:border-primary/30 hover:shadow-md' : 'opacity-60'}`}
+            onClick={() => (retificacaoEnabled || isAdmin) && navigate('/calculo/retificacao')}
+          >
             <CardHeader className="pb-2 text-center">
               <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${retificacaoEnabled || isAdmin ? 'bg-primary/10 transition-colors group-hover:bg-primary/20' : 'bg-muted'}`}>
                 <Calculator className={`h-6 w-6 ${retificacaoEnabled || isAdmin ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -87,8 +90,8 @@ const Index = () => {
               <CardDescription className="text-center">
                 Calculo de retificacao de declaracao anual de IRPF (vários anos)
               </CardDescription>
-              <Button variant="outline" className="mt-4 w-full" disabled>
-                {retificacaoEnabled || isAdmin ? 'Em implantacao' : 'Desabilitado'}
+              <Button variant="outline" className="mt-4 w-full" disabled={!retificacaoEnabled && !isAdmin}>
+                {retificacaoEnabled || isAdmin ? 'Iniciar Calculo' : 'Desabilitado'}
               </Button>
             </CardContent>
           </Card>
