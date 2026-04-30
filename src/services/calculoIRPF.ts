@@ -534,7 +534,7 @@ export function calcularRetificacao(
         // Parte VII (CM) e Parte IX (CM novamente, juros entre INICIO_CORRECAO e FIM)
         fator_cm = round8(cm_fim / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        fator_juros = round8(juros_fim - juros_aux);
+        fator_juros = round8(juros_fim - juros_aux + 0.01);
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
       }
