@@ -437,8 +437,8 @@ export function calcularRetificacao(
   const template = ctx.templates.find((t) => t.nome === nomeTpl) ?? null;
   const id_template = template?.id ?? null;
 
-  let juros_dist = 0;
-  let juros_fim = 0;
+  let juros_dist = 1;
+  let juros_fim = 1;
   let cm_dist = 1;
   let cm_fim = 1;
 
@@ -446,8 +446,8 @@ export function calcularRetificacao(
     const regraDist = buscarRegraVigente(ctx.regras, id_template, data_dist);
     const regraFim = buscarRegraVigente(ctx.regras, id_template, dados.data_fim);
 
-    juros_dist = regraDist ? buscarFatorAcumulado(ctx.taxas, regraDist.id_indice_juros, data_dist) : 0;
-    juros_fim = regraFim ? buscarFatorAcumulado(ctx.taxas, regraFim.id_indice_juros, dados.data_fim) : 0;
+    juros_dist = regraDist ? (buscarFatorAcumulado(ctx.taxas, regraDist.id_indice_juros, data_dist) || 1) : 1;
+    juros_fim = regraFim ? (buscarFatorAcumulado(ctx.taxas, regraFim.id_indice_juros, dados.data_fim) || 1) : 1;
     cm_dist = regraDist ? (buscarFatorAcumulado(ctx.taxas, regraDist.id_indice_correcao, data_dist) || 1) : 1;
     cm_fim = regraFim ? (buscarFatorAcumulado(ctx.taxas, regraFim.id_indice_correcao, dados.data_fim) || 1) : 1;
   }
@@ -521,7 +521,7 @@ export function calcularRetificacao(
     if (atualiza_calculo && id_template) {
       const regraInicio = buscarRegraVigente(ctx.regras, id_template, inicio_correcao);
       const cm_aux = regraInicio ? (buscarFatorAcumulado(ctx.taxas, regraInicio.id_indice_correcao, inicio_correcao) || 1) : 1;
-      const juros_aux = regraInicio ? buscarFatorAcumulado(ctx.taxas, regraInicio.id_indice_juros, inicio_correcao) : 0;
+      const juros_aux = regraInicio ? (buscarFatorAcumulado(ctx.taxas, regraInicio.id_indice_juros, inicio_correcao) || 1) : 1;
 
       if (usa_data_ad === 1) {
         // Parte IV — até a distribuição
@@ -534,11 +534,7 @@ export function calcularRetificacao(
         // Parte VII (CM) e Parte IX (CM novamente, juros entre INICIO_CORRECAO e FIM)
         fator_cm = round8(cm_fim / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        if (juros_fim / juros_aux == 1) {
-          fator_juros = 0.01;
-        } else {
-          fator_juros = round8(juros_fim / juros_aux);
-        }
+        fator_juros = round8((juros_fim / juros_aux) + 0.01);
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
       }
