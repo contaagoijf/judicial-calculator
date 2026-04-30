@@ -68,6 +68,10 @@ const RelatorioPage = () => {
   const resultadoAjuste = calculo.resultado as unknown as ResultadoCalculo;
   const isRestituir = !isRetificacao && resultadoAjuste.imposto_a_pagar > 0;
   const isPagar = !isRetificacao && resultadoAjuste.imposto_a_pagar < 0;
+  const honorariosPercent = (dadosEntrada?.percentual_honorarios ?? 0) / 100;
+  const honorariosValue = Math.round(
+    ((r.periodos ?? []).reduce((sum, p) => sum + p.valor_devido, 0) * honorariosPercent) * 100
+  ) / 100;
 
   const handleExportPDF = () => {
     const faixasParaPDF: FaixaIR[] = isRetificacao ? (faixasAll ?? []) : (faixas ?? []);
@@ -233,7 +237,7 @@ const RelatorioPage = () => {
             {/* Resumo Geral */}
             <div className="rounded-md border bg-slate-50 p-4 mb-4">
               <h3 className="font-semibold mb-3 text-foreground">Resumo Geral</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
                 <div>
                   <p className="text-muted-foreground">Principal devido</p>
                   <p className="font-mono text-lg">R$ {fmt(r.principal_devido)}</p>
@@ -242,9 +246,26 @@ const RelatorioPage = () => {
                   <p className="text-muted-foreground">Juros devido</p>
                   <p className="font-mono text-lg">R$ {fmt(r.juros_devido)}</p>
                 </div>
+                <div>
+                  <p className="text-muted-foreground">Honorários</p>
+                  <p className="font-mono text-lg">R$ {fmt(honorariosValue)}</p>
+                </div>
                 <div className="md:border-l md:pl-3">
                   <p className="text-muted-foreground font-semibold">Total da execução</p>
                   <p className="font-mono text-xl font-bold">R$ {fmt(r.total_execucao)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-md border bg-slate-50 p-4 mb-4">
+              <h3 className="font-semibold mb-3 text-foreground">Honorários</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Percentual aplicado</p>
+                  <p className="font-mono">{dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Honorários totais</p>
+                  <p className="font-mono">R$ {fmt(honorariosValue)}</p>
                 </div>
               </div>
             </div>

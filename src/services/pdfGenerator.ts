@@ -170,6 +170,11 @@ export function gerarRelatorioPDF(
       y = (doc as any).lastAutoTable.finalY + 6;
     }
 
+    const honorariosPercent = ((dadosRet?.percentual_honorarios ?? 0) / 100);
+    const honorariosValue = Math.round(
+      ((r.periodos ?? []).reduce((sum, p) => sum + p.valor_devido, 0) * honorariosPercent) * 100
+    ) / 100;
+
     // Resumo Geral
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -179,6 +184,7 @@ export function gerarRelatorioPDF(
       body: [
         ['Principal devido:', formatCurrency(r.principal_devido)],
         ['Juros devido:', formatCurrency(r.juros_devido)],
+        [`Honorários (${formatPercent(honorariosPercent)}):`, formatCurrency(honorariosValue)],
         [{ content: 'Total da execução:', styles: { fontStyle: 'bold' } }, { content: formatCurrency(r.total_execucao), styles: { fontStyle: 'bold' } }],
       ] as never[],
       styles: { fontSize: 9, cellPadding: 2 },

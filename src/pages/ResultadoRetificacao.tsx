@@ -85,6 +85,10 @@ const ResultadoRetificacaoPage = () => {
 
   const { resultadoRetificacao: r, dadosEntrada, processo, nomeAutor } = state;
   const limitaAjuiz = dadosEntrada.limita_ajuiz === 'SIM';
+  const honorariosPercent = (dadosEntrada.percentual_honorarios ?? 0) / 100;
+  const honorariosTotal = Math.round(
+    (r.periodos.reduce((sum, p) => sum + p.valor_devido, 0) * honorariosPercent) * 100
+  ) / 100;
 
   const handleEditar = () => {
     sessionStorage.setItem(RETIFICACAO_EDIT_DRAFT_KEY, JSON.stringify(dadosEntrada));
@@ -150,6 +154,15 @@ const ResultadoRetificacaoPage = () => {
           <Card className="md:col-span-4 border-primary/40">
             <CardHeader><CardTitle className="text-sm">Total da execução</CardTitle></CardHeader>
             <CardContent><p className="text-3xl font-mono">R$ {fmt(r.total_execucao)}</p></CardContent>
+          </Card>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Honorários</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-2xl font-mono">R$ {fmt(honorariosTotal)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Percentual: {dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</p>
+            </CardContent>
           </Card>
         </div>
 
