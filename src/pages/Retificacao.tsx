@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useParametrosIR, useFaixasIRAll, useCalculo } from '@/hooks/useIRData';
+import { useRetificacaoContexto } from '@/hooks/useRetificacaoContexto';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -90,6 +91,7 @@ const RetificacaoPage = () => {
 
   const { data: parametros } = useParametrosIR();
   const { data: faixasAll } = useFaixasIRAll();
+  const { data: contexto } = useRetificacaoContexto();
   const { data: calculoAnterior } = useCalculo(idParam);
 
   const [processo, setProcesso] = useState('');
@@ -276,6 +278,10 @@ const RetificacaoPage = () => {
       toast({ title: 'Erro', description: 'Faixas de IR não carregadas.', variant: 'destructive' });
       return;
     }
+    if (!contexto) {
+      toast({ title: 'Erro', description: 'Tabelas de correção/juros ainda carregando.', variant: 'destructive' });
+      return;
+    }
     if (periodos.length === 0) {
       toast({ title: 'Erro', description: 'Adicione ao menos um ano para retificação.', variant: 'destructive' });
       return;
@@ -304,7 +310,7 @@ const RetificacaoPage = () => {
         periodos,
       };
 
-      const resultadoRetificacao = calcularRetificacao(dadosEntrada, faixasAll, parametros);
+      const resultadoRetificacao = calcularRetificacao(dadosEntrada, contexto);
 
       sessionStorage.setItem(RETIFICACAO_EDIT_DRAFT_KEY, JSON.stringify(dadosEntrada));
 

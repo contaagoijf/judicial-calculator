@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { ResultadoCalculo, ResultadoRetificacao, FaixaIR } from './calculoIRPF';
+import type { ResultadoCalculo, ResultadoRetificacao, FaixaIR, PeriodoRetificacao } from './calculoIRPF';
 
 function formatCurrency(val: number): string {
   return val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
