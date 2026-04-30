@@ -4,11 +4,63 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/externalClient';
 import { useToast } from '@/hooks/use-toast';
-import type { ResultadoRetificacao, DadosEntradaRetificacao, PeriodoRetificacao } from '@/services/calculoIRPF';
+import type { ResultadoRetificacao, DadosEntradaRetificacao, LinhaAnoRetificacao } from '@/services/calculoIRPF';
 
 const RETIFICACAO_EDIT_DRAFT_KEY = 'retificacao-edit-draft';
 
-const fmt = (v: number | undefined) => (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = (v: number | undefined) =>
+  (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const fmtFator = (v: number | undefined) =>
+  (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+
+const fmtPct = (v: number | undefined) =>
+  `${((v ?? 0) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+
+const fmtDate = (v: string | undefined) => {
+  if (!v) return '-';
+  const [y, m, d] = v.split('T')[0].split('-');
+  return `${d}/${m}/${y}`;
+};
+
+const TabelaParcelas = ({ linhas, titulo }: { linhas: LinhaAnoRetificacao[]; titulo: string }) => (
+  <div className="mb-6">
+    <h2 className="text-lg font-semibold mb-3 text-foreground">{titulo}</h2>
+    <div className="overflow-x-auto rounded-xl border bg-card">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="bg-slate-100 text-left">
+            <th className="border px-3 py-2">Ano calendário</th>
+            <th className="border px-3 py-2">Início correção</th>
+            <th className="border px-3 py-2 text-right">Diferença devida</th>
+            <th className="border px-3 py-2 text-right">Coef. atualização</th>
+            <th className="border px-3 py-2 text-right">Diferença atualizada</th>
+            <th className="border px-3 py-2 text-right">Juros %</th>
+            <th className="border px-3 py-2 text-right">Juros valor</th>
+            <th className="border px-3 py-2 text-right">Valor atualizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.length === 0 && (
+            <tr><td colSpan={8} className="border px-3 py-3 text-center text-muted-foreground">Nenhuma linha.</td></tr>
+          )}
+          {linhas.map((l) => (
+            <tr key={`${l.ano_calendario}-${l.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
+              <td className="border px-3 py-2">{l.ano_calendario}</td>
+              <td className="border px-3 py-2">{fmtDate(l.inicio_correcao)}</td>
+              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_devido)}</td>
+              <td className="border px-3 py-2 text-right font-mono">{fmtFator(l.fator_cm)}</td>
+              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_cm)}</td>
+              <td className="border px-3 py-2 text-right font-mono">{fmtPct(l.fator_juros)}</td>
+              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_juros)}</td>
+              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.total_com_juros)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
 const ResultadoRetificacaoPage = () => {
   const navigate = useNavigate();
@@ -31,33 +83,12 @@ const ResultadoRetificacaoPage = () => {
     );
   }
 
-  const { resultadoRetificacao, dadosEntrada, processo, nomeAutor } = state;
-  const isRestituir = resultadoRetificacao.total_imposto_a_pagar > 0;
-  const isPagar = resultadoRetificacao.total_imposto_a_pagar < 0;
+  const { resultadoRetificacao: r, dadosEntrada, processo, nomeAutor } = state;
   const limitaAjuiz = dadosEntrada.limita_ajuiz === 'SIM';
 
-  const formatDate = (value: string | undefined) => value || '-';
-
-  const periodosAntesDistribuicao = limitaAjuiz && resultadoRetificacao.periodos.length > 1
-    ? resultadoRetificacao.periodos.slice(0, 1)
-    : [];
-  const periodosDepoisDistribuicao = limitaAjuiz && resultadoRetificacao.periodos.length > 1
-    ? resultadoRetificacao.periodos.slice(1)
-    : resultadoRetificacao.periodos;
-
-  const totalsResumo = {
-    totalPrincipalAd: resultadoRetificacao.total_principal_devido,
-    totalJurosAd: resultadoRetificacao.total_juros_devido,
-    totalExecucao: resultadoRetificacao.total_execucao,
-    valTeto: resultadoRetificacao.periodos[0]?.resultado.teto ?? 0,
-    dataDist: dadosEntrada.data_fim || '-',
-    resultadoFiscal: resultadoRetificacao.total_imposto_a_pagar,
-  };
-
   const handleEditar = () => {
-    const editDraft = { processo, nomeAutor, periodos: dadosEntrada.periodos };
-    sessionStorage.setItem(RETIFICACAO_EDIT_DRAFT_KEY, JSON.stringify(editDraft));
-    navigate('/calculo/retificacao', { state: { editDraft } });
+    sessionStorage.setItem(RETIFICACAO_EDIT_DRAFT_KEY, JSON.stringify(dadosEntrada));
+    navigate('/calculo/retificacao', { state: { editDraft: dadosEntrada } });
   };
 
   const handleFinalizar = async () => {
@@ -69,20 +100,19 @@ const ResultadoRetificacaoPage = () => {
           ano_calendario: dadosEntrada.periodos[0]?.ano_calendario || new Date().getFullYear(),
           numero_processo: processo,
           nome_autor: nomeAutor,
-          tipo_declaracao: dadosEntrada.periodos[0]?.tipo_declaracao as any,
-          dados_entrada: dadosEntrada as any,
-          resultado: resultadoRetificacao as any,
+          tipo_declaracao: dadosEntrada.periodos[0]?.tipo_declaracao as never,
+          dados_entrada: dadosEntrada as never,
+          resultado: r as never,
         })
         .select('id')
         .single();
-
       if (error) throw error;
-
       sessionStorage.removeItem(RETIFICACAO_EDIT_DRAFT_KEY);
       toast({ title: 'Retificação finalizada', description: `ID: ${data.id}` });
       navigate(`/relatorio/${data.id}?calculo_novo=sim`);
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message ?? 'Falha ao salvar retificação.', variant: 'destructive' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao salvar retificação.';
+      toast({ title: 'Erro', description: msg, variant: 'destructive' });
     }
   };
 
@@ -98,150 +128,116 @@ const ResultadoRetificacaoPage = () => {
 
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-sm">Resumo do Relatório</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-sm">Resumo do Processo</CardTitle></CardHeader>
             <CardContent>
-              <p className="text-sm"><span className="font-semibold">Processo:</span> {processo}</p>
-              <p className="text-sm"><span className="font-semibold">Autor:</span> {nomeAutor}</p>
-              <p className="text-sm"><span className="font-semibold">Data de ajuizamento:</span> {formatDate(dadosEntrada.data_ajuizamento)}</p>
-              <p className="text-sm"><span className="font-semibold">Limita ajuiz:</span> {dadosEntrada.limita_ajuiz ?? 'NAO'}</p>
-              <p className="text-sm"><span className="font-semibold">Atualiza cálculo até:</span> {formatDate(dadosEntrada.data_fim)}</p>
+              <p className="text-sm"><span className="font-semibold">Data de ajuizamento:</span> {fmtDate(dadosEntrada.data_ajuizamento)}</p>
+              <p className="text-sm"><span className="font-semibold">Data da distribuição:</span> {fmtDate(r.data_dist)}</p>
+              <p className="text-sm"><span className="font-semibold">Tipo de correção:</span> {dadosEntrada.tipo_correcao}</p>
+              <p className="text-sm"><span className="font-semibold">Limita na distribuição:</span> {dadosEntrada.limita_ajuiz ?? 'NAO'}</p>
+              <p className="text-sm"><span className="font-semibold">Atualiza cálculo até:</span> {fmtDate(dadosEntrada.data_fim)}</p>
+              <p className="text-sm"><span className="font-semibold">Salário mínimo (DATA_DIST):</span> R$ {fmt(r.salario_min)}</p>
+              <p className="text-sm"><span className="font-semibold">Teto RPV (60×SM):</span> R$ {fmt(r.val_teto)}</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Principal devido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-mono">R$ {fmt(totalsResumo.totalPrincipalAd)}</p>
-            </CardContent>
+            <CardHeader><CardTitle className="text-sm">Principal devido</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-mono">R$ {fmt(r.principal_devido)}</p></CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Juros devido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-mono">R$ {fmt(totalsResumo.totalJurosAd)}</p>
-            </CardContent>
+            <CardHeader><CardTitle className="text-sm">Juros devido</CardTitle></CardHeader>
+            <CardContent><p className="text-2xl font-mono">R$ {fmt(r.juros_devido)}</p></CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Total da execução</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-mono">R$ {fmt(totalsResumo.totalExecucao)}</p>
-            </CardContent>
+          <Card className="md:col-span-4 border-primary/40">
+            <CardHeader><CardTitle className="text-sm">Total da execução</CardTitle></CardHeader>
+            <CardContent><p className="text-3xl font-mono">R$ {fmt(r.total_execucao)}</p></CardContent>
           </Card>
         </div>
 
-        {limitaAjuiz && periodosAntesDistribuicao.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3 text-foreground">Parcelas devidas até a data de distribuição</h2>
-            <div className="overflow-x-auto rounded-xl border bg-card">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-slate-100 text-left">
-                    <th className="border px-3 py-2">Ano calendário</th>
-                    <th className="border px-3 py-2">Início correção</th>
-                    <th className="border px-3 py-2 text-right">Valor devido</th>
-                    <th className="border px-3 py-2 text-right">Coef. atualização</th>
-                    <th className="border px-3 py-2 text-right">Dif. atualizada</th>
-                    <th className="border px-3 py-2 text-right">Juros %</th>
-                    <th className="border px-3 py-2 text-right">Juros valor</th>
-                    <th className="border px-3 py-2 text-right">Valor atualizado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {periodosAntesDistribuicao.map((periodo) => (
-                    <tr key={`pre-${periodo.ano_calendario}-${periodo.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
-                      <td className="border px-3 py-2">{periodo.ano_calendario}</td>
-                      <td className="border px-3 py-2">-</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(periodo.valor_devido)}</td>
-                      <td className="border px-3 py-2 text-right">-</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(periodo.valor_devido)}</td>
-                      <td className="border px-3 py-2 text-right">-</td>
-                      <td className="border px-3 py-2 text-right">-</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(periodo.valor_atualizado)}</td>
+        {limitaAjuiz && r.linhas_ad.length > 0 && (
+          <>
+            <TabelaParcelas linhas={r.linhas_ad} titulo="Parcelas devidas até a data de distribuição" />
+
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3 text-foreground">Resumo até a data da distribuição (teto dos juizados especiais)</h2>
+              <div className="overflow-x-auto rounded-xl border bg-card">
+                <table className="w-full border-collapse text-sm">
+                  <tbody>
+                    <tr className="bg-white"><td className="border px-3 py-2">Total do principal até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_cm_dif_ad)}</td></tr>
+                    <tr className="bg-slate-50"><td className="border px-3 py-2">Total dos juros até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_dif_ad)}</td></tr>
+                    <tr className="bg-white"><td className="border px-3 py-2">Valor total das parcelas vencidas até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.totais_dif_ad)}</td></tr>
+                    <tr className="bg-slate-50"><td className="border px-3 py-2">Teto máximo dos juizados especiais na data da distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.val_teto)}</td></tr>
+                    <tr className="bg-white"><td className="border px-3 py-2">Valor final total do principal até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_principal_ad)}</td></tr>
+                    <tr className="bg-slate-50"><td className="border px-3 py-2">Valor final total dos juros até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td></tr>
+                    <tr className="bg-white"><td className="border px-3 py-2">Valor devido na data da distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_devido_ad)}</td></tr>
+                    <tr className="bg-slate-50"><td className="border px-3 py-2">Data da distribuição</td><td className="border px-3 py-2 text-right">{fmtDate(r.data_dist)}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-3 text-foreground">Atualização do devido até a data limite</h2>
+              <div className="overflow-x-auto rounded-xl border bg-card">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-slate-100 text-left">
+                      <th className="border px-3 py-2">Tipo</th>
+                      <th className="border px-3 py-2">Início correção</th>
+                      <th className="border px-3 py-2 text-right">Diferença devida</th>
+                      <th className="border px-3 py-2 text-right">Coef. atualização</th>
+                      <th className="border px-3 py-2 text-right">Diferença atualizada</th>
+                      <th className="border px-3 py-2 text-right">Juros %</th>
+                      <th className="border px-3 py-2 text-right">Juros valor</th>
+                      <th className="border px-3 py-2 text-right">Valor atualizado</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-white">
+                      <td className="border px-3 py-2">PRINCIPAL</td>
+                      <td className="border px-3 py-2">{fmtDate(r.data_dist)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_principal_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">{fmtFator(r.fator_cm_fim)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.principal_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">{fmtPct(r.fator_juros_fim)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.principal_juros_ad)}</td>
+                    </tr>
+                    <tr className="bg-slate-50">
+                      <td className="border px-3 py-2">JUROS</td>
+                      <td className="border px-3 py-2">{fmtDate(r.data_dist)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">{fmtFator(r.fator_cm_fim)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad * r.fator_cm_fim)}</td>
+                      <td className="border px-3 py-2 text-right">-</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad * r.fator_cm_fim)}</td>
+                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad * r.fator_cm_fim)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-3 text-foreground">{limitaAjuiz ? 'Parcelas a partir da data de distribuição' : 'Parcelas devidas'}</h2>
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-slate-100 text-left">
-                  <th className="border px-3 py-2">Ano calendário</th>
-                  <th className="border px-3 py-2">Início correção</th>
-                  <th className="border px-3 py-2 text-right">Valor devido</th>
-                  <th className="border px-3 py-2 text-right">Coef. atualização</th>
-                  <th className="border px-3 py-2 text-right">Dif. atualizada</th>
-                  <th className="border px-3 py-2 text-right">Juros %</th>
-                  <th className="border px-3 py-2 text-right">Juros valor</th>
-                  <th className="border px-3 py-2 text-right">Valor atualizado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {periodosDepoisDistribuicao.map((periodo) => (
-                  <tr key={`${periodo.ano_calendario}-${periodo.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
-                    <td className="border px-3 py-2">{periodo.ano_calendario}</td>
-                    <td className="border px-3 py-2">-</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(periodo.valor_devido)}</td>
-                    <td className="border px-3 py-2 text-right">-</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(periodo.valor_devido)}</td>
-                    <td className="border px-3 py-2 text-right">-</td>
-                    <td className="border px-3 py-2 text-right">-</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(periodo.valor_atualizado)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <TabelaParcelas
+          linhas={r.linhas_pos}
+          titulo={limitaAjuiz ? 'Parcelas devidas — posteriores à data de distribuição' : 'Cálculo das parcelas devidas'}
+        />
+
+        <div className="grid gap-4 md:grid-cols-3 mb-6">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Total das diferenças atualizadas</CardTitle></CardHeader>
+            <CardContent><p className="text-xl font-mono">R$ {fmt(r.total_cm_dif_fim)}</p></CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Total dos juros</CardTitle></CardHeader>
+            <CardContent><p className="text-xl font-mono">R$ {fmt(r.total_juros_dif_fim)}</p></CardContent>
+          </Card>
+          <Card className="border-primary/40">
+            <CardHeader><CardTitle className="text-sm">Total da execução</CardTitle></CardHeader>
+            <CardContent><p className="text-xl font-mono">R$ {fmt(r.total_execucao)}</p></CardContent>
+          </Card>
         </div>
-
-        {limitaAjuiz && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-3 text-foreground">Resumo de cálculo até a data da distribuição</h2>
-            <div className="overflow-x-auto rounded-xl border bg-card">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-slate-100 text-left">
-                    <th className="border px-3 py-2">Descrição</th>
-                    <th className="border px-3 py-2 text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-white">
-                    <td className="border px-3 py-2">Total do principal devido</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(totalsResumo.totalPrincipalAd)}</td>
-                  </tr>
-                  <tr className="bg-slate-50">
-                    <td className="border px-3 py-2">Total dos juros devidos</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(totalsResumo.totalJurosAd)}</td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="border px-3 py-2">Valor da execução</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(totalsResumo.totalExecucao)}</td>
-                  </tr>
-                  <tr className="bg-slate-50">
-                    <td className="border px-3 py-2">Teto máximo na data da distribuição</td>
-                    <td className="border px-3 py-2 text-right font-mono">R$ {fmt(totalsResumo.valTeto)}</td>
-                  </tr>
-                  <tr className="bg-white">
-                    <td className="border px-3 py-2">Data da distribuição</td>
-                    <td className="border px-3 py-2 text-right">{totalsResumo.dataDist}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         <div className="flex gap-4 justify-end mt-6">
           <Button variant="outline" onClick={handleEditar} className="gap-2">
