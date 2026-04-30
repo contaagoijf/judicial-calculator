@@ -527,14 +527,18 @@ export function calcularRetificacao(
         // Parte IV — até a distribuição
         fator_cm = round8(cm_dist / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        fator_juros = round8(juros_dist - juros_aux);
+        fator_juros = round8(juros_dist / juros_aux);
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
       } else {
         // Parte VII (CM) e Parte IX (CM novamente, juros entre INICIO_CORRECAO e FIM)
         fator_cm = round8(cm_fim / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        fator_juros = round8(juros_fim - juros_aux + 0.01);
+        if (juros_fim / juros_aux == 1) {
+          fator_juros = 0.01;
+        } else {
+          fator_juros = round8(juros_fim / juros_aux);
+        }
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
       }
@@ -583,7 +587,7 @@ export function calcularRetificacao(
   // Parte VI — atualização do principal AD para DATA_FIM
   const fator_cm_fim = cm_dist > 0 ? round8(cm_fim / cm_dist) : 1;
   const principal_ad = round2(total_principal_ad * fator_cm_fim);
-  const fator_juros_fim = round8(juros_fim - juros_dist);
+  const fator_juros_fim = round8(juros_fim / juros_dist);
   const juros_ad_val = round2(principal_ad * fator_juros_fim);
   const principal_juros_ad = round2(principal_ad + juros_ad_val);
 
