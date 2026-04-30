@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useParametrosIR, useFaixasIRAll, useCalculo } from '@/hooks/useIRData';
+import { useRetificacaoContexto } from '@/hooks/useRetificacaoContexto';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -90,6 +91,7 @@ const RetificacaoPage = () => {
 
   const { data: parametros } = useParametrosIR();
   const { data: faixasAll } = useFaixasIRAll();
+  const { data: contexto } = useRetificacaoContexto();
   const { data: calculoAnterior } = useCalculo(idParam);
 
   const [processo, setProcesso] = useState('');
