@@ -289,6 +289,8 @@ export interface LinhaAnoRetificacao {
   fator_juros: number;              // FATOR_JUROS
   valor_juros: number;              // VALOR_JUROS
   total_com_juros: number;          // TOTAL_COM_JUROS
+  /** Alias de `total_com_juros` mantido p/ compat com telas antigas. */
+  valor_atualizado: number;
   resultado: ResultadoCalculo;      // memória de cálculo IRPF do ano
   validacao: ValidacaoConsistenciaAjusteAnual;
 }
