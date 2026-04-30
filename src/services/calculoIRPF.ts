@@ -542,9 +542,9 @@ export function calcularRetificacao(
       // sem correção
       fator_cm = 1;
       valor_cm = valor_devido;
-      fator_juros = 0;
-      valor_juros = 0;
-      total_com_juros = valor_devido;
+      fator_juros = 0.01;
+      valor_juros = round2(valor_devido * fator_juros);
+      total_com_juros = valor_cm + valor_juros;
     }
 
     return {
