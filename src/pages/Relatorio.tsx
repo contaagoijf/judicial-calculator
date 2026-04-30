@@ -85,15 +85,17 @@ const RelatorioPage = () => {
           <span>ID: <strong className="text-foreground font-mono text-xs">{calculo.id}</strong></span>
         </div>
 
-        {/* Valor Final */}
-        <div className={`rounded-lg border-2 p-6 text-center mb-6 ${isPagar ? 'border-destructive/40 bg-destructive/5' : isRestituir ? 'border-green-500/40 bg-green-50' : 'border-border'}`}>
-          <p className="text-sm text-muted-foreground mb-1">
-            {isPagar ? 'Imposto a Pagar' : isRestituir ? 'Valor a Restituir' : 'Sem diferença'}
-          </p>
-          <p className={`text-3xl font-bold font-mono ${isPagar ? 'text-destructive' : isRestituir ? 'text-green-600' : 'text-foreground'}`}>
-            R$ {Math.abs((isRetificacao ? resultadoRetificacao.total_imposto_a_pagar : resultadoAjuste.imposto_a_pagar)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-        </div>
+        {/* Valor Final - oculto para Retificação */}
+        {!isRetificacao && (
+          <div className={`rounded-lg border-2 p-6 text-center mb-6 ${isPagar ? 'border-destructive/40 bg-destructive/5' : isRestituir ? 'border-green-500/40 bg-green-50' : 'border-border'}`}>
+            <p className="text-sm text-muted-foreground mb-1">
+              {isPagar ? 'Imposto a Pagar' : isRestituir ? 'Valor a Restituir' : 'Sem diferença'}
+            </p>
+            <p className={`text-3xl font-bold font-mono ${isPagar ? 'text-destructive' : isRestituir ? 'text-green-600' : 'text-foreground'}`}>
+              R$ {Math.abs(resultadoAjuste.imposto_a_pagar).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        )}
 
         {isRetificacao ? (
           <div className="space-y-6">
