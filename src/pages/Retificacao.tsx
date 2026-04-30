@@ -278,6 +278,10 @@ const RetificacaoPage = () => {
       toast({ title: 'Erro', description: 'Faixas de IR não carregadas.', variant: 'destructive' });
       return;
     }
+    if (!contexto) {
+      toast({ title: 'Erro', description: 'Tabelas de correção/juros ainda carregando.', variant: 'destructive' });
+      return;
+    }
     if (periodos.length === 0) {
       toast({ title: 'Erro', description: 'Adicione ao menos um ano para retificação.', variant: 'destructive' });
       return;
@@ -306,7 +310,7 @@ const RetificacaoPage = () => {
         periodos,
       };
 
-      const resultadoRetificacao = calcularRetificacao(dadosEntrada, faixasAll, parametros);
+      const resultadoRetificacao = calcularRetificacao(dadosEntrada, contexto);
 
       sessionStorage.setItem(RETIFICACAO_EDIT_DRAFT_KEY, JSON.stringify(dadosEntrada));
 
