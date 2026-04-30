@@ -552,7 +552,7 @@ export function calcularRetificacao(
       tipo_declaracao: periodo.tipo_declaracao,
       inicio_correcao,
       total_devido, valor_ref, total_devido_ii, valor_devido, usa_data_ad,
-      fator_cm, valor_cm, fator_juros, valor_juros, total_com_juros,
+      fator_cm, valor_cm, fator_juros, valor_juros, total_com_juros, valor_atualizado: total_com_juros,
       resultado, validacao,
     };
   });
