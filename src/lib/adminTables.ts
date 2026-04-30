@@ -112,7 +112,7 @@ export const adminTableConfigs: AdminTableConfig[] = [
     primaryKey: 'id',
     orderBy: [{ column: 'data_referencia', ascending: false }],
     fields: [
-      { key: 'id_indice', label: 'ID indice', type: 'text' },
+      { key: 'id_indice', label: 'Indice', type: 'select' },
       { key: 'data_referencia', label: 'Data referencia', type: 'date' },
       { key: 'valor_percentual', label: 'Valor percentual', type: 'number', step: '0.000001' },
       { key: 'fator_multiplicador', label: 'Fator multiplicador', type: 'number', step: '0.0000000001', editable: false },
@@ -150,11 +150,11 @@ export const adminTableConfigs: AdminTableConfig[] = [
     primaryKey: 'id',
     orderBy: [{ column: 'ordem', ascending: true }],
     fields: [
-      { key: 'id_template', label: 'ID template', type: 'text' },
+      { key: 'id_template', label: 'Template', type: 'select' },
       { key: 'data_inicio_vigencia', label: 'Inicio vigencia', type: 'date', nullable: true },
       { key: 'data_fim_vigencia', label: 'Fim vigencia', type: 'date', nullable: true },
-      { key: 'id_indice_correcao', label: 'ID indice correcao', type: 'text', nullable: true },
-      { key: 'id_indice_juros', label: 'ID indice juros', type: 'text', nullable: true },
+      { key: 'id_indice_correcao', label: 'Indice correcao', type: 'select', nullable: true },
+      { key: 'id_indice_juros', label: 'Indice juros', type: 'select', nullable: true },
       {
         key: 'tipo_juros',
         label: 'Tipo juros',

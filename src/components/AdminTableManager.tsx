@@ -8,6 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { AdminTableConfig, TableField } from '@/lib/adminTables';
 
@@ -44,6 +52,26 @@ export function AdminTableManager({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [rows, setRows] = useState<RowData[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newRowDraft, setNewRowDraft] = useState<RowData>(() => config.createRow());
+
+  const indicesQuery = useQuery({
+    queryKey: ['admin_indices_options'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('indices_economicos').select('id,sigla').order('sigla', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; sigla: string }>;
+    },
+  });
+
+  const templatesQuery = useQuery({
+    queryKey: ['admin_templates_options'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('templates_calculo').select('id,nome').order('nome', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; nome: string }>;
+    },
+  });
 
   const query = useQuery({
     queryKey: ['admin_table', config.table],
@@ -68,8 +96,53 @@ export function AdminTableManager({
     setRows(query.data ?? []);
   }, [query.data]);
 
+  useEffect(() => {
+    setNewRowDraft(config.createRow());
+  }, [config.table]);
+
   const hasRows = rows.length > 0;
   const visibleFields = useMemo(() => config.fields, [config.fields]);
+
+  const getFieldOptions = (field: TableField) => {
+    if (field.options && field.options.length > 0) {
+      return field.options;
+    }
+
+    if (config.table === 'taxas_historicas' && field.key === 'id_indice') {
+      return (indicesQuery.data ?? []).map((item) => ({ value: item.id, label: item.sigla }));
+    }
+
+    if (config.table === 'regras_subperiodo' && field.key === 'id_template') {
+      return (templatesQuery.data ?? []).map((item) => ({ value: item.id, label: item.nome }));
+    }
+
+    if (config.table === 'regras_subperiodo' && (field.key === 'id_indice_correcao' || field.key === 'id_indice_juros')) {
+      return (indicesQuery.data ?? []).map((item) => ({ value: item.id, label: item.sigla }));
+    }
+
+    return [] as Array<{ label: string; value: string }>;
+  };
+
+  const getOptionLabel = (field: TableField, value: unknown) => {
+    const options = getFieldOptions(field);
+    const match = options.find((option) => option.value === value);
+    return match ? match.label : String(value ?? '-');
+  };
+
+  const openAddDialog = () => {
+    setNewRowDraft(config.createRow());
+    setIsDialogOpen(true);
+  };
+
+  const handleAddDialogSubmit = () => {
+    const normalizedDraft = visibleFields.reduce((acc, field) => {
+      acc[field.key] = normalizeValue(field, newRowDraft[field.key]);
+      return acc;
+    }, {} as RowData);
+
+    setRows((currentRows) => [...currentRows, normalizedDraft]);
+    setIsDialogOpen(false);
+  };
 
   const updateRow = (index: number, field: TableField, value: unknown) => {
     setRows((currentRows) =>
@@ -82,10 +155,6 @@ export function AdminTableManager({
           : row,
       ),
     );
-  };
-
-  const addRow = () => {
-    setRows((currentRows) => [...currentRows, config.createRow()]);
   };
 
   const removeRow = (index: number) => {
@@ -179,7 +248,7 @@ export function AdminTableManager({
 
           {canEdit && (
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={addRow} className="gap-2">
+              <Button variant="outline" size="sm" onClick={openAddDialog} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Adicionar
               </Button>
@@ -193,6 +262,55 @@ export function AdminTableManager({
       </CardHeader>
 
       <CardContent>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar novo registro</DialogTitle>
+              <DialogDescription>Preencha as informações e confirme para inserir um novo item em {config.title}.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {visibleFields
+                .filter((field) => field.editable !== false)
+                .map((field) => (
+                  <div key={field.key} className="grid gap-2">
+                    <label className="text-sm font-medium">{field.label}</label>
+                    {field.type === 'select' ? (
+                      <Select
+                        value={String(newRowDraft[field.key] ?? '')}
+                        onValueChange={(value) => setNewRowDraft((draft) => ({ ...draft, [field.key]: value }))}
+                      >
+                        <SelectTrigger className="min-w-[140px]">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getFieldOptions(field).map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        type={field.type === 'number' ? 'number' : field.type}
+                        step={field.step}
+                        value={String(newRowDraft[field.key] ?? '')}
+                        placeholder={field.placeholder}
+                        onChange={(event) => setNewRowDraft((draft) => ({ ...draft, [field.key]: event.target.value }))}
+                      />
+                    )}
+                  </div>
+                ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddDialogSubmit}>Adicionar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {query.isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando dados...</p>
         ) : !hasRows ? (
@@ -232,7 +350,7 @@ export function AdminTableManager({
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
-                                {(field.options ?? []).map((option) => (
+                                {getFieldOptions(field).map((option) => (
                                   <SelectItem key={option.value} value={option.value}>
                                     {option.label}
                                   </SelectItem>
@@ -251,6 +369,8 @@ export function AdminTableManager({
                           )
                         ) : field.type === 'boolean' ? (
                           <span>{row[field.key] ? 'Sim' : 'Nao'}</span>
+                        ) : field.type === 'select' ? (
+                          <span className="text-sm">{getOptionLabel(field, row[field.key])}</span>
                         ) : (
                           <span className="text-sm">{String(row[field.key] ?? '-')}</span>
                         )}
