@@ -49,8 +49,10 @@ export function gerarRelatorioPDF(
     tipo_calculo: 'ajuste_anual' | 'retificacao';
     dados_entrada?: DadosEntradaRetificacao;
   },
-  faixas: FaixaIR[]
+  faixas: FaixaIR[],
+  opcoes?: { memoriaDetalhada?: boolean }
 ): jsPDF {
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
