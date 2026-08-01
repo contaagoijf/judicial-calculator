@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useCalculo } from '@/hooks/useIRData';
 import { useFaixasIR, useFaixasIRAll } from '@/hooks/useIRData';
 import TabelaAlteracoes from '@/components/TabelaAlteracoes';
@@ -45,6 +48,7 @@ const RelatorioPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isNovo = searchParams.get('calculo_novo') === 'sim';
+  const [memoriaDetalhada, setMemoriaDetalhada] = useState(false);
 
   const { data: calculo, isLoading } = useCalculo(id || null);
   const { data: faixas } = useFaixasIR(calculo?.ano_calendario || null);
@@ -86,7 +90,9 @@ const RelatorioPage = () => {
       anos: isRetificacao ? dadosEntrada?.periodos?.map((p) => p.ano_calendario) : undefined,
       dados_entrada: isRetificacao ? dadosEntrada : undefined,
     };
-    const doc = gerarRelatorioPDF(isRetificacao ? r : resultadoAjuste, data, faixasParaPDF);
+    const doc = gerarRelatorioPDF(isRetificacao ? r : resultadoAjuste, data, faixasParaPDF, {
+      memoriaDetalhada,
+    });
     doc.save(`relatorio-${calculo.id}.pdf`);
   };
 
@@ -463,7 +469,17 @@ const RelatorioPage = () => {
           </>
         )}
 
-        <div className="flex gap-4 justify-end mt-6">
+        <div className="flex flex-wrap items-center gap-4 justify-end mt-6">
+          <div className="flex items-center gap-2 mr-auto">
+            <Checkbox
+              id="memoria-detalhada"
+              checked={memoriaDetalhada}
+              onCheckedChange={(v) => setMemoriaDetalhada(v === true)}
+            />
+            <Label htmlFor="memoria-detalhada" className="text-sm font-normal cursor-pointer">
+              Incluir página adicional com memória de cálculo detalhada
+            </Label>
+          </div>
           {!isNovo && (
             <Button variant="outline" onClick={handleRefazer} className="gap-2">
               <RefreshCw className="w-4 h-4" /> Refazer Cálculo

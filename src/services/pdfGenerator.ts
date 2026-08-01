@@ -49,8 +49,10 @@ export function gerarRelatorioPDF(
     tipo_calculo: 'ajuste_anual' | 'retificacao';
     dados_entrada?: DadosEntradaRetificacao;
   },
-  faixas: FaixaIR[]
+  faixas: FaixaIR[],
+  opcoes?: { memoriaDetalhada?: boolean }
 ): jsPDF {
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 20;
@@ -447,6 +449,166 @@ export function gerarRelatorioPDF(
       theme: 'grid',
     });
   }
+
+  // ============================================================
+  // PÁGINA ADICIONAL — MEMÓRIA DE CÁLCULO DETALHADA (opcional)
+  // ============================================================
+  if (opcoes?.memoriaDetalhada) {
+    doc.addPage();
+    y = drawHeader('MEMÓRIA DE CÁLCULO DETALHADA');
+
+    const secao = (titulo: string) => {
+      if (y > 255) { doc.addPage(); y = drawHeader('MEMÓRIA DE CÁLCULO DETALHADA'); }
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(titulo, 14, y);
+      y += 4;
+      doc.setFont('helvetica', 'normal');
+    };
+    const tabela = (head: string[] | null, body: (string | number)[][]) => {
+      autoTable(doc, {
+        startY: y,
+        ...(head ? { head: [head] } : {}),
+        body: body as never[][],
+        styles: { fontSize: 7.5, cellPadding: 1.5 },
+        headStyles: { fillColor: HEAD_COLOR, textColor: 255 },
+        columnStyles: { 1: { halign: 'right' } },
+        theme: 'grid',
+        margin: { top: 44 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+    };
+
+    if (isRetificacao) {
+      const dadosRet = dados.dados_entrada;
+      secao('1. PARÂMETROS GERAIS E VALORES OBTIDOS DAS TABELAS DO BANCO DE DADOS');
+      tabela(['Variável / Parâmetro', 'Valor'], [
+        ['DATA_DIST (data de ajuizamento)', formatDateBR(r.data_dist)],
+        ['DATA_FIM (atualização até)', formatDateBR(dadosRet?.data_fim)],
+        ['TIPO_CORRECAO', dadosRet?.tipo_correcao ?? '—'],
+        ['LIMITA_AJUIZ (teto dos juizados)', dadosRet?.limita_ajuiz === 'SIM' ? 'SIM' : 'NÃO'],
+        ['ATUALIZA_CALCULO', r.atualiza_calculo ? 'SIM' : 'NÃO'],
+        ['ID_TEMPLATE (regras de subperíodo)', r.id_template ?? '—'],
+        ['SALARIO_MIN (tabela salario_minimo)', formatCurrency(r.salario_min)],
+        ['VAL_TETO (60 x SALARIO_MIN)', formatCurrency(r.val_teto)],
+        ['CM_DIST (fator acumulado de correção na distribuição)', formatFator(r.cm_dist)],
+        ['CM_FIM (fator acumulado de correção em DATA_FIM)', formatFator(r.cm_fim)],
+        ['JUROS_DIST (juros acumulados na distribuição)', formatFator(r.juros_dist)],
+        ['JUROS_FIM (juros acumulados em DATA_FIM)', formatFator(r.juros_fim)],
+        ['PERCENTUAL_HONORARIOS', formatPercent((dadosRet?.percentual_honorarios ?? 0) / 100)],
+      ]);
+
+      secao('2. VARIÁVEIS DE CORREÇÃO E JUROS POR ANO-CALENDÁRIO');
+      const linhasTodas = [...r.linhas_ad, ...r.linhas_pos].sort((a, b) => a.ano_calendario - b.ano_calendario);
+      autoTable(doc, {
+        startY: y,
+        head: [['Ano', 'Decl.', 'INICIO_CORRECAO', 'USA_DATA_AD', 'TOTAL_DEVIDO', 'VALOR_REF', 'TOTAL_DEVIDO_II', 'FATOR_CM', 'VALOR_CM', 'FATOR_JUROS', 'VALOR_JUROS', 'TOTAL_COM_JUROS']],
+        body: linhasTodas.map((l) => [
+          String(l.ano_calendario),
+          l.tipo_declaracao === 'completa' ? 'C' : 'S',
+          formatDateBR(l.inicio_correcao),
+          String(l.usa_data_ad),
+          formatCurrency(l.total_devido),
+          formatCurrency(l.valor_ref),
+          formatCurrency(l.total_devido_ii),
+          formatFator(l.fator_cm),
+          formatCurrency(l.valor_cm),
+          formatPctDecimal(l.fator_juros),
+          formatCurrency(l.valor_juros),
+          formatCurrency(l.total_com_juros),
+        ]),
+        styles: { fontSize: 6.5, cellPadding: 1.2 },
+        headStyles: { fillColor: HEAD_COLOR, textColor: 255 },
+        theme: 'grid',
+        margin: { top: 44 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+
+      secao('3. CÁLCULOS INTERMEDIÁRIOS E FÓRMULAS APLICADAS');
+      tabela(['Etapa / Fórmula', 'Valor'], [
+        ['TOTAL_CM_DIF_AD = Σ VALOR_CM (parcelas até a distribuição)', formatCurrency(r.total_cm_dif_ad)],
+        ['TOTAL_JUROS_DIF_AD = Σ VALOR_JUROS (até a distribuição)', formatCurrency(r.total_juros_dif_ad)],
+        ['TOTAIS_DIF_AD = TOTAL_CM_DIF_AD + TOTAL_JUROS_DIF_AD', formatCurrency(r.totais_dif_ad)],
+        ['TOTAL_PRINCIPAL_AD (após aplicação do teto, se houver)', formatCurrency(r.total_principal_ad)],
+        ['TOTAL_JUROS_AD (após aplicação do teto, se houver)', formatCurrency(r.total_juros_ad)],
+        ['TOTAL_DEVIDO_AD = TOTAL_PRINCIPAL_AD + TOTAL_JUROS_AD', formatCurrency(r.total_devido_ad)],
+        ['FATOR_CM_FIM = CM_FIM / CM_DIST', formatFator(r.fator_cm_fim)],
+        ['PRINCIPAL_AD = TOTAL_PRINCIPAL_AD x FATOR_CM_FIM', formatCurrency(r.principal_ad)],
+        ['FATOR_JUROS_FIM = JUROS_FIM - JUROS_DIST', formatPctDecimal(r.fator_juros_fim)],
+        ['JUROS_AD = PRINCIPAL_AD x FATOR_JUROS_FIM', formatCurrency(r.juros_ad)],
+        ['PRINCIPAL_JUROS_AD = PRINCIPAL_AD + JUROS_AD', formatCurrency(r.principal_juros_ad)],
+        ['TOTAL_CM_DIF_FIM = Σ VALOR_CM (parcelas posteriores)', formatCurrency(r.total_cm_dif_fim)],
+        ['TOTAL_JUROS_DIF_FIM = Σ VALOR_JUROS (parcelas posteriores)', formatCurrency(r.total_juros_dif_fim)],
+        ['PRINCIPAL_DEVIDO = PRINCIPAL_AD + TOTAL_CM_DIF_FIM', formatCurrency(r.principal_devido)],
+        ['JUROS_DEVIDO = JUROS_AD + TOTAL_JUROS_DIF_FIM', formatCurrency(r.juros_devido)],
+        ['TOTAL_EXECUCAO = PRINCIPAL_DEVIDO + JUROS_DEVIDO + honorários', formatCurrency(r.total_execucao)],
+      ]);
+
+      secao('4. VARIÁVEIS DO CÁLCULO DO IRPF POR ANO (BASE, ALÍQUOTA E DEDUÇÕES)');
+      linhasTodas.forEach((l) => {
+        const res = l.resultado;
+        if (y > 235) { doc.addPage(); y = drawHeader('MEMÓRIA DE CÁLCULO DETALHADA'); }
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Ano-calendário ${l.ano_calendario} — declaração ${l.tipo_declaracao}`, 14, y);
+        y += 4;
+        doc.setFont('helvetica', 'normal');
+        tabela(null, [
+          ['Teto (tabela ir_parametros)', formatCurrency(res.teto)],
+          ['Base de cálculo original', formatCurrency(res.base_calculo)],
+          ['Alíquota original (tabela ir_faixas)', formatPercent(res.aliquota_inicial)],
+          ['Parcela de dedução original (tabela ir_faixas)', formatCurrency(res.deducao_inicial)],
+          ['Imposto devido original', formatCurrency(res.imposto_devido)],
+          ['Rendimentos tributáveis recalculados', formatCurrency(res.rend_trib_recalc)],
+          ['Total das deduções recalculado', formatCurrency(res.total_deducoes_recalc)],
+          ['Base de cálculo recalculada', formatCurrency(res.base_calculo_recalc)],
+          ['Alíquota aplicável recalculada', formatPercent(res.aliquota_recalc)],
+          ['Parcela de dedução recalculada', formatCurrency(res.deducao_recalc)],
+          ['Deduções de incentivo recalculadas', formatCurrency(res.incentivo_recalc)],
+          ['Imposto RRA recalculado', formatCurrency(res.imposto_rra_recalc)],
+          ['Imposto devido recalculado', formatCurrency(res.imposto_devido_recalc)],
+          ['Imposto pago (recalculado)', formatCurrency(res.alteracoes.imposto_pago.recalculado)],
+          ['Imposto a pagar / restituir', formatCurrency(res.imposto_a_pagar)],
+          ['Validação: imposto devido original informado', formatCurrency(l.validacao.imposto_devido_original)],
+          ['Validação: total informado (ajuste + imposto pago)', formatCurrency(l.validacao.total_informado)],
+          ['Validação: diferença', formatCurrency(l.validacao.diferenca)],
+          ['Validação: consistente', l.validacao.consistente ? 'SIM' : 'NÃO'],
+        ]);
+      });
+    } else {
+      const res = resultadoAjuste;
+      secao('1. PARÂMETROS E VALORES OBTIDOS DAS TABELAS DO BANCO DE DADOS');
+      tabela(['Variável / Parâmetro', 'Valor'], [
+        ['Ano-calendário', String(dados.ano_calendario ?? '—')],
+        ['Tipo de declaração', dados.tipo_declaracao],
+        ['Teto de desconto simplificado (ir_parametros)', formatCurrency(res.teto)],
+        ['Faixas de IR carregadas (ir_faixas)', String(faixas.length)],
+      ]);
+
+      secao('2. VARIÁVEIS E CÁLCULOS REALIZADOS');
+      tabela(['Etapa / Fórmula', 'Valor'], [
+        ['Rendimentos tributáveis originais', formatCurrency(res.alteracoes.rendimentos.original)],
+        ['Deduções originais', formatCurrency(res.alteracoes.deducoes.original)],
+        ['Total das deduções originais', formatCurrency(res.total_deducoes)],
+        ['Base de cálculo original = rendimentos - deduções', formatCurrency(res.base_calculo)],
+        ['Alíquota original (ir_faixas)', formatPercent(res.aliquota_inicial)],
+        ['Parcela de dedução original (ir_faixas)', formatCurrency(res.deducao_inicial)],
+        ['Imposto devido original', formatCurrency(res.imposto_devido)],
+        ['Rendimentos tributáveis recalculados', formatCurrency(res.rend_trib_recalc)],
+        ['Total das deduções recalculado', formatCurrency(res.total_deducoes_recalc)],
+        ['Base de cálculo recalculada', formatCurrency(res.base_calculo_recalc)],
+        ['Alíquota aplicável recalculada', formatPercent(res.aliquota_recalc)],
+        ['Parcela de dedução recalculada', formatCurrency(res.deducao_recalc)],
+        ['Deduções de incentivo recalculadas', formatCurrency(res.incentivo_recalc)],
+        ['Imposto RRA recalculado', formatCurrency(res.imposto_rra_recalc)],
+        ['Imposto devido recalculado = base x alíquota - dedução - incentivo + RRA', formatCurrency(res.imposto_devido_recalc)],
+        ['Imposto pago (recalculado)', formatCurrency(res.alteracoes.imposto_pago.recalculado)],
+        ['Imposto a pagar / restituir', formatCurrency(res.imposto_a_pagar)],
+      ]);
+    }
+  }
+
+
 
   y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 10 : y + 10;
   doc.setFontSize(8);
