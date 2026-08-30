@@ -153,6 +153,25 @@ supabase/
 - Escrita (`INSERT`/`UPDATE`/`DELETE`) restrita a usuários administradores, verificados pela função `public.is_admin()` (`SECURITY DEFINER`, consulta a tabela `admin_users` a partir de `auth.uid()`).
 - A promoção a administrador é automática: ao ser criado um usuário no Supabase Auth cujo e-mail conste em `admin_invites` como convite pendente, um trigger (`handle_auth_user_admin_sync` / `grant_admin_by_email`) grava a linha correspondente em `admin_users` e marca o convite como aceito.
 
+### Acesso, manuseio e manutenção do banco de dados (Supabase Dashboard)
+
+O banco de dados do CALCJUD é um projeto Supabase (PostgreSQL gerenciado). O acesso operacional (fora da aplicação) é feito pelo painel web do Supabase, não pelo código:
+
+1. **Acessar o painel**: entre em <https://supabase.com/dashboard/organizations> e faça login com uma conta (e-mail/senha, GitHub ou Google) que já tenha sido convidada como membro da organização/projeto do CALCJUD.
+   - Se o login não mostrar nenhuma organização, significa que a conta ainda não foi convidada — peça a quem hoje é *owner* do projeto (ver contato indicado na especificação original, seção [Referências](#referências-e-materiais-relacionados)) para adicioná-la em **Project Settings → Team**.
+2. **Selecionar o projeto**: após entrar na organização, abra o projeto cujo *Project Ref* é **`xitpsqtcxraejzlxvvmn`** (mesmo valor de `VITE_SUPABASE_PROJECT_ID` em [.env.example](../.env.example) e da URL `https://xitpsqtcxraejzlxvvmn.supabase.co` usada em [externalClient.ts](../src/integrations/supabase/externalClient.ts)) — ou acesse diretamente `https://supabase.com/dashboard/project/xitpsqtcxraejzlxvvmn`.
+3. **Áreas do painel mais usadas para manuseio e manutenção**:
+   - **Table Editor**: navegar, filtrar e editar linhas de qualquer tabela (`ir_parametros`, `ir_faixas`, `calculos`, `salario_minimo`, `indices_economicos`, `taxas_historicas`, `templates_calculo`, `regras_subperiodo`, `admin_invites`, `admin_users`, `system_settings`) de forma visual — equivalente ao que a aba **Tabelas** de `/parametros` oferece a um administrador logado na aplicação, mas com acesso direto (ignora RLS, pois usa a *service role* do painel).
+   - **SQL Editor**: executar manualmente [supabase/schema.sql](../supabase/schema.sql) (reaplicar o esquema completo — é idempotente), as migrações de [supabase/migrations/](../supabase/migrations/) ou os `seed*.sql` ([seed.sql](../supabase/seed.sql), [seed_indices.sql](../supabase/seed_indices.sql), [seed_templates_regras.sql](../supabase/seed_templates_regras.sql)), além de consultas avulsas de conferência/manutenção.
+   - **Authentication → Users**: listar, criar, desativar ou redefinir a senha de contas de login (inclusive a conta administrativa inicial criada pelo bootstrap em `schema.sql` — ver alerta de segurança abaixo).
+   - **Database → Tables / Policies**: conferir visualmente a estrutura das tabelas e as políticas de RLS que estão de fato aplicadas no projeto, para comparação com o que está versionado em `schema.sql`.
+   - **Database → Backups**: pontos de restauração automáticos (e, conforme o plano contratado, *point-in-time recovery*) e opção de disparar um backup manual antes de qualquer manutenção mais arriscada.
+   - **Project Settings → API**: obter a `Project URL` e as chaves `anon`/`public` (usada pela aplicação) e `service_role` (uso administrativo apenas — **nunca** deve ser exposta no front-end ou commitada no repositório).
+   - **Project Settings → Database**: *connection string* para acesso direto via `psql` ou outra ferramenta de cliente PostgreSQL, quando o painel web não for suficiente.
+   - **Logs / Advisors**: acompanhar erros de API/consulta e alertas automáticos de segurança e performance do próprio Supabase.
+4. **Boa prática de manutenção recomendada**: tratar [supabase/schema.sql](../supabase/schema.sql) e [supabase/migrations/](../supabase/migrations/) como a fonte da verdade do esquema. Alterações estruturais (novas colunas, tabelas, políticas, funções) devem ser feitas primeiro nesses arquivos versionados e depois aplicadas ao projeto (via SQL Editor ou pela [Supabase CLI](https://supabase.com/docs/guides/cli), `supabase db push`), em vez de alterar o esquema apenas pelo painel — isso evita que o banco em produção fique divergente do que está no repositório.
+5. **Ação de segurança pendente**: como citado na observação abaixo, o script de bootstrap em `schema.sql` cria/atualiza uma conta administrativa com senha em texto claro no próprio script. Assim que possível, um administrador deve trocar essa senha por **Authentication → Users** no painel (ou pedindo redefinição de senha na tela de login admin da aplicação) e avaliar remover o trecho do histórico do repositório.
+
 ### Testes
 
 - **Unitários** (Vitest): validam principalmente as regras de cálculo determinísticas de [src/services/calculoIRPF.ts](../src/services/calculoIRPF.ts). Rodar com `bun run test` (ou `npm run test`); `test:watch` para modo interativo.
