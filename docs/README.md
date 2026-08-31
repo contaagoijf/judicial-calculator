@@ -12,8 +12,10 @@
 
 O CALCJUD nasceu como iniciativa para **unificar duas planilhas Excel** mantidas pela **DCAL (Divisão de Cálculos)** do TRF2/JFRJ, hoje distribuídas pela intranet e usadas manualmente pelas contadorias:
 
-- **Planilha de Cálculo de Ajuste Anual de IRPF** — calcula o ajuste anual do Imposto de Renda Pessoa Física de um único ano, com acréscimo/decréscimo de valores não tributáveis.
-- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** ("Soluções para Contadorias") — recalcula uma declaração de IRPF já entregue, aplicando alterações (acréscimos e decréscimos) aos valores originais de qualquer rubrica, para múltiplos anos.
+- **Planilha de Cálculo de Ajuste Anual de IRPF** (arquivo `irpfanual.xlt`, acompanhado do manual `manualir.pdf`) — calcula o ajuste anual do Imposto de Renda Pessoa Física de um único ano, com acréscimo/decréscimo de valores não tributáveis.
+- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (arquivo `ir-recalculo.xlt`, seção "Soluções para Contadorias") — recalcula uma declaração de IRPF já entregue, aplicando alterações (acréscimos e decréscimos) aos valores originais de qualquer rubrica, para múltiplos anos.
+
+Ambas as planilhas são mantidas pela DCAL, foram atualizadas pela última vez em 22/08/2024 e estão protegidas por senha (a estrutura de fórmulas não pôde ser aberta para conferência direta); dúvidas sobre elas podem ser encaminhadas ao contato administrativo da intranet, **tssedus@jfrj.jus.br**.
 
 O cálculo realizado não é uma declaração de IR "avulsa": é o **cálculo judicial de diferenças de Imposto de Renda dentro de um processo em trâmite** (por exemplo, discussão sobre a incidência de IR sobre determinados rendimentos), incluindo a apuração de correção monetária e juros de mora sobre a diferença, respeitando o teto de 60 salários mínimos dos Juizados Especiais/RPV, para juntada da memória de cálculo ao processo.
 
@@ -138,10 +140,10 @@ supabase/
 | `ir_faixas` | Faixas progressivas de alíquota e parcela a deduzir, por ano-calendário. |
 | `calculos` | Histórico de cálculos realizados (tipo — ajuste anual ou retificação —, ano, processo, autor, dados de entrada e resultado em JSONB); é a tabela usada na Consulta pública por ID. |
 | `salario_minimo` | Série histórica de salário mínimo por data de referência, usada para apurar o teto do RPV (60 salários mínimos). |
-| `indices_economicos` | Cadastro de índices de correção monetária e de juros (ex.: SELIC, poupança, UFIR), com sua natureza (`CORRECAO` ou `JUROS`). |
+| `indices_economicos` | Cadastro de índices de correção monetária e de juros. Na base de produção estão cadastrados 7 índices: `SELIC`, `POUPANCA` e `PERCENTUAL` (natureza `JUROS`) e `INPC`, `IPCA`, `UFIR` e `TR` (natureza `CORRECAO`). |
 | `taxas_historicas` | Série mensal de percentuais por índice, com fator multiplicador e fator acumulado recalculados automaticamente (trigger `handle_taxas_historicas_write` / função `recalculate_taxas_historicas`) sempre que uma taxa é inserida, alterada ou removida. |
-| `templates_calculo` | Templates de cálculo correspondentes aos tipos de correção disponíveis na Retificação (SELIC, SELIC + poupança, sem correção). |
-| `regras_subperiodo` | Regras de correção/juros vigentes por sub-período dentro de cada template (qual índice de correção e de juros usar em cada intervalo de datas). |
+| `templates_calculo` | Templates de cálculo correspondentes aos tipos de correção disponíveis na Retificação: **Template_1** — juros simples de 1% até 12/1995 e, depois, SELIC; correção por INPC/IPCA/UFIR até 12/1995 e, depois, sem correção; **Template_2** — juros simples de 1% até 12/1995, SELIC de 01/1996 a 06/2009 e, depois, rendimento da poupança; correção por INPC/IPCA/UFIR até 12/1995, sem correção de 01/1996 a 06/2009 e, depois, pela TR; **Template_3** — sem correção/juros. |
+| `regras_subperiodo` | Regras de correção/juros vigentes por sub-período dentro de cada template (qual índice de correção e de juros usar em cada intervalo de datas); a base de produção mantém 11 regras cadastradas entre os 3 templates. |
 | `admin_invites` | Convites pendentes/aceitos de novos administradores, por e-mail. |
 | `admin_users` | Usuários com privilégio de administrador (vinculados a `auth.users` do Supabase Auth). |
 | `system_settings` | Chave única (linha singleton) com as chaves de disponibilidade pública: sistema inteiro, Ajuste Anual e Retificação. |
@@ -152,6 +154,8 @@ supabase/
 - Leitura pública (`SELECT`) liberada para as tabelas fiscais/paramétricas e para `calculos` e `system_settings`.
 - Escrita (`INSERT`/`UPDATE`/`DELETE`) restrita a usuários administradores, verificados pela função `public.is_admin()` (`SECURITY DEFINER`, consulta a tabela `admin_users` a partir de `auth.uid()`).
 - A promoção a administrador é automática: ao ser criado um usuário no Supabase Auth cujo e-mail conste em `admin_invites` como convite pendente, um trigger (`handle_auth_user_admin_sync` / `grant_admin_by_email`) grava a linha correspondente em `admin_users` e marca o convite como aceito.
+
+**Volume de dados de referência** (base de produção, para dimensionamento): `ir_parametros` cobre os anos-calendário de 1990 a 2025 (36 registros); `ir_faixas` tem 145 faixas cadastradas para esse mesmo intervalo; `salario_minimo` tem 325 registros mensais, de 01/2000 a 01/2027; e `taxas_historicas` tem cerca de 1.147 registros mensais por índice, cobrindo 03/1991 a 04/2026.
 
 ### Acesso, manuseio e manutenção do banco de dados (Supabase Dashboard)
 
@@ -212,12 +216,11 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 - **Repositório de código**: <https://github.com/contaagoijf/judicial-calculator>
 - **Sistema em produção**: <https://calcjud.vercel.app/>
-- **Planilha de Cálculo de Ajuste Anual de IRPF** (DCAL, intranet JFRJ — acesso restrito à rede interna): <https://intranet.jfrj.jus.br/unidade/dcal/planilhas-para-calculo-simples-projef-web/planilha-de-calculo-de-ajuste-anual-de>
-- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (DCAL, intranet JFRJ — acesso restrito à rede interna): <https://intranet.jfrj.jus.br/unidade/dcal/solucoes-para-contadorias/planilha-de-calculo-de-declaracao-anual-do-imposto-de-renda>
-- **Conteúdo de referência das tabelas do banco de dados** (Nextcloud interno — acesso restrito): <https://nuvem.trf2.jus.br/s/7P2xp6QLsWNf65q>
-- **Documento de especificação funcional do projeto original** (Nextcloud interno — acesso restrito): <https://nuvem.trf2.jus.br/s/xNMMC9ZrcRi3sXZ>
-
-> Os links de intranet e do Nextcloud interno só são acessíveis a partir da rede do TRF2/JFRJ e não puderam ser consultados na elaboração deste documento; a descrição do contexto de origem do projeto (seção acima) foi montada a partir de material de levantamento já disponível localmente, que resume o conteúdo dessas mesmas fontes.
+- **Planilha de Cálculo de Ajuste Anual de IRPF** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/planilhas-para-calculo-simples-projef-web/planilha-de-calculo-de-ajuste-anual-de> — arquivo `irpfanual.xlt`, protegido por senha, com o manual `manualir.pdf`; atualizado em 22/08/2024.
+- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/solucoes-para-contadorias/planilha-de-calculo-de-declaracao-anual-do-imposto-de-renda> — arquivo `ir-recalculo.xlt`, protegido por senha; atualizado em 22/08/2024.
+- **Conteúdo de referência das tabelas do banco de dados** (Nextcloud interno — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://nuvem.trf2.jus.br/s/7P2xp6QLsWNf65q> — planilha `bd calcjud.xlsx`, um export de referência das tabelas `ir_faixas`, `ir_parametros`, `salario_minimo`, `indices_economicos`, `taxas_historicas`, `templates_calculo` e `regras_subperiodo`; foi conferida e é consistente com o [esquema do banco](../supabase/schema.sql) e com o conteúdo hoje semeado pelos scripts `seed*.sql` do repositório — útil como referência/backup para conferência dos dados cadastrados.
+- **Documento de especificação funcional do projeto original** (Nextcloud interno — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://nuvem.trf2.jus.br/s/xNMMC9ZrcRi3sXZ> — arquivo `retificação irpf-anual (varios anos).docx`; foi conferido e confirma o conteúdo já refletido nas seções deste documento (dados de entrada, cálculo em 8 partes, dados de saída, mockups de tela), sem detalhes adicionais além dos já incorporados.
+- **Contato administrativo da DCAL** (planilhas na intranet JFRJ): tssedus@jfrj.jus.br
 
 > **Observação de segurança**: as credenciais do Supabase (URL e chave pública/anon) usadas pela aplicação não concedem privilégios administrativos por si só — o acesso de administrador é controlado pela tabela `admin_users` e pelas políticas de RLS descritas acima. Foi identificado que o script [supabase/schema.sql](../supabase/schema.sql) contém, em texto claro, e-mail e senha de um administrador inicial usado no processo de bootstrap do banco; recomenda-se rotacionar essa senha e, se possível, remover o segredo do histórico do repositório.
 
