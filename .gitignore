@@ -15,8 +15,13 @@ dist-ssr
 .env.*
 !.env.example
 
-# Documentos Word (versionados apenas localmente)
+# Documentos Word e PDF (versionados apenas localmente)
 *.docx
+*.pdf
+
+# Saida gerada pelo Playwright (npx playwright test)
+/playwright-report/
+/test-results/
 
 # Editor directories and files
 .vscode/*

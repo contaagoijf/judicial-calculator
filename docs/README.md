@@ -6,7 +6,8 @@
 2. [Objetivo](#objetivo)
 3. [Como utilizar](#como-utilizar)
 4. [Detalhes Técnicos](#detalhes-técnicos)
-5. [Referências e materiais relacionados](#referências-e-materiais-relacionados)
+5. [Regras de versionamento (Git)](#regras-de-versionamento-git)
+6. [Referências e materiais relacionados](#referências-e-materiais-relacionados)
 
 ## Contexto e origem do projeto
 
@@ -211,6 +212,13 @@ O servidor de desenvolvimento sobe em `http://localhost:8080` (porta definida em
 ### Deploy
 
 O deploy de produção é feito na **Vercel**, como site estático gerado por `vite build`, com todas as rotas reescritas para `index.html` (ver [vercel.json](../vercel.json)) para suportar o roteamento client-side do `react-router-dom`. As variáveis de ambiente `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` (quando aplicável ao cliente gerado) devem estar configuradas no projeto Vercel.
+
+## Regras de versionamento (Git)
+
+- **Não versionar arquivos `.docx` e `.pdf`.** Documentos Word e PDF (relatórios, atas de reunião, resumos, manuais, planilhas de referência exportadas etc.) gerados durante o trabalho no repositório **não devem ser enviados ao GitHub** — nem em `docs/`, nem em qualquer outra pasta do projeto.
+- Essa regra já está aplicada em [.gitignore](../.gitignore) (`*.docx` e `*.pdf`), então esses arquivos ficam automaticamente fora de qualquer `git add`/`git commit` feito normalmente.
+- Ao gerar um documento `.docx`/`.pdf` como entregável de uma tarefa, mantenha-o apenas localmente (ou em `C:\temp\...`/outra pasta fora do repositório); se for necessário um registro versionado do mesmo conteúdo, gere a versão equivalente em **Markdown (`.md`)** e versiona-se essa, não o binário.
+- Antes de um `git add` amplo (`git add .`/`git add -A`), confira com `git status` se nenhum `.docx`/`.pdf` aparece para ser adicionado — caso apareça, é sinal de que o arquivo foi criado antes da regra do `.gitignore` existir, ou que o `.gitignore` precisa ser ajustado.
 
 ## Referências e materiais relacionados
 
