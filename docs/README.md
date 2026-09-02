@@ -223,8 +223,8 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 ## Referências e materiais relacionados
 
-- **Repositório de código**: <https://github.com/contaagoijf/judicial-calculator>
 - **Sistema em produção**: <https://calcjud.vercel.app/>
+- **Repositório de código**: <https://github.com/contaagoijf/judicial-calculator>
 - **Planilha de Cálculo de Ajuste Anual de IRPF** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/planilhas-para-calculo-simples-projef-web/planilha-de-calculo-de-ajuste-anual-de> — arquivo `irpfanual.xlt`, protegido por senha, com o manual `manualir.pdf`; atualizado em 22/08/2024.
 - **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/solucoes-para-contadorias/planilha-de-calculo-de-declaracao-anual-do-imposto-de-renda> — arquivo `ir-recalculo.xlt`, protegido por senha; atualizado em 22/08/2024.
 - **Conteúdo de referência das tabelas do banco de dados** (Nextcloud interno — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://nuvem.trf2.jus.br/s/7P2xp6QLsWNf65q> — planilha `bd calcjud.xlsx`, um export de referência das tabelas `ir_faixas`, `ir_parametros`, `salario_minimo`, `indices_economicos`, `taxas_historicas`, `templates_calculo` e `regras_subperiodo`; foi conferida e é consistente com o [esquema do banco](../supabase/schema.sql) e com o conteúdo hoje semeado pelos scripts `seed*.sql` do repositório — útil como referência/backup para conferência dos dados cadastrados.

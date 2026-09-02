@@ -199,8 +199,8 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 ## 5. Referências e materiais relacionados
 
-- **Repositório de código**: <https://github.com/contaagoijf/judicial-calculator>
 - **Sistema em produção**: <https://calcjud.vercel.app/>
+- **Repositório de código**: <https://github.com/contaagoijf/judicial-calculator>
 - **Planilha de Cálculo de Ajuste Anual de IRPF** (DCAL, intranet JFRJ — acesso restrito à rede interna): <https://intranet.jfrj.jus.br/unidade/dcal/planilhas-para-calculo-simples-projef-web/planilha-de-calculo-de-ajuste-anual-de>
 - **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (DCAL, intranet JFRJ — acesso restrito à rede interna): <https://intranet.jfrj.jus.br/unidade/dcal/solucoes-para-contadorias/planilha-de-calculo-de-declaracao-anual-do-imposto-de-renda>
 - **Conteúdo de referência das tabelas do banco de dados** (Nextcloud interno — acesso restrito): <https://nuvem.trf2.jus.br/s/7P2xp6QLsWNf65q>
