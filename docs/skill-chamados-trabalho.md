@@ -98,7 +98,7 @@ Mapeamento de classificacao por tipo, conforme for sendo usado:
 | Tipo | Classificacao |
 |------|----------------|
 | Desenvolvimento | DT:Codificacao-Implementacao |
-| Documentacao | (ainda nao mapeada) |
+| Documentacao | DT:Documentacao |
 | Testes | (ainda nao mapeada) |
 
 So preencher a classificacao quando ela for conhecida; se esbarrar em um tipo/valor novo na ferramenta, adicionar aqui e no facilitador antes de usar.
@@ -131,7 +131,7 @@ ja vinculada ao Projeto/Tarefa.
 (buscar "cosadm"), Data de abertura (botao "Agora" no datepicker), Requerente (buscar nome
 completo) e Atribuido (buscar "cosadm" → selecionar COSADM-TERCEIROS). **O tecnico logado
 nem sempre entra sozinho** no Atribuido — conferir depois de buscar "cosadm" e, se nao
-tiver, buscar o proprio nome e adicionar manualmente. Clicar "Adicionar" sem preencher os
+tiver, buscar o proprio nome (Marcio Rodrigues Barcellos) e adicionar manualmente. Clicar "Adicionar" sem preencher os
 obrigatorios so dispara validacao (nao e destrutivo, da pra corrigir e submeter de novo). Ao
 salvar com sucesso aparece uma notificacao com o numero real do chamado que some rapido — se
 perder o clique no link, navegar direto por `front/ticket.form.php?id=<numero>` ou achar na
