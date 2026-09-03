@@ -18,6 +18,15 @@ Antes de investigar o caso específico relatado, o primeiro passo foi confirmar 
 
 ## 2. O que cada teste demonstrou
 
+### Por que o ano-calendário de 2020 foi usado como base destes testes
+
+Os dois testes abaixo usam o **mesmo caso de exemplo, do ano-calendário de 2020**, em vez de dados de um processo real. Isso não foi uma escolha aleatória nem tem relação com o caso relatado pelo contador — a explicação é mais simples:
+
+- Esse caso de 2020 já existia, **desde o início do desenvolvimento do sistema**, como um teste automatizado interno (rodado a cada atualização do código). Nele, todos os valores de entrada (rendimentos, deduções, alterações etc.) e o resultado esperado em cada etapa do cálculo (base de cálculo, alíquota, parcela de dedução, imposto devido, valor final) já estavam conferidos e documentados com precisão — é o único cenário do sistema com esse nível de detalhamento verificado, funcionando como um "gabarito" pronto.
+- Como já existia um resultado certo e detalhado para conferir, foi o caso mais rápido e seguro para uma primeira verificação: em vez de criar um caso novo do zero (o que exigiria refazer as contas à mão para saber qual resultado esperar), reaproveitou-se esse gabarito já pronto.
+- Usar exatamente os mesmos números do teste automatizado interno permite comparar **duas coisas ao mesmo tempo**: (1) se a fórmula de cálculo está correta — isso já era verificado pelo teste automatizado, que roda isolado, sem depender do site nem do banco de dados — e (2) se os dados de 2020 realmente cadastrados no sistema em produção (as faixas de alíquota e parâmetros daquele ano) também estão corretos. Como o resultado no site bateu exatamente com o valor já esperado, isso confirma as duas coisas juntas para esse ano.
+- **Importante:** não é um caso real de nenhum contribuinte — é um exemplo com valores redondos, criado só para servir de conferência do sistema. E, como esse cenário de 2020 não envolve correção monetária/juros, ele não testa os índices (SELIC, INPC, IPCA, TR, poupança) — por isso a ressalva já feita na seção 2.3 continua valendo.
+
 ### 2.1 Teste 1 — Ajuste Anual do IRPF (ano-calendário 2020)
 
 **Arquivo:** `Calculo-de-Ajuste-Anual-do-IRPF.md`
