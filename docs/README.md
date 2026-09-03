@@ -8,7 +8,8 @@
 4. [Detalhes Técnicos](#detalhes-técnicos)
 5. [Regras de versionamento (Git)](#regras-de-versionamento-git)
 6. [Referências e materiais relacionados](#referências-e-materiais-relacionados)
-7. [Acesso ao Sistema](#acesso-ao-sistema)
+7. [Siglas](#siglas)
+8. [Acesso ao Sistema](#acesso-ao-sistema)
 
 ## Contexto e origem do projeto
 
@@ -232,6 +233,38 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 - **Contato administrativo da DCAL** (planilhas na intranet JFRJ): tssedus@jfrj.jus.br
 
 > **Observação de segurança**: as credenciais do Supabase (URL e chave pública/anon) usadas pela aplicação não concedem privilégios administrativos por si só — o acesso de administrador é controlado pela tabela `admin_users` e pelas políticas de RLS descritas acima. Foi identificado que o script [supabase/schema.sql](../supabase/schema.sql) contém, em texto claro, e-mail e senha de um administrador inicial usado no processo de bootstrap do banco; recomenda-se rotacionar essa senha e, se possível, remover o segredo do histórico do repositório.
+
+## Siglas
+
+Glossário das siglas e termos técnicos usados neste documento e nos relatórios de teste do CALCJUD, para apoiar a comunicação com a contadoria e outras áreas não técnicas.
+
+**AGOI** — sigla usada para identificar a área/equipe de contadoria com quem os testes de cálculo do CALCJUD são apresentados e discutidos. O nome por extenso da AGOI não está definido em nenhum documento do projeto; convém confirmar diretamente com a própria equipe antes de usar o nome completo em comunicações formais.
+
+**DCAL** — Divisão de Cálculos do TRF2/JFRJ, a área que hoje mantém e usa manualmente as duas planilhas Excel (`irpfanual.xlt` e `ir-recalculo.xlt`) que o CALCJUD pretende substituir.
+
+**IRPF** — Imposto de Renda Pessoa Física. É o imposto recalculado pelo CALCJUD nos módulos de Ajuste Anual e Retificação.
+
+**IR** — forma abreviada de IRPF, usada em expressões como "faixas de IR" (as faixas de alíquota progressiva do imposto, com a parcela a deduzir de cada uma).
+
+**RRA** (também aparece como "imposto sobre RRA" ou "imposto devido RRA") — Rendimentos Recebidos Acumuladamente: valores recebidos de uma só vez referentes a períodos anteriores (por exemplo, atrasados de uma ação judicial). Esses rendimentos têm tributação exclusiva, calculada separadamente do restante da declaração. "Imposto devido RRA" é o valor de IR que incide especificamente sobre esses rendimentos acumulados.
+
+**RPV** — Requisição de Pequeno Valor: a forma de pagamento judicial usada quando o valor devido pela Fazenda Pública é considerado "de pequeno valor" (em oposição ao **precatório**, usado para valores maiores), típica dos Juizados Especiais Federais. "Aplicar o teto do RPV" significa comparar o valor total apurado (principal + juros) contra o limite legal de **60 salários mínimos** vigentes na data de referência do processo — uma das 8 etapas da sequência de cálculo da Retificação (ver [Contexto e origem do projeto](#contexto-e-origem-do-projeto) e a tabela `salario_minimo` em [Banco de dados](#banco-de-dados)).
+
+**SELIC** — Sistema Especial de Liquidação e Custódia. Na prática, é a taxa básica de juros da economia brasileira, definida pelo Banco Central (Copom). No CALCJUD, é um dos índices possíveis para corrigir/atualizar valores devidos com juros ao longo do tempo.
+
+**INPC** — Índice Nacional de Preços ao Consumidor, calculado pelo IBGE. Usado como índice de correção monetária em determinados períodos, conforme o *template* de cálculo aplicável.
+
+**IPCA** — Índice Nacional de Preços ao Consumidor Amplo, também calculado pelo IBGE — é o índice oficial de inflação do país. Assim como o INPC, pode ser usado como índice de correção monetária.
+
+**TR** — Taxa Referencial, calculada e divulgada pelo Banco Central; usada historicamente para corrigir saldos da poupança e, no CALCJUD, como índice de correção monetária em determinados períodos.
+
+**UFIR** — Unidade Fiscal de Referência; índice de correção monetária histórico, usado no período de janeiro/1992 a dezembro/1995 nos templates de cálculo mais antigos.
+
+**IBGE** — Instituto Brasileiro de Geografia e Estatística, responsável por calcular e divulgar o INPC e o IPCA.
+
+**Banco Central** — Banco Central do Brasil, responsável pela SELIC e pela TR.
+
+**Receita Federal** — órgão responsável por publicar, ano a ano, as tabelas progressivas de alíquota e parcela a deduzir do IR (as "faixas de IR" citadas acima).
 
 ## Acesso ao Sistema
 
