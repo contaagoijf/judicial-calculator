@@ -115,6 +115,7 @@ const RetificacaoPage = () => {
   const [alteracaoDraft, setAlteracaoDraft] = useState<AlteracaoRetificacao>(defaultAlteracao());
 
   const toolEnabled = isAdmin || ((settings?.system_enabled ?? true) && (settings?.retificacao_enabled ?? false));
+  const anosOptions = useMemo(() => parametros?.map((p) => p.ano_calendario) ?? [], [parametros]);
 
   const preencherFormulario = (draft: DadosEntradaRetificacao) => {
     setProcesso(draft.numero_processo);
@@ -171,8 +172,6 @@ const RetificacaoPage = () => {
       </div>
     );
   }
-
-  const anosOptions = useMemo(() => parametros?.map((p) => p.ano_calendario) ?? [], [parametros]);
 
   const openNovoPeriodo = () => {
     setEditingPeriodoIndex(null);

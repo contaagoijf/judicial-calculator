@@ -20,16 +20,23 @@ WHERE NOT EXISTS (
 WITH regras_raw AS (
   SELECT *
   FROM (VALUES
+    -- A planilha oficial da DCAL corrige por UFIR até 01/1996 (inclusive),
+    -- mas os juros já passam a ser SELIC a partir de 01/1996 — janeiro/1996
+    -- é um mês de transição (correção por UFIR, juros por SELIC), por isso
+    -- vira uma regra própria (ordem 4) entre a regra 3 (UFIR+PERCENTUAL) e
+    -- a regra 5 (sem correção monetária, só SELIC).
     ('Template_1', '1991-03-01'::date, '1991-11-01'::date, 'INPC', 'PERCENTUAL', true, true, 1),
     ('Template_1', '1991-12-01'::date, '1991-12-01'::date, 'IPCA', 'PERCENTUAL', true, true, 2),
     ('Template_1', '1992-01-01'::date, '1995-12-31'::date, 'UFIR', 'PERCENTUAL', true, true, 3),
-    ('Template_1', '1996-01-01'::date, '2026-04-01'::date, NULL, 'SELIC', false, true, 4),
+    ('Template_1', '1996-01-01'::date, '1996-01-31'::date, 'UFIR', 'SELIC', true, true, 4),
+    ('Template_1', '1996-02-01'::date, '2026-04-01'::date, NULL, 'SELIC', false, true, 5),
 
     ('Template_2', '1991-03-01'::date, '1991-11-01'::date, 'INPC', 'PERCENTUAL', true, true, 1),
     ('Template_2', '1991-12-01'::date, '1991-12-01'::date, 'IPCA', 'PERCENTUAL', true, true, 2),
     ('Template_2', '1992-01-01'::date, '1995-12-31'::date, 'UFIR', 'PERCENTUAL', true, true, 3),
-    ('Template_2', '1996-01-01'::date, '2009-06-30'::date, NULL, 'SELIC', false, true, 4),
-    ('Template_2', '2009-07-01'::date, '2026-04-01'::date, 'TR', 'POUPANCA', false, true, 5),
+    ('Template_2', '1996-01-01'::date, '1996-01-31'::date, 'UFIR', 'SELIC', true, true, 4),
+    ('Template_2', '1996-02-01'::date, '2009-06-30'::date, NULL, 'SELIC', false, true, 5),
+    ('Template_2', '2009-07-01'::date, '2026-04-01'::date, 'TR', 'POUPANCA', false, true, 6),
 
     ('Template_3', '1991-01-01'::date, '2026-04-01'::date, NULL, NULL, false, false, 1)
   ) AS v(nome_template, data_inicio_vigencia, data_fim_vigencia, sigla_correcao, sigla_juros, aplicar_correcao, aplicar_juros, ordem)
