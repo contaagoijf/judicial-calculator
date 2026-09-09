@@ -238,7 +238,7 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 Glossário das siglas e termos técnicos usados neste documento e nos relatórios de teste do CALCJUD, para apoiar a comunicação com a contadoria e outras áreas não técnicas.
 
-**AGOI** — sigla usada para identificar a área/equipe de contadoria com quem os testes de cálculo do CALCJUD são apresentados e discutidos. O nome por extenso da AGOI não está definido em nenhum documento do projeto; convém confirmar diretamente com a própria equipe antes de usar o nome completo em comunicações formais.
+**AGOI** — sigla usada para identificar a área/equipe de contadoria com quem os testes de cálculo do CALCJUD são apresentados e discutidos.
 
 **DCAL** — Divisão de Cálculos do TRF2/JFRJ, a área que hoje mantém e usa manualmente as duas planilhas Excel (`irpfanual.xlt` e `ir-recalculo.xlt`) que o CALCJUD pretende substituir.
 
