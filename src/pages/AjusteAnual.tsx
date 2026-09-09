@@ -58,7 +58,8 @@ const AjusteAnualPage = () => {
   const [deducoesLegais, setDeducoesLegais] = useState(0);
   const [deducoesIncentivo, setDeducoesIncentivo] = useState(0);
   const [impostoRRA, setImpostoRRA] = useState(0);
-  const [ajusteAnual, setAjusteAnual] = useState(0);
+  const [ajusteAnualMagnitude, setAjusteAnualMagnitude] = useState(0);
+  const [tipoSaldoOriginal, setTipoSaldoOriginal] = useState<'PAGAR' | 'RESTITUIR'>('PAGAR');
   const [impostoPago, setImpostoPago] = useState(0);
   const [rendSomar, setRendSomar] = useState(0);
   const [rendSub, setRendSub] = useState(0);
@@ -78,7 +79,9 @@ const AjusteAnualPage = () => {
     setDeducoesLegais(draft.dados.deducoes_legais || 0);
     setDeducoesIncentivo(draft.dados.deducoes_incentivo || 0);
     setImpostoRRA(draft.dados.imposto_rra || 0);
-    setAjusteAnual(draft.dados.ajuste_anual || 0);
+    const saldoOriginal = draft.dados.ajuste_anual || 0;
+    setTipoSaldoOriginal(saldoOriginal < 0 ? 'RESTITUIR' : 'PAGAR');
+    setAjusteAnualMagnitude(Math.abs(saldoOriginal));
     setImpostoPago(draft.dados.imposto_pago || 0);
     setRendSomar(draft.dados.rend_somar || 0);
     setRendSub(draft.dados.rend_sub || 0);
@@ -167,6 +170,8 @@ const AjusteAnualPage = () => {
       toast({ title: 'Erro', description: 'Parâmetros não encontrados para o ano selecionado.', variant: 'destructive' });
       return;
     }
+
+    const ajusteAnual = tipoSaldoOriginal === 'RESTITUIR' ? -Math.abs(ajusteAnualMagnitude) : Math.abs(ajusteAnualMagnitude);
 
     const dados: DadosEntradaAjusteAnual = {
       tipo_declaracao: tipoDeclaracao,
@@ -281,7 +286,27 @@ const AjusteAnualPage = () => {
             <CampoMonetario label="Deduções de Incentivo" value={deducoesIncentivo} onChange={setDeducoesIncentivo} disabled={!isCompleta} />
             <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} />
             <CampoMonetario label="Imposto Devido RRA" value={impostoRRA} onChange={setImpostoRRA} />
-            <CampoMonetario label="Ajuste Anual" value={ajusteAnual} onChange={setAjusteAnual} />
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Saldo do Ajuste Anual (declaração original)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={ajusteAnualMagnitude || ''}
+                  onChange={(e) => setAjusteAnualMagnitude(parseFloat(e.target.value) || 0)}
+                  placeholder="0,00"
+                  className="font-mono"
+                />
+                <Select value={tipoSaldoOriginal} onValueChange={(v) => setTipoSaldoOriginal(v as 'PAGAR' | 'RESTITUIR')}>
+                  <SelectTrigger className="w-40 shrink-0"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAGAR">A pagar</SelectItem>
+                    <SelectItem value="RESTITUIR">A restituir</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 

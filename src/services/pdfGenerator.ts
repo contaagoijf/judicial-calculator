@@ -339,7 +339,7 @@ export function gerarRelatorioPDF(
           ['(*) Imposto devido RRA (+)', formatCurrency(periodo.resultado.imposto_rra_recalc)],
           ['Imposto devido (=)', formatCurrency(periodo.resultado.imposto_devido_recalc)],
           ['(*) Total do imposto pago (-)', formatCurrency(periodo.resultado.alteracoes.imposto_pago.recalculado)],
-          [periodo.resultado.imposto_a_pagar >= 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', formatCurrency(Math.abs(periodo.resultado.imposto_a_pagar))],
+          [periodo.resultado.imposto_a_pagar < 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', formatCurrency(Math.abs(periodo.resultado.imposto_a_pagar))],
           ['Total devido', formatCurrency(periodo.valor_devido)],
         ];
 

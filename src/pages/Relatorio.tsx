@@ -412,7 +412,7 @@ const RelatorioPage = () => {
                             ['(*) Imposto devido RRA (+)', p.resultado.imposto_rra_recalc],
                             ['Imposto devido (=)', p.resultado.imposto_devido_recalc],
                             ['(*) Total do imposto pago (-)', p.resultado.alteracoes.imposto_pago.recalculado],
-                            [p.resultado.imposto_a_pagar >= 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', Math.abs(p.resultado.imposto_a_pagar)],
+                            [p.resultado.imposto_a_pagar < 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', Math.abs(p.resultado.imposto_a_pagar)],
                             ['Total devido (valor)', p.valor_devido],
                           ].map(([label, val], idx) => (
                             <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>

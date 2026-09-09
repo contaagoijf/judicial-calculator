@@ -109,6 +109,7 @@ const RetificacaoPage = () => {
   const [periodoDialogOpen, setPeriodoDialogOpen] = useState(false);
   const [editingPeriodoIndex, setEditingPeriodoIndex] = useState<number | null>(null);
   const [periodoDraft, setPeriodoDraft] = useState<DadosEntradaAjusteAnual>(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
+  const [tipoSaldoPeriodo, setTipoSaldoPeriodo] = useState<'PAGAR' | 'RESTITUIR'>('PAGAR');
 
   const [alteracaoDialogOpen, setAlteracaoDialogOpen] = useState(false);
   const [editingAlteracaoId, setEditingAlteracaoId] = useState<string | null>(null);
@@ -176,12 +177,14 @@ const RetificacaoPage = () => {
   const openNovoPeriodo = () => {
     setEditingPeriodoIndex(null);
     setPeriodoDraft(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
+    setTipoSaldoPeriodo('PAGAR');
     setPeriodoDialogOpen(true);
   };
 
   const openEditarPeriodo = (index: number) => {
     setEditingPeriodoIndex(index);
     setPeriodoDraft({ ...periodos[index], alteracoes: periodos[index].alteracoes ?? [] });
+    setTipoSaldoPeriodo(periodos[index].ajuste_anual < 0 ? 'RESTITUIR' : 'PAGAR');
     setPeriodoDialogOpen(true);
   };
 
@@ -519,7 +522,38 @@ const RetificacaoPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
                   <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} />
                   <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} />
-                  <CampoMonetario label="Valor do ajuste anual" value={periodoDraft.ajuste_anual} onChange={(v) => setPeriodoDraft({ ...periodoDraft, ajuste_anual: v })} />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Saldo do ajuste anual (declaração original)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={Math.abs(periodoDraft.ajuste_anual) || ''}
+                        onChange={(e) => {
+                          const magnitude = parseFloat(e.target.value) || 0;
+                          setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipoSaldoPeriodo === 'RESTITUIR' ? -magnitude : magnitude });
+                        }}
+                        placeholder="0,00"
+                        className="font-mono"
+                      />
+                      <Select
+                        value={tipoSaldoPeriodo}
+                        onValueChange={(v) => {
+                          const tipo = v as 'PAGAR' | 'RESTITUIR';
+                          setTipoSaldoPeriodo(tipo);
+                          const magnitude = Math.abs(periodoDraft.ajuste_anual);
+                          setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipo === 'RESTITUIR' ? -magnitude : magnitude });
+                        }}
+                      >
+                        <SelectTrigger className="w-36 shrink-0"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PAGAR">A pagar</SelectItem>
+                          <SelectItem value="RESTITUIR">A restituir</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-6 border-t pt-4">
