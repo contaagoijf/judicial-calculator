@@ -36,3 +36,6 @@ dist-ssr
 
 # Ferramenta de automação de sessão (nao deve ser commitada)
 .glpi-driver.mjs
+
+# Scripts avulsos de uso local (ex.: migrações manuais de banco), nunca versionados
+src/script/
