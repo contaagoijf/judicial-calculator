@@ -1,31 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useParametrosIR, useFaixasIR, useCalculo } from '@/hooks/useIRData';
+import { useParametrosIR, useFaixasIR, useCalculo, useCalculosPorProcesso } from '@/hooks/useIRData';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
-import { calcularAjusteAnual, validarConsistenciaAjusteAnual, type DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
-
-const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) => (
-  <div className="space-y-1.5">
-    <Label className="text-sm font-medium">{label}</Label>
-    <Input
-      type="number"
-      min="0"
-      step="0.01"
-      value={value || ''}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      placeholder="0,00"
-      disabled={disabled}
-      className="font-mono"
-    />
-  </div>
-);
+import { calcularAjusteAnual, validarConsistenciaAjusteAnual, type DadosEntradaAjusteAnual, type DadosEntradaRetificacao } from '@/services/calculoIRPF';
+import { CampoMonetario } from '@/components/CampoMonetario';
+import { currencyToMaskedDisplay, formatNumeroProcesso, isNumeroProcessoCompleto, parseMaskedCurrency } from '@/lib/masks';
 
 const AJUSTE_ANUAL_EDIT_DRAFT_KEY = 'ajuste-anual-edit-draft';
 
@@ -54,11 +41,13 @@ const AjusteAnualPage = () => {
   const [tipoDeclaracao, setTipoDeclaracao] = useState<'completa' | 'simplificada'>('completa');
   const [processo, setProcesso] = useState('');
   const [nomeAutor, setNomeAutor] = useState('');
+  const { data: declaracoesDoProcesso } = useCalculosPorProcesso(processo, 'ajuste_anual');
   const [rendTrib, setRendTrib] = useState(0);
   const [deducoesLegais, setDeducoesLegais] = useState(0);
   const [deducoesIncentivo, setDeducoesIncentivo] = useState(0);
   const [impostoRRA, setImpostoRRA] = useState(0);
-  const [ajusteAnual, setAjusteAnual] = useState(0);
+  const [ajusteAnualMagnitude, setAjusteAnualMagnitude] = useState(0);
+  const [tipoSaldoOriginal, setTipoSaldoOriginal] = useState<'PAGAR' | 'RESTITUIR'>('PAGAR');
   const [impostoPago, setImpostoPago] = useState(0);
   const [rendSomar, setRendSomar] = useState(0);
   const [rendSub, setRendSub] = useState(0);
@@ -68,8 +57,18 @@ const AjusteAnualPage = () => {
   const [incentivoSub, setIncentivoSub] = useState(0);
   const [rraSomar, setRraSomar] = useState(0);
   const [rraSub, setRraSub] = useState(0);
+  const [processoDuplicadoOpen, setProcessoDuplicadoOpen] = useState(false);
+  const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
+  const skipDuplicateCheckRef = useRef(false);
+
+  const handleProcessoBlur = () => {
+    if (processo.trim() && !isNumeroProcessoCompleto(processo)) {
+      setProcessoInvalidoOpen(true);
+    }
+  };
 
   const preencherFormulario = (draft: AjusteAnualEditDraft) => {
+    skipDuplicateCheckRef.current = true;
     setProcesso(draft.processo);
     setNomeAutor(draft.nomeAutor);
     setTipoDeclaracao(draft.tipoDeclaracao);
@@ -78,7 +77,9 @@ const AjusteAnualPage = () => {
     setDeducoesLegais(draft.dados.deducoes_legais || 0);
     setDeducoesIncentivo(draft.dados.deducoes_incentivo || 0);
     setImpostoRRA(draft.dados.imposto_rra || 0);
-    setAjusteAnual(draft.dados.ajuste_anual || 0);
+    const saldoOriginal = draft.dados.ajuste_anual || 0;
+    setTipoSaldoOriginal(saldoOriginal < 0 ? 'RESTITUIR' : 'PAGAR');
+    setAjusteAnualMagnitude(Math.abs(saldoOriginal));
     setImpostoPago(draft.dados.imposto_pago || 0);
     setRendSomar(draft.dados.rend_somar || 0);
     setRendSub(draft.dados.rend_sub || 0);
@@ -121,6 +122,32 @@ const AjusteAnualPage = () => {
     }
   }, [idParam, location.state]);
 
+  // Se o número do processo digitado já tem declaração(ões) registrada(s), o cadastro
+  // deve continuar na Retificação (para não duplicar o mesmo processo no banco de dados).
+  useEffect(() => {
+    if (skipDuplicateCheckRef.current) return;
+    if (idParam) return;
+    if (!declaracoesDoProcesso || declaracoesDoProcesso.length === 0) return;
+    setProcessoDuplicadoOpen(true);
+  }, [declaracoesDoProcesso, idParam]);
+
+  const handleConfirmarProcessoDuplicado = () => {
+    if (!declaracoesDoProcesso || declaracoesDoProcesso.length === 0) return;
+    const periodos = [...declaracoesDoProcesso]
+      .sort((a, b) => a.ano_calendario - b.ano_calendario)
+      .map((row) => row.dados_entrada as unknown as DadosEntradaAjusteAnual);
+    const draft: DadosEntradaRetificacao = {
+      numero_processo: processo,
+      nome_autor: declaracoesDoProcesso[0].nome_autor,
+      data_ajuizamento: '',
+      tipo_correcao: 'SEM_CORRECAO',
+      percentual_honorarios: 0,
+      periodos,
+    };
+    setProcessoDuplicadoOpen(false);
+    navigate('/calculo/retificacao', { state: { editDraft: draft } });
+  };
+
   const isCompleta = tipoDeclaracao === 'completa';
   const toolEnabled = isAdmin || ((settings?.system_enabled ?? true) && (settings?.ajuste_anual_enabled ?? true));
 
@@ -149,6 +176,10 @@ const AjusteAnualPage = () => {
       toast({ title: 'Erro', description: 'Informe o número do processo.', variant: 'destructive' });
       return;
     }
+    if (!isNumeroProcessoCompleto(processo)) {
+      setProcessoInvalidoOpen(true);
+      return;
+    }
     if (!nomeAutor.trim()) {
       toast({ title: 'Erro', description: 'Informe o nome do autor.', variant: 'destructive' });
       return;
@@ -167,6 +198,8 @@ const AjusteAnualPage = () => {
       toast({ title: 'Erro', description: 'Parâmetros não encontrados para o ano selecionado.', variant: 'destructive' });
       return;
     }
+
+    const ajusteAnual = tipoSaldoOriginal === 'RESTITUIR' ? -Math.abs(ajusteAnualMagnitude) : Math.abs(ajusteAnualMagnitude);
 
     const dados: DadosEntradaAjusteAnual = {
       tipo_declaracao: tipoDeclaracao,
@@ -233,7 +266,17 @@ const AjusteAnualPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Número do Processo *</Label>
-              <Input value={processo} onChange={(e) => setProcesso(e.target.value)} placeholder="0000000-00.0000.0.00.0000" />
+              <Input
+                value={processo}
+                onChange={(e) => {
+                  skipDuplicateCheckRef.current = false;
+                  setProcesso(formatNumeroProcesso(e.target.value));
+                }}
+                onBlur={handleProcessoBlur}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                placeholder="0000000-00.0000.0.00.0000"
+                inputMode="numeric"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Nome do Autor *</Label>
@@ -281,7 +324,25 @@ const AjusteAnualPage = () => {
             <CampoMonetario label="Deduções de Incentivo" value={deducoesIncentivo} onChange={setDeducoesIncentivo} disabled={!isCompleta} />
             <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} />
             <CampoMonetario label="Imposto Devido RRA" value={impostoRRA} onChange={setImpostoRRA} />
-            <CampoMonetario label="Ajuste Anual" value={ajusteAnual} onChange={setAjusteAnual} />
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Saldo do Ajuste Anual (declaração original)</Label>
+              <div className="flex gap-2">
+                <Input
+                  inputMode="numeric"
+                  value={currencyToMaskedDisplay(ajusteAnualMagnitude)}
+                  onChange={(e) => setAjusteAnualMagnitude(parseMaskedCurrency(e.target.value))}
+                  placeholder="0,00"
+                  className="font-mono"
+                />
+                <Select value={tipoSaldoOriginal} onValueChange={(v) => setTipoSaldoOriginal(v as 'PAGAR' | 'RESTITUIR')}>
+                  <SelectTrigger className="w-40 shrink-0"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAGAR">A pagar</SelectItem>
+                    <SelectItem value="RESTITUIR">A restituir</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -300,12 +361,40 @@ const AjusteAnualPage = () => {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end pb-[130px]">
           <Button onClick={handleSimular} size="lg" className="px-8">
-            Simular Cálculo
+            Simular Declaração
           </Button>
         </div>
       </div>
+
+      <Dialog open={processoDuplicadoOpen} onOpenChange={setProcessoDuplicadoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Processo já registrado</DialogTitle>
+            <DialogDescription>
+              Este número de processo já foi registrado no sistema, portanto, os dados serão carregados para o Cálculo de Retificação de IRPF.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleConfirmarProcessoDuplicado}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={processoInvalidoOpen} onOpenChange={setProcessoInvalidoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Número de processo inválido</DialogTitle>
+            <DialogDescription>
+              O número do processo informado está incompleto ou não segue o padrão do e-Proc (NNNNNNN-DD.AAAA.J.TR.OOOO). Insira um número de processo válido para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setProcessoInvalidoOpen(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

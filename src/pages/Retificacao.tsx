@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useParametrosIR, useFaixasIRAll, useCalculo } from '@/hooks/useIRData';
+import { useParametrosIR, useFaixasIRAll, useCalculo, useCalculosPorProcesso } from '@/hooks/useIRData';
 import { useRetificacaoContexto } from '@/hooks/useRetificacaoContexto';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,28 +22,14 @@ import {
   type TipoCorrecao,
   type TipoLimitaAjuiz,
 } from '@/services/calculoIRPF';
+import { CampoMonetario } from '@/components/CampoMonetario';
+import { currencyToMaskedDisplay, formatNumeroProcesso, isNumeroProcessoCompleto, parseMaskedCurrency } from '@/lib/masks';
 
 const RETIFICACAO_EDIT_DRAFT_KEY = 'retificacao-edit-draft';
 
 type RetificacaoDraft = DadosEntradaRetificacao;
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) => (
-  <div className="space-y-1.5">
-    <Label className="text-sm font-medium">{label}</Label>
-    <Input
-      type="number"
-      min="0"
-      step="0.01"
-      value={value !== undefined ? value : ''}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      placeholder="0,00"
-      disabled={disabled}
-      className="font-mono"
-    />
-  </div>
-);
 
 const defaultAlteracao = (): AlteracaoRetificacao => ({
   id: makeId(),
@@ -95,6 +81,16 @@ const RetificacaoPage = () => {
   const { data: calculoAnterior } = useCalculo(idParam);
 
   const [processo, setProcesso] = useState('');
+  const { data: declaracoesAjuste } = useCalculosPorProcesso(processo, 'ajuste_anual');
+  const { data: retificacoesAnteriores } = useCalculosPorProcesso(processo, 'retificacao');
+  const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
+
+  const handleProcessoBlur = () => {
+    if (processo.trim() && !isNumeroProcessoCompleto(processo)) {
+      setProcessoInvalidoOpen(true);
+    }
+  };
+
   const [nomeAutor, setNomeAutor] = useState('');
   const [dataAjuizamento, setDataAjuizamento] = useState('');
   const [tipoCorrecao, setTipoCorrecao] = useState<TipoCorrecao>('SEM_CORRECAO');
@@ -109,12 +105,14 @@ const RetificacaoPage = () => {
   const [periodoDialogOpen, setPeriodoDialogOpen] = useState(false);
   const [editingPeriodoIndex, setEditingPeriodoIndex] = useState<number | null>(null);
   const [periodoDraft, setPeriodoDraft] = useState<DadosEntradaAjusteAnual>(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
+  const [tipoSaldoPeriodo, setTipoSaldoPeriodo] = useState<'PAGAR' | 'RESTITUIR'>('PAGAR');
 
   const [alteracaoDialogOpen, setAlteracaoDialogOpen] = useState(false);
   const [editingAlteracaoId, setEditingAlteracaoId] = useState<string | null>(null);
   const [alteracaoDraft, setAlteracaoDraft] = useState<AlteracaoRetificacao>(defaultAlteracao());
 
   const toolEnabled = isAdmin || ((settings?.system_enabled ?? true) && (settings?.retificacao_enabled ?? false));
+  const anosOptions = useMemo(() => parametros?.map((p) => p.ano_calendario) ?? [], [parametros]);
 
   const preencherFormulario = (draft: DadosEntradaRetificacao) => {
     setProcesso(draft.numero_processo);
@@ -152,6 +150,41 @@ const RetificacaoPage = () => {
     }
   }, [idParam, location.state, parametros]);
 
+  // Ao digitar um número de processo que já tem dados cadastrados, preenche
+  // automaticamente todas as seções (Dados do Processo, Correção e honorários,
+  // Dados de Declarações Anuais) — sem exigir confirmação, diferente do Ajuste
+  // Anual, onde o mesmo processo não pode ser duplicado.
+  const autoFillProcessoRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (idParam) return;
+
+    const temAjuste = !!declaracoesAjuste && declaracoesAjuste.length > 0;
+    const temRetificacao = !!retificacoesAnteriores && retificacoesAnteriores.length > 0;
+    if (!temAjuste && !temRetificacao) return;
+    if (autoFillProcessoRef.current === processo) return;
+    autoFillProcessoRef.current = processo;
+
+    if (temRetificacao) {
+      // Já existe uma Retificação anterior para este processo: carrega todos os dados dela.
+      const entry = retificacoesAnteriores[0].dados_entrada as unknown as DadosEntradaRetificacao;
+      preencherFormulario(entry);
+    } else {
+      // Só existem declarações de Ajuste Anual: preenche autor e períodos com elas.
+      if (!nomeAutor.trim()) setNomeAutor(declaracoesAjuste[0].nome_autor);
+      const periodosEncontrados = [...declaracoesAjuste]
+        .sort((a, b) => a.ano_calendario - b.ano_calendario)
+        .map((row) => row.dados_entrada as unknown as DadosEntradaAjusteAnual);
+      setPeriodos(periodosEncontrados);
+    }
+
+    toast({
+      title: 'Dados do processo carregados',
+      description: 'Já havia declarações cadastradas para este processo — os dados foram preenchidos automaticamente.',
+      duration: 4000,
+    });
+  }, [declaracoesAjuste, retificacoesAnteriores, idParam, processo]);
+
   if (!toolEnabled) {
     return (
       <div className="min-h-screen bg-background">
@@ -172,17 +205,17 @@ const RetificacaoPage = () => {
     );
   }
 
-  const anosOptions = useMemo(() => parametros?.map((p) => p.ano_calendario) ?? [], [parametros]);
-
   const openNovoPeriodo = () => {
     setEditingPeriodoIndex(null);
     setPeriodoDraft(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
+    setTipoSaldoPeriodo('PAGAR');
     setPeriodoDialogOpen(true);
   };
 
   const openEditarPeriodo = (index: number) => {
     setEditingPeriodoIndex(index);
     setPeriodoDraft({ ...periodos[index], alteracoes: periodos[index].alteracoes ?? [] });
+    setTipoSaldoPeriodo(periodos[index].ajuste_anual < 0 ? 'RESTITUIR' : 'PAGAR');
     setPeriodoDialogOpen(true);
   };
 
@@ -260,6 +293,10 @@ const RetificacaoPage = () => {
   const handleSimular = () => {
     if (!processo.trim()) {
       toast({ title: 'Erro', description: 'Informe o número do processo.', variant: 'destructive' });
+      return;
+    }
+    if (!isNumeroProcessoCompleto(processo)) {
+      setProcessoInvalidoOpen(true);
       return;
     }
     if (!nomeAutor.trim()) {
@@ -341,7 +378,14 @@ const RetificacaoPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Número do processo *</Label>
-              <Input value={processo} onChange={(e) => setProcesso(e.target.value)} placeholder="0000000-00.0000.0.00.0000" />
+              <Input
+                value={processo}
+                onChange={(e) => setProcesso(formatNumeroProcesso(e.target.value))}
+                onBlur={handleProcessoBlur}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                placeholder="0000000-00.0000.0.00.0000"
+                inputMode="numeric"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Nome do autor *</Label>
@@ -438,9 +482,9 @@ const RetificacaoPage = () => {
                   <tr key={`${periodo.ano_calendario}-${index}`} className="border-b even:bg-slate-50">
                     <td className="px-4 py-3">{periodo.ano_calendario}</td>
                     <td className="px-4 py-3">{periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}</td>
-                    <td className="px-4 py-3 text-right font-mono">R$ {periodo.rendimentos_tributaveis.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                    <td className="px-4 py-3 text-right font-mono">R$ {periodo.imposto_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                    <td className="px-4 py-3 text-right font-mono">R$ {periodo.ajuste_anual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.rendimentos_tributaveis.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.imposto_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.ajuste_anual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     <td className="px-4 py-3 text-center">{(periodo.alteracoes ?? []).length}</td>
                     <td className="px-4 py-3 text-center space-x-2">
                       <Button size="sm" variant="outline" onClick={() => openEditarPeriodo(index)} className="gap-2">
@@ -462,14 +506,14 @@ const RetificacaoPage = () => {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end pb-[130px]">
           <Button onClick={handleSimular} size="lg" className="px-8">
             Simular Retificação
           </Button>
         </div>
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
-          <DialogContent className="max-w-3xl h-[85vh] max-h-[85vh] overflow-hidden">
+          <DialogContent className="max-w-4xl h-[85vh] max-h-[85vh] overflow-hidden">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-0 py-0">
                 <DialogHeader>
@@ -520,7 +564,40 @@ const RetificacaoPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
                   <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} />
                   <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} />
-                  <CampoMonetario label="Valor do ajuste anual" value={periodoDraft.ajuste_anual} onChange={(v) => setPeriodoDraft({ ...periodoDraft, ajuste_anual: v })} />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Saldo do ajuste anual (declaração original)</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={currencyToMaskedDisplay(Math.abs(periodoDraft.ajuste_anual))}
+                      onChange={(e) => {
+                        const magnitude = parseMaskedCurrency(e.target.value);
+                        setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipoSaldoPeriodo === 'RESTITUIR' ? -magnitude : magnitude });
+                      }}
+                      placeholder="0,00"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Tipo do saldo do ajuste anual</Label>
+                    <Select
+                      value={tipoSaldoPeriodo}
+                      onValueChange={(v) => {
+                        const tipo = v as 'PAGAR' | 'RESTITUIR';
+                        setTipoSaldoPeriodo(tipo);
+                        const magnitude = Math.abs(periodoDraft.ajuste_anual);
+                        setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipo === 'RESTITUIR' ? -magnitude : magnitude });
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PAGAR">A pagar</SelectItem>
+                        <SelectItem value="RESTITUIR">A restituir</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="mt-6 border-t pt-4">
@@ -647,6 +724,20 @@ const RetificacaoPage = () => {
                 <Button onClick={handleSalvarAlteracao}>Salvar</Button>
               </DialogFooter>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={processoInvalidoOpen} onOpenChange={setProcessoInvalidoOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Número de processo inválido</DialogTitle>
+              <DialogDescription>
+                O número do processo informado está incompleto ou não segue o padrão do e-Proc (NNNNNNN-DD.AAAA.J.TR.OOOO). Insira um número de processo válido para continuar.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setProcessoInvalidoOpen(false)}>OK</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

@@ -120,7 +120,7 @@ export function gerarRelatorioPDF(
     if (r.linhas_ad.length > 0) {
       autoTable(doc, {
         startY: y,
-        head: [['Tipo', 'Início Correção', 'Diferença Devida', 'Coef. Atualização', 'Diferença Atualizada', 'Juros %', 'Juros Valor', 'Valor Atualizado']],
+        head: [['Tipo', 'Início Correção', 'Diferença Devida', 'Coef. Atualização', 'Diferença Atualizada', 'Juros/Selic %', 'Juros Valor', 'Valor Atualizado']],
         body: [
           ['PRINCIPAL', formatDateBR(r.data_dist), formatCurrency(r.total_principal_ad), formatFator(r.fator_cm_fim), formatCurrency(r.principal_ad), formatPctDecimal(r.fator_juros_fim), formatCurrency(r.juros_ad), formatCurrency(r.principal_juros_ad)],
           ['JUROS', formatDateBR(r.data_dist), formatCurrency(r.total_juros_ad), formatFator(1), formatCurrency(r.total_juros_ad), '—', formatCurrency(r.total_juros_ad), formatCurrency(r.total_juros_ad)],
@@ -145,7 +145,7 @@ export function gerarRelatorioPDF(
       doc.text('Cálculo das parcelas devidas — posteriores à data da distribuição', 14, y); y += 5;
       autoTable(doc, {
         startY: y,
-        head: [['Ano Calendário', 'Início Correção', 'Diferença Devida', 'Coef. Atualização', 'Diferença Atualizada', 'Juros %', 'Juros Valor', 'Valor Atualizado']],
+        head: [['Ano Calendário', 'Início Correção', 'Diferença Devida', 'Coef. Atualização', 'Diferença Atualizada', 'Juros/Selic %', 'Juros Valor', 'Valor Atualizado']],
         body: [
           ...r.linhas_pos.map((l) => [
             String(l.ano_calendario),
@@ -218,7 +218,7 @@ export function gerarRelatorioPDF(
 
       autoTable(doc, {
         startY: y,
-        head: [['Ano Calendário', 'Início Correção', 'Diferença Devida', 'Coef. Atualização', 'Diferença Atualizada', 'Juros %', 'Juros Valor', 'Valor Atualizado']],
+        head: [['Ano Calendário', 'Início Correção', 'Diferença Devida', 'Coef. Atualização', 'Diferença Atualizada', 'Juros/Selic %', 'Juros Valor', 'Valor Atualizado']],
         body: r.linhas_ad.map((l) => [
           String(l.ano_calendario),
           formatDateBR(l.inicio_correcao),
@@ -339,7 +339,8 @@ export function gerarRelatorioPDF(
           ['(*) Imposto devido RRA (+)', formatCurrency(periodo.resultado.imposto_rra_recalc)],
           ['Imposto devido (=)', formatCurrency(periodo.resultado.imposto_devido_recalc)],
           ['(*) Total do imposto pago (-)', formatCurrency(periodo.resultado.alteracoes.imposto_pago.recalculado)],
-          [periodo.resultado.imposto_a_pagar >= 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', formatCurrency(Math.abs(periodo.resultado.imposto_a_pagar))],
+          [periodo.resultado.imposto_a_pagar < 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', formatCurrency(Math.abs(periodo.resultado.imposto_a_pagar))],
+          [`Ajuste anual (declaração original) — ${(periodoInput.ajuste_anual ?? 0) < 0 ? 'a restituir' : 'a pagar'}`, formatCurrency(Math.abs(periodoInput.ajuste_anual ?? 0))],
           ['Total devido', formatCurrency(periodo.valor_devido)],
         ];
 

@@ -416,6 +416,37 @@ function buscarValorPercentual(taxas: TaxaHistorica[], idIndice: string | null, 
   return taxa ? Number(taxa.valor_percentual) : 0;
 }
 
+// Soma direta dos valores mensais (valor_percentual) de um índice de juros
+// entre duas datas (mês de início e mês de fim, ambos inclusive).
+//
+// Por que não usar fator_acumulado aqui: para índices de natureza JUROS
+// (SELIC, POUPANCA, PERCENTUAL), o fator_acumulado é uma SOMA cumulativa
+// dos fatores mensais (1 + taxa/100) desde o início da série (ver
+// recalculate_taxas_historicas em supabase/schema.sql) — não um produto.
+// Dividir dois valores de fator_acumulado (fim / início) só faz sentido
+// matematicamente para uma série acumulada por PRODUTO (juros compostos),
+// que é o caso dos índices de correção monetária (INPC/IPCA/UFIR/TR), não
+// dos índices de juros. Para juros, a soma direta dos valores mensais no
+// período reproduz a mesma metodologia usada na planilha oficial da DCAL.
+function somarValorPercentualNoPeriodo(
+  taxas: TaxaHistorica[],
+  idIndice: string | null,
+  dataInicio: string,
+  dataFim: string
+): number {
+  if (!idIndice) return 0;
+  const inicio = primeiroDiaDoMes(dataInicio);
+  const fim = primeiroDiaDoMes(dataFim);
+  if (parseDate(fim).getTime() < parseDate(inicio).getTime()) return 0;
+  return taxas
+    .filter((tx) => {
+      if (tx.id_indice !== idIndice) return false;
+      const mes = primeiroDiaDoMes(tx.data_referencia);
+      return mes >= inicio && mes <= fim;
+    })
+    .reduce((soma, tx) => soma + Number(tx.valor_percentual), 0);
+}
+
 // ----- cálculo principal ----------------------------------------------------
 
 export function calcularRetificacao(
@@ -527,14 +558,23 @@ export function calcularRetificacao(
         // Parte IV — até a distribuição
         fator_cm = round8(cm_dist / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        fator_juros = round8(juros_dist / juros_aux);
+        // Juros somados mês a mês entre INICIO_CORRECAO e DATA_DIST (ver
+        // somarValorPercentualNoPeriodo acima — não é um fator composto).
+        fator_juros = round8(1 + somarValorPercentualNoPeriodo(
+          ctx.taxas, regraInicio?.id_indice_juros ?? null, inicio_correcao, data_dist
+        ) / 100);
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
       } else {
         // Parte VII (CM) e Parte IX (CM novamente, juros entre INICIO_CORRECAO e FIM)
         fator_cm = round8(cm_fim / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        fator_juros = round8((juros_fim / juros_aux) + 0.01);
+        // Idem: soma direta dos juros mensais entre INICIO_CORRECAO e DATA_FIM.
+        fator_juros = dados.data_fim
+          ? round8(1 + somarValorPercentualNoPeriodo(
+              ctx.taxas, regraInicio?.id_indice_juros ?? null, inicio_correcao, dados.data_fim
+            ) / 100 + 0.01)
+          : round8(1.01);
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
       }
@@ -583,7 +623,15 @@ export function calcularRetificacao(
   // Parte VI — atualização do principal AD para DATA_FIM
   const fator_cm_fim = cm_dist > 0 ? round8(cm_fim / cm_dist) : 1;
   const principal_ad = round2(total_principal_ad * fator_cm_fim);
-  const fator_juros_fim = round8(juros_fim / juros_dist);
+  // Juros somados mês a mês entre DATA_DIST e DATA_FIM (mesma correção da
+  // Parte IV/VII acima — soma direta, não fator_acumulado dividido).
+  let fator_juros_fim = 1;
+  if (atualiza_calculo && id_template && dados.data_fim) {
+    const regraParaJurosFim = buscarRegraVigente(ctx.regras, id_template, dados.data_fim);
+    fator_juros_fim = round8(1 + somarValorPercentualNoPeriodo(
+      ctx.taxas, regraParaJurosFim?.id_indice_juros ?? null, data_dist, dados.data_fim
+    ) / 100);
+  }
   const juros_ad_val = round2(principal_ad * fator_juros_fim);
   const principal_juros_ad = round2(principal_ad + juros_ad_val);
 
