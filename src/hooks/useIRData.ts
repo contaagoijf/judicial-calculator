@@ -65,3 +65,22 @@ export function useCalculo(id: string | null) {
     enabled: !!id,
   });
 }
+
+/** Busca cálculos já cadastrados para um número de processo (opcionalmente filtrando por tipo), para autopreenchimento/detecção de duplicidade. */
+export function useCalculosPorProcesso(numeroProcesso: string | null, tipoCalculo?: 'ajuste_anual' | 'retificacao') {
+  return useQuery({
+    queryKey: ['calculos_por_processo', numeroProcesso, tipoCalculo ?? 'all'],
+    queryFn: async () => {
+      if (!numeroProcesso) return [];
+      let query = supabase
+        .from('calculos')
+        .select('*')
+        .eq('numero_processo', numeroProcesso);
+      if (tipoCalculo) query = query.eq('tipo_calculo', tipoCalculo);
+      const { data, error } = await query.order('criado_em', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!numeroProcesso && numeroProcesso.replace(/\D/g, '').length === 20,
+  });
+}

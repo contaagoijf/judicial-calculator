@@ -1,31 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useParametrosIR, useFaixasIR, useCalculo } from '@/hooks/useIRData';
+import { useParametrosIR, useFaixasIR, useCalculo, useCalculosPorProcesso } from '@/hooks/useIRData';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
-import { calcularAjusteAnual, validarConsistenciaAjusteAnual, type DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
-
-const CampoMonetario = ({ label, value, onChange, disabled = false }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) => (
-  <div className="space-y-1.5">
-    <Label className="text-sm font-medium">{label}</Label>
-    <Input
-      type="number"
-      min="0"
-      step="0.01"
-      value={value || ''}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      placeholder="0,00"
-      disabled={disabled}
-      className="font-mono"
-    />
-  </div>
-);
+import { calcularAjusteAnual, validarConsistenciaAjusteAnual, type DadosEntradaAjusteAnual, type DadosEntradaRetificacao } from '@/services/calculoIRPF';
+import { CampoMonetario } from '@/components/CampoMonetario';
+import { currencyToMaskedDisplay, formatNumeroProcesso, isNumeroProcessoCompleto, parseMaskedCurrency } from '@/lib/masks';
 
 const AJUSTE_ANUAL_EDIT_DRAFT_KEY = 'ajuste-anual-edit-draft';
 
@@ -54,6 +41,7 @@ const AjusteAnualPage = () => {
   const [tipoDeclaracao, setTipoDeclaracao] = useState<'completa' | 'simplificada'>('completa');
   const [processo, setProcesso] = useState('');
   const [nomeAutor, setNomeAutor] = useState('');
+  const { data: declaracoesDoProcesso } = useCalculosPorProcesso(processo, 'ajuste_anual');
   const [rendTrib, setRendTrib] = useState(0);
   const [deducoesLegais, setDeducoesLegais] = useState(0);
   const [deducoesIncentivo, setDeducoesIncentivo] = useState(0);
@@ -69,8 +57,18 @@ const AjusteAnualPage = () => {
   const [incentivoSub, setIncentivoSub] = useState(0);
   const [rraSomar, setRraSomar] = useState(0);
   const [rraSub, setRraSub] = useState(0);
+  const [processoDuplicadoOpen, setProcessoDuplicadoOpen] = useState(false);
+  const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
+  const skipDuplicateCheckRef = useRef(false);
+
+  const handleProcessoBlur = () => {
+    if (processo.trim() && !isNumeroProcessoCompleto(processo)) {
+      setProcessoInvalidoOpen(true);
+    }
+  };
 
   const preencherFormulario = (draft: AjusteAnualEditDraft) => {
+    skipDuplicateCheckRef.current = true;
     setProcesso(draft.processo);
     setNomeAutor(draft.nomeAutor);
     setTipoDeclaracao(draft.tipoDeclaracao);
@@ -124,6 +122,32 @@ const AjusteAnualPage = () => {
     }
   }, [idParam, location.state]);
 
+  // Se o número do processo digitado já tem declaração(ões) registrada(s), o cadastro
+  // deve continuar na Retificação (para não duplicar o mesmo processo no banco de dados).
+  useEffect(() => {
+    if (skipDuplicateCheckRef.current) return;
+    if (idParam) return;
+    if (!declaracoesDoProcesso || declaracoesDoProcesso.length === 0) return;
+    setProcessoDuplicadoOpen(true);
+  }, [declaracoesDoProcesso, idParam]);
+
+  const handleConfirmarProcessoDuplicado = () => {
+    if (!declaracoesDoProcesso || declaracoesDoProcesso.length === 0) return;
+    const periodos = [...declaracoesDoProcesso]
+      .sort((a, b) => a.ano_calendario - b.ano_calendario)
+      .map((row) => row.dados_entrada as unknown as DadosEntradaAjusteAnual);
+    const draft: DadosEntradaRetificacao = {
+      numero_processo: processo,
+      nome_autor: declaracoesDoProcesso[0].nome_autor,
+      data_ajuizamento: '',
+      tipo_correcao: 'SEM_CORRECAO',
+      percentual_honorarios: 0,
+      periodos,
+    };
+    setProcessoDuplicadoOpen(false);
+    navigate('/calculo/retificacao', { state: { editDraft: draft } });
+  };
+
   const isCompleta = tipoDeclaracao === 'completa';
   const toolEnabled = isAdmin || ((settings?.system_enabled ?? true) && (settings?.ajuste_anual_enabled ?? true));
 
@@ -150,6 +174,10 @@ const AjusteAnualPage = () => {
   const handleSimular = () => {
     if (!processo.trim()) {
       toast({ title: 'Erro', description: 'Informe o número do processo.', variant: 'destructive' });
+      return;
+    }
+    if (!isNumeroProcessoCompleto(processo)) {
+      setProcessoInvalidoOpen(true);
       return;
     }
     if (!nomeAutor.trim()) {
@@ -238,7 +266,17 @@ const AjusteAnualPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Número do Processo *</Label>
-              <Input value={processo} onChange={(e) => setProcesso(e.target.value)} placeholder="0000000-00.0000.0.00.0000" />
+              <Input
+                value={processo}
+                onChange={(e) => {
+                  skipDuplicateCheckRef.current = false;
+                  setProcesso(formatNumeroProcesso(e.target.value));
+                }}
+                onBlur={handleProcessoBlur}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                placeholder="0000000-00.0000.0.00.0000"
+                inputMode="numeric"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Nome do Autor *</Label>
@@ -290,11 +328,9 @@ const AjusteAnualPage = () => {
               <Label className="text-sm font-medium">Saldo do Ajuste Anual (declaração original)</Label>
               <div className="flex gap-2">
                 <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={ajusteAnualMagnitude || ''}
-                  onChange={(e) => setAjusteAnualMagnitude(parseFloat(e.target.value) || 0)}
+                  inputMode="numeric"
+                  value={currencyToMaskedDisplay(ajusteAnualMagnitude)}
+                  onChange={(e) => setAjusteAnualMagnitude(parseMaskedCurrency(e.target.value))}
                   placeholder="0,00"
                   className="font-mono"
                 />
@@ -325,12 +361,40 @@ const AjusteAnualPage = () => {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end pb-[130px]">
           <Button onClick={handleSimular} size="lg" className="px-8">
-            Simular Cálculo
+            Simular Declaração
           </Button>
         </div>
       </div>
+
+      <Dialog open={processoDuplicadoOpen} onOpenChange={setProcessoDuplicadoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Processo já registrado</DialogTitle>
+            <DialogDescription>
+              Este número de processo já foi registrado no sistema, portanto, os dados serão carregados para o Cálculo de Retificação de IRPF.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleConfirmarProcessoDuplicado}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={processoInvalidoOpen} onOpenChange={setProcessoInvalidoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Número de processo inválido</DialogTitle>
+            <DialogDescription>
+              O número do processo informado está incompleto ou não segue o padrão do e-Proc (NNNNNNN-DD.AAAA.J.TR.OOOO). Insira um número de processo válido para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setProcessoInvalidoOpen(false)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
