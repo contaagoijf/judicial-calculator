@@ -35,7 +35,7 @@ const TabelaParcelas = ({ linhas, titulo }: { linhas: LinhaAnoRetificacao[]; tit
             <th className="border px-3 py-2 text-right">Diferença devida</th>
             <th className="border px-3 py-2 text-right">Coef. atualização</th>
             <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-            <th className="border px-3 py-2 text-right">Juros %</th>
+            <th className="border px-3 py-2 text-right">Juros/Selic %</th>
             <th className="border px-3 py-2 text-right">Juros valor</th>
             <th className="border px-3 py-2 text-right">Valor atualizado</th>
           </tr>
@@ -199,7 +199,7 @@ const ResultadoRetificacaoPage = () => {
                       <th className="border px-3 py-2 text-right">Diferença devida</th>
                       <th className="border px-3 py-2 text-right">Coef. atualização</th>
                       <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-                      <th className="border px-3 py-2 text-right">Juros %</th>
+                      <th className="border px-3 py-2 text-right">Juros/Selic %</th>
                       <th className="border px-3 py-2 text-right">Juros valor</th>
                       <th className="border px-3 py-2 text-right">Valor atualizado</th>
                     </tr>
@@ -239,7 +239,7 @@ const ResultadoRetificacaoPage = () => {
 
         <div className="grid gap-4 md:grid-cols-3 mb-6">
           <Card>
-            <CardHeader><CardTitle className="text-sm">Total das diferenças atualizadas</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Principal Devido</CardTitle></CardHeader>
             <CardContent><p className="text-xl font-mono">R$ {fmt(r.total_cm_dif_fim)}</p></CardContent>
           </Card>
           <Card>

@@ -157,7 +157,7 @@ const RelatorioPage = () => {
                       <th className="border px-3 py-2 text-right">Diferença devida</th>
                       <th className="border px-3 py-2 text-right">Coef. atualização</th>
                       <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-                      <th className="border px-3 py-2 text-right">Juros %</th>
+                      <th className="border px-3 py-2 text-right">Juros/Selic %</th>
                       <th className="border px-3 py-2 text-right">Juros valor</th>
                       <th className="border px-3 py-2 text-right">Valor atualizado</th>
                     </tr>
@@ -209,7 +209,7 @@ const RelatorioPage = () => {
                         <th className="border px-3 py-2 text-right">Diferença devida</th>
                         <th className="border px-3 py-2 text-right">Coef. atualização</th>
                         <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-                        <th className="border px-3 py-2 text-right">Juros %</th>
+                        <th className="border px-3 py-2 text-right">Juros/Selic %</th>
                         <th className="border px-3 py-2 text-right">Juros valor</th>
                         <th className="border px-3 py-2 text-right">Valor atualizado</th>
                       </tr>
@@ -302,7 +302,7 @@ const RelatorioPage = () => {
                         <th className="border px-3 py-2 text-right">Diferença devida</th>
                         <th className="border px-3 py-2 text-right">Coef. atualização</th>
                         <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-                        <th className="border px-3 py-2 text-right">Juros %</th>
+                        <th className="border px-3 py-2 text-right">Juros/Selic %</th>
                         <th className="border px-3 py-2 text-right">Juros valor</th>
                         <th className="border px-3 py-2 text-right">Valor atualizado</th>
                       </tr>
@@ -413,6 +413,7 @@ const RelatorioPage = () => {
                             ['Imposto devido (=)', p.resultado.imposto_devido_recalc],
                             ['(*) Total do imposto pago (-)', p.resultado.alteracoes.imposto_pago.recalculado],
                             [p.resultado.imposto_a_pagar < 0 ? 'Imposto a pagar (=)' : 'Imposto a restituir (=)', Math.abs(p.resultado.imposto_a_pagar)],
+                            [`Ajuste anual (declaração original) — ${(inputPeriodo?.ajuste_anual ?? 0) < 0 ? 'a restituir' : 'a pagar'}`, Math.abs(inputPeriodo?.ajuste_anual ?? 0)],
                             ['Total devido (valor)', p.valor_devido],
                           ].map(([label, val], idx) => (
                             <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
