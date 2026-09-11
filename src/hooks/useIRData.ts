@@ -84,3 +84,19 @@ export function useCalculosPorProcesso(numeroProcesso: string | null, tipoCalcul
     enabled: !!numeroProcesso && numeroProcesso.replace(/\D/g, '').length === 20,
   });
 }
+
+/** Busca todos os cálculos (Ajuste Anual e Retificação) já registrados, para a listagem geral de processos. */
+export function useTodosCalculos() {
+  return useQuery({
+    queryKey: ['calculos_todos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('calculos')
+        .select('*')
+        .order('numero_processo', { ascending: true })
+        .order('criado_em', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
