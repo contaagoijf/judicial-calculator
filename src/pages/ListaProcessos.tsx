@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AdminAuthDialog } from '@/components/AdminAuthDialog';
 import { supabase } from '@/integrations/supabase/externalClient';
 import type { DadosEntradaAjusteAnual, DadosEntradaRetificacao } from '@/services/calculoIRPF';
+import { formatNumeroProcesso, isNumeroProcessoCompleto } from '@/lib/masks';
 
 const fmt = (v: number | undefined) =>
   (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -50,6 +51,13 @@ const ListaProcessosPage = () => {
   const [buscaProcesso, setBuscaProcesso] = useState('');
   const [buscaAutor, setBuscaAutor] = useState('');
   const [buscaData, setBuscaData] = useState('');
+  const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
+
+  const handleBuscaProcessoBlur = () => {
+    if (buscaProcesso.trim() && !isNumeroProcessoCompleto(buscaProcesso)) {
+      setProcessoInvalidoOpen(true);
+    }
+  };
 
   const grupos = useMemo<GrupoProcesso[]>(() => {
     if (!calculos) return [];
@@ -154,8 +162,10 @@ const ListaProcessosPage = () => {
               <Label>Número do processo</Label>
               <Input
                 value={buscaProcesso}
-                onChange={(e) => setBuscaProcesso(e.target.value)}
+                onChange={(e) => setBuscaProcesso(formatNumeroProcesso(e.target.value))}
+                onBlur={handleBuscaProcessoBlur}
                 placeholder="0000000-00.0000.0.00.0000"
+                inputMode="numeric"
               />
             </div>
             <div className="space-y-1.5">
@@ -272,6 +282,20 @@ const ListaProcessosPage = () => {
             <Button variant="destructive" onClick={handleRemover} disabled={removendo}>
               {removendo ? 'Removendo...' : 'Remover'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={processoInvalidoOpen} onOpenChange={setProcessoInvalidoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Número de processo inválido</DialogTitle>
+            <DialogDescription>
+              O número do processo informado está incompleto ou não segue o padrão do e-Proc (NNNNNNN-DD.AAAA.J.TR.OOOO). Insira um número de processo válido para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setProcessoInvalidoOpen(false)}>OK</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
