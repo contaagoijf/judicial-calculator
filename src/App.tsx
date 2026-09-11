@@ -14,6 +14,7 @@ const ResultadoRetificacaoPage = lazy(() => import("./pages/ResultadoRetificacao
 const RelatorioPage = lazy(() => import("./pages/Relatorio.tsx"));
 const ConsultaPage = lazy(() => import("./pages/Consulta.tsx"));
 const ParametrosPage = lazy(() => import("./pages/Parametros.tsx"));
+const ListaProcessosPage = lazy(() => import("./pages/ListaProcessos.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/relatorio/:id" element={<RelatorioPage />} />
               <Route path="/consulta" element={<ConsultaPage />} />
               <Route path="/parametros" element={<ParametrosPage />} />
+              <Route path="/calculo/listaprocessos" element={<ListaProcessosPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

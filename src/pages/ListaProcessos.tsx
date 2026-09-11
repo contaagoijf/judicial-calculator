@@ -1,0 +1,209 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { useTodosCalculos } from '@/hooks/useIRData';
+import { useAuth } from '@/contexts/AuthContext';
+import { AdminAuthDialog } from '@/components/AdminAuthDialog';
+import { supabase } from '@/integrations/supabase/externalClient';
+import type { DadosEntradaAjusteAnual, DadosEntradaRetificacao } from '@/services/calculoIRPF';
+
+const fmt = (v: number | undefined) =>
+  (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtDate = (v: string | undefined) => {
+  if (!v) return '-';
+  const [y, m, d] = v.split('T')[0].split('-');
+  return `${d}/${m}/${y}`;
+};
+
+type Declaracao = {
+  id: string;
+  ano_calendario: number;
+  tipo_declaracao: string;
+  criado_em: string;
+  dados: DadosEntradaAjusteAnual;
+};
+
+type GrupoProcesso = {
+  numero_processo: string;
+  nome_autor: string;
+  data_ajuizamento?: string;
+  declaracoes: Declaracao[];
+};
+
+const ListaProcessosPage = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { isAdmin } = useAuth();
+  const { data: calculos, isLoading, refetch } = useTodosCalculos();
+  const [removerAlvo, setRemoverAlvo] = useState<{ id: string; label: string } | null>(null);
+  const [removendo, setRemovendo] = useState(false);
+
+  const grupos = useMemo<GrupoProcesso[]>(() => {
+    if (!calculos) return [];
+    const porProcesso = new Map<string, typeof calculos>();
+    for (const c of calculos) {
+      const lista = porProcesso.get(c.numero_processo) ?? [];
+      lista.push(c);
+      porProcesso.set(c.numero_processo, lista);
+    }
+
+    const resultado: GrupoProcesso[] = [];
+    for (const [numero_processo, rows] of porProcesso) {
+      const maisRecente = rows[0]; // já vem ordenado por criado_em desc
+      const retificacaoMaisRecente = rows.find((r) => r.tipo_calculo === 'retificacao');
+      const dataAjuizamento = retificacaoMaisRecente
+        ? (retificacaoMaisRecente.dados_entrada as unknown as DadosEntradaRetificacao).data_ajuizamento
+        : undefined;
+
+      const declaracoes: Declaracao[] = rows
+        .filter((r) => r.tipo_calculo === 'ajuste_anual')
+        .map((r) => ({
+          id: r.id,
+          ano_calendario: r.ano_calendario,
+          tipo_declaracao: r.tipo_declaracao,
+          criado_em: r.criado_em,
+          dados: r.dados_entrada as unknown as DadosEntradaAjusteAnual,
+        }))
+        .sort((a, b) => a.ano_calendario - b.ano_calendario || a.criado_em.localeCompare(b.criado_em));
+
+      resultado.push({
+        numero_processo,
+        nome_autor: maisRecente.nome_autor,
+        data_ajuizamento: dataAjuizamento,
+        declaracoes,
+      });
+    }
+
+    resultado.sort((a, b) => {
+      const ta = a.declaracoes[0]?.criado_em ?? '';
+      const tb = b.declaracoes[0]?.criado_em ?? '';
+      return tb.localeCompare(ta);
+    });
+    return resultado;
+  }, [calculos]);
+
+  const handleRemover = async () => {
+    if (!removerAlvo) return;
+    setRemovendo(true);
+    const { error } = await supabase.from('calculos').delete().eq('id', removerAlvo.id);
+    setRemovendo(false);
+    if (error) {
+      toast({
+        title: 'Não foi possível remover',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Declaração removida com sucesso' });
+      refetch();
+    }
+    setRemoverAlvo(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+          <AdminAuthDialog compact />
+        </div>
+
+        <h1 className="text-2xl font-bold mb-6">Processos: {grupos.length}</h1>
+
+        {isLoading && <p className="text-muted-foreground">Carregando...</p>}
+        {!isLoading && grupos.length === 0 && (
+          <p className="text-muted-foreground">Nenhum processo registrado.</p>
+        )}
+
+        {grupos.map((grupo) => (
+          <div key={grupo.numero_processo} className="form-section mb-8">
+            <h2 className="text-lg font-semibold mb-4 text-foreground">Dados do Processo</h2>
+            <div className="flex flex-wrap gap-x-8 gap-y-1 text-sm mb-6">
+              <span>Número do processo: <strong className="text-foreground">{grupo.numero_processo}</strong></span>
+              <span>Nome do autor: <strong className="text-foreground">{grupo.nome_autor}</strong></span>
+              <span>Data do ajuizamento: <strong className="text-foreground">{fmtDate(grupo.data_ajuizamento)}</strong></span>
+            </div>
+
+            <h3 className="text-base font-semibold mb-3 text-foreground">Dados de Declarações Anuais</h3>
+            <div className="overflow-x-auto rounded-xl border bg-card">
+              <table className="min-w-full text-sm">
+                <thead className="border-b bg-slate-100 text-left">
+                  <tr>
+                    <th className="px-4 py-3">Ano calendário</th>
+                    <th className="px-4 py-3">Tipo decl.</th>
+                    <th className="px-4 py-3 text-right">Rendimentos</th>
+                    <th className="px-4 py-3 text-right">Imposto pago</th>
+                    <th className="px-4 py-3 text-right">Ajuste anual</th>
+                    <th className="px-4 py-3 text-center">Alterações</th>
+                    <th className="px-4 py-3 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grupo.declaracoes.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-4 text-sm text-muted-foreground">Nenhuma declaração de Ajuste Anual cadastrada.</td>
+                    </tr>
+                  )}
+                  {grupo.declaracoes.map((d) => (
+                    <tr key={d.id} className="border-b even:bg-slate-50">
+                      <td className="px-4 py-3">{d.ano_calendario}</td>
+                      <td className="px-4 py-3">{d.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}</td>
+                      <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {fmt(d.dados.rendimentos_tributaveis)}</td>
+                      <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {fmt(d.dados.imposto_pago)}</td>
+                      <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {fmt(d.dados.ajuste_anual)}</td>
+                      <td className="px-4 py-3 text-center">{(d.dados.alteracoes ?? []).length}</td>
+                      <td className="px-4 py-3 text-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/calculo/ajuste-anual?id=${d.id}`)}
+                          className="gap-2"
+                        >
+                          <Edit className="w-4 h-4" /> Editar
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRemoverAlvo({ id: d.id, label: `${grupo.numero_processo} · ${d.ano_calendario}` })}
+                            className="text-destructive gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" /> Remover
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Dialog open={!!removerAlvo} onOpenChange={(open) => !open && setRemoverAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remover declaração</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja remover a declaração {removerAlvo?.label}? Essa ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoverAlvo(null)} disabled={removendo}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleRemover} disabled={removendo}>
+              {removendo ? 'Removendo...' : 'Remover'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default ListaProcessosPage;

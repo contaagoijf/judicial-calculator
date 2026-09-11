@@ -511,6 +511,8 @@ DROP POLICY IF EXISTS "Public read regras_subperiodo" ON public.regras_subperiod
 DROP POLICY IF EXISTS "Admin manage regras_subperiodo" ON public.regras_subperiodo;
 DROP POLICY IF EXISTS "Public read calculos" ON public.calculos;
 DROP POLICY IF EXISTS "Public insert calculos" ON public.calculos;
+DROP POLICY IF EXISTS "Admin manage calculos" ON public.calculos;
+DROP POLICY IF EXISTS "Admin delete calculos" ON public.calculos;
 DROP POLICY IF EXISTS "Public read system_settings" ON public.system_settings;
 DROP POLICY IF EXISTS "Admin manage system_settings" ON public.system_settings;
 DROP POLICY IF EXISTS "Admin read pending invites" ON public.admin_invites;
@@ -565,6 +567,12 @@ FOR SELECT USING (true);
 
 CREATE POLICY "Public insert calculos" ON public.calculos
 FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Admin manage calculos" ON public.calculos
+FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admin delete calculos" ON public.calculos
+FOR DELETE USING (public.is_admin());
 
 CREATE POLICY "Public read system_settings" ON public.system_settings
 FOR SELECT USING (true);
