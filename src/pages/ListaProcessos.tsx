@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Search, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,7 +45,6 @@ const ListaProcessosPage = () => {
   const [buscaProcesso, setBuscaProcesso] = useState('');
   const [buscaAutor, setBuscaAutor] = useState('');
   const [buscaData, setBuscaData] = useState('');
-  const [processosFiltrados, setProcessosFiltrados] = useState<string[] | null>(null);
   const [nenhumEncontradoOpen, setNenhumEncontradoOpen] = useState(false);
 
   const grupos = useMemo<GrupoProcesso[]>(() => {
@@ -92,37 +91,33 @@ const ListaProcessosPage = () => {
     return resultado;
   }, [calculos]);
 
-  const gruposExibidos = useMemo(
-    () => (processosFiltrados ? grupos.filter((g) => processosFiltrados.includes(g.numero_processo)) : grupos),
-    [grupos, processosFiltrados]
-  );
+  const termoProcesso = buscaProcesso.trim().toLowerCase();
+  const termoAutor = buscaAutor.trim().toLowerCase();
+  const termoData = buscaData.trim().toLowerCase();
+  const temFiltro = !!(termoProcesso || termoAutor || termoData);
 
-  const handleBuscar = () => {
-    const termoProcesso = buscaProcesso.trim().toLowerCase();
-    const termoAutor = buscaAutor.trim().toLowerCase();
-    const termoData = buscaData.trim().toLowerCase();
-
-    if (!termoProcesso && !termoAutor && !termoData) {
-      setProcessosFiltrados(null);
-      return;
-    }
-
-    const encontrados = grupos.filter((g) => {
+  // Aplica o filtro automaticamente a cada digitação/colagem em qualquer campo de busca.
+  const gruposExibidos = useMemo(() => {
+    if (!temFiltro) return grupos;
+    return grupos.filter((g) => {
       const matchProcesso = !!termoProcesso && g.numero_processo.toLowerCase().includes(termoProcesso);
       const matchAutor = !!termoAutor && g.nome_autor.toLowerCase().includes(termoAutor);
       const matchData = !!termoData && fmtDate(g.data_ajuizamento).toLowerCase().includes(termoData);
       return matchProcesso || matchAutor || matchData;
     });
+  }, [grupos, temFiltro, termoProcesso, termoAutor, termoData]);
 
-    if (encontrados.length === 0) {
+  const handleBuscar = () => {
+    if (temFiltro && gruposExibidos.length === 0) {
       setNenhumEncontradoOpen(true);
-    } else {
-      setProcessosFiltrados(encontrados.map((g) => g.numero_processo));
     }
+  };
 
+  const handleLimpar = () => {
     setBuscaProcesso('');
     setBuscaAutor('');
     setBuscaData('');
+    setNenhumEncontradoOpen(false);
   };
 
   const handleRemover = async () => {
@@ -153,18 +148,7 @@ const ListaProcessosPage = () => {
           <AdminAuthDialog compact />
         </div>
 
-        <div className="flex flex-wrap items-baseline gap-3 mb-6">
-          <h1 className="text-2xl font-bold">Processos: {gruposExibidos.length}</h1>
-          {processosFiltrados && (
-            <button
-              type="button"
-              onClick={() => setProcessosFiltrados(null)}
-              className="text-sm text-primary underline underline-offset-2"
-            >
-              Mostrar todos
-            </button>
-          )}
-        </div>
+        <h1 className="text-2xl font-bold mb-6">Processos: {gruposExibidos.length}</h1>
 
         <div className="form-section mb-8">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Busca</h2>
@@ -194,9 +178,14 @@ const ListaProcessosPage = () => {
               />
             </div>
           </div>
-          <Button onClick={handleBuscar} className="gap-2">
-            <Search className="w-4 h-4" /> Buscar
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleBuscar} className="gap-2">
+              <Search className="w-4 h-4" /> Buscar
+            </Button>
+            <Button onClick={handleLimpar} variant="outline" className="gap-2">
+              <X className="w-4 h-4" /> Limpar
+            </Button>
+          </div>
         </div>
 
         {isLoading && <p className="text-muted-foreground">Carregando...</p>}
