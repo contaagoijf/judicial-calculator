@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useTodosCalculos } from '@/hooks/useIRData';
@@ -40,6 +42,11 @@ const ListaProcessosPage = () => {
   const { data: calculos, isLoading, refetch } = useTodosCalculos();
   const [removerAlvo, setRemoverAlvo] = useState<{ id: string; label: string } | null>(null);
   const [removendo, setRemovendo] = useState(false);
+  const [buscaProcesso, setBuscaProcesso] = useState('');
+  const [buscaAutor, setBuscaAutor] = useState('');
+  const [buscaData, setBuscaData] = useState('');
+  const [processosFiltrados, setProcessosFiltrados] = useState<string[] | null>(null);
+  const [nenhumEncontradoOpen, setNenhumEncontradoOpen] = useState(false);
 
   const grupos = useMemo<GrupoProcesso[]>(() => {
     if (!calculos) return [];
@@ -85,6 +92,39 @@ const ListaProcessosPage = () => {
     return resultado;
   }, [calculos]);
 
+  const gruposExibidos = useMemo(
+    () => (processosFiltrados ? grupos.filter((g) => processosFiltrados.includes(g.numero_processo)) : grupos),
+    [grupos, processosFiltrados]
+  );
+
+  const handleBuscar = () => {
+    const termoProcesso = buscaProcesso.trim().toLowerCase();
+    const termoAutor = buscaAutor.trim().toLowerCase();
+    const termoData = buscaData.trim().toLowerCase();
+
+    if (!termoProcesso && !termoAutor && !termoData) {
+      setProcessosFiltrados(null);
+      return;
+    }
+
+    const encontrados = grupos.filter((g) => {
+      const matchProcesso = !!termoProcesso && g.numero_processo.toLowerCase().includes(termoProcesso);
+      const matchAutor = !!termoAutor && g.nome_autor.toLowerCase().includes(termoAutor);
+      const matchData = !!termoData && fmtDate(g.data_ajuizamento).toLowerCase().includes(termoData);
+      return matchProcesso || matchAutor || matchData;
+    });
+
+    if (encontrados.length === 0) {
+      setNenhumEncontradoOpen(true);
+    } else {
+      setProcessosFiltrados(encontrados.map((g) => g.numero_processo));
+    }
+
+    setBuscaProcesso('');
+    setBuscaAutor('');
+    setBuscaData('');
+  };
+
   const handleRemover = async () => {
     if (!removerAlvo) return;
     setRemovendo(true);
@@ -113,14 +153,58 @@ const ListaProcessosPage = () => {
           <AdminAuthDialog compact />
         </div>
 
-        <h1 className="text-2xl font-bold mb-6">Processos: {grupos.length}</h1>
+        <div className="flex flex-wrap items-baseline gap-3 mb-6">
+          <h1 className="text-2xl font-bold">Processos: {gruposExibidos.length}</h1>
+          {processosFiltrados && (
+            <button
+              type="button"
+              onClick={() => setProcessosFiltrados(null)}
+              className="text-sm text-primary underline underline-offset-2"
+            >
+              Mostrar todos
+            </button>
+          )}
+        </div>
+
+        <div className="form-section mb-8">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Busca</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="space-y-1.5">
+              <Label>Número do processo</Label>
+              <Input
+                value={buscaProcesso}
+                onChange={(e) => setBuscaProcesso(e.target.value)}
+                placeholder="0000000-00.0000.0.00.0000"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Nome do autor</Label>
+              <Input
+                value={buscaAutor}
+                onChange={(e) => setBuscaAutor(e.target.value)}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Data do ajuizamento</Label>
+              <Input
+                value={buscaData}
+                onChange={(e) => setBuscaData(e.target.value)}
+                placeholder="dd/mm/aaaa"
+              />
+            </div>
+          </div>
+          <Button onClick={handleBuscar} className="gap-2">
+            <Search className="w-4 h-4" /> Buscar
+          </Button>
+        </div>
 
         {isLoading && <p className="text-muted-foreground">Carregando...</p>}
-        {!isLoading && grupos.length === 0 && (
+        {!isLoading && gruposExibidos.length === 0 && (
           <p className="text-muted-foreground">Nenhum processo registrado.</p>
         )}
 
-        {grupos.map((grupo) => (
+        {gruposExibidos.map((grupo) => (
           <div key={grupo.numero_processo} className="form-section mb-8">
             <h2 className="text-lg font-semibold mb-4 text-foreground">Dados do Processo</h2>
             <div className="flex flex-wrap gap-x-8 gap-y-1 text-sm mb-6">
@@ -199,6 +283,20 @@ const ListaProcessosPage = () => {
             <Button variant="destructive" onClick={handleRemover} disabled={removendo}>
               {removendo ? 'Removendo...' : 'Remover'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={nenhumEncontradoOpen} onOpenChange={setNenhumEncontradoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nenhum Processo encontrado</DialogTitle>
+            <DialogDescription>
+              Nenhum Processo encontrado com as informações inseridas.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setNenhumEncontradoOpen(false)}>OK</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
