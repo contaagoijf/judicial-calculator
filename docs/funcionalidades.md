@@ -172,6 +172,61 @@ autorização para publicar em produção (ainda não commitado).**
 
 - **Migração do banco de produção da regra UFIR/SELIC** (ver 04/09/2026) —
   reconfirmada como pendente durante o teste em produção de 09/09/2026.
+  **Resolvida em 10/09/2026**, ver seção correspondente abaixo.
 - **Publicação em produção** de todas as correções feitas em ambiente local
   desde 09/09/2026 — depende de autorização/acesso ao repositório de
-  produção.
+  produção. **Resolvida em 10 e 11/09/2026**, com a publicação de todas as
+  correções e novas telas descritas nas seções seguintes.
+
+## 10/09/2026 — Aplicação da correção de juros SELIC/Poupança no banco de produção
+
+**Corrigido, publicado e validado em produção.**
+
+- Aplicada manualmente, via SQL Editor do Supabase, a migração documentada em
+  `docs/supabase-migracao.md` (pendente desde 04/09/2026): ajuste da regra de
+  transição UFIR → SELIC de janeiro de 1996 nos templates de correção do
+  banco de produção.
+- Antes de aplicar, foi feito um backup rápido (cópia da tabela
+  `regras_subperiodo` com Row Level Security ativado, sem políticas — acesso
+  bloqueado para as chaves públicas do sistema).
+- Validado o resultado direto em produção: o percentual de Juros/Selic de um
+  caso real, que antes da correção calculava 6,77%, passou a calcular
+  438,24%, consistente com a ordem de grandeza esperada (comparado
+  anteriormente com a planilha da DCAL — ver 04/09/2026).
+- Scripts avulsos de backup e migração manual do banco passaram a ficar fora
+  do controle de versão (pasta local, não versionada), por não fazerem parte
+  do código do sistema.
+
+## 11/09/2026 — Tela de listagem de todos os processos, com busca
+
+**Implementado, testado e publicado em produção.**
+
+- Nova página **`/calculo/listaprocessos`**, mostrando a quantidade total de
+  processos cadastrados ("Processos: N") e, para cada processo, os dados
+  gerais (número, nome do autor, data do ajuizamento) e a tabela de
+  Declarações Anuais cadastradas (ano-calendário, tipo de declaração,
+  rendimentos, imposto pago, ajuste anual, alterações), com botão "Editar"
+  (leva ao Ajuste Anual já preenchido, disponível para qualquer usuário) e
+  "Remover" (visível só para administradores logados).
+- Adicionada uma seção de busca, com campos para número do processo, nome do
+  autor e data do ajuizamento — o filtro é aplicado **automaticamente**
+  enquanto o usuário digita ou cola em qualquer um dos campos, sem precisar
+  clicar em nenhum botão; um botão "Limpar" reseta os três campos de uma vez
+  e volta a mostrar a lista completa.
+- Quando o filtro não encontra nenhum processo, a mensagem "Nenhum Processo
+  encontrado com as informações inseridas" aparece no lugar da lista.
+- O campo de busca "Número do processo" usa a mesma máscara e validação da
+  tela de Ajuste Anual (padrão do e-Proc `NNNNNNN-DD.AAAA.J.TR.OOOO`, com o
+  mesmo alerta de "Número de processo inválido" se o número ficar
+  incompleto); o campo "Data do ajuizamento" aplica a máscara `dd/mm/aaaa`
+  automaticamente enquanto o usuário digita.
+
+### Pendência nova: permissão de remoção no banco de produção
+
+- O botão "Remover" depende de uma política de acesso nova (UPDATE/DELETE)
+  na tabela `calculos`, já criada no repositório
+  (`supabase/migrations/20260911000000_admin_manage_calculos.sql`) — até
+  hoje só existiam políticas de leitura e inserção pública para essa tabela.
+  **Ainda não aplicada no banco de produção**; enquanto isso não for feito
+  manualmente por um administrador (mesmo processo usado na migração de
+  10/09/2026), o botão "Remover" retorna erro de permissão.
