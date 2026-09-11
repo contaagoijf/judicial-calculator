@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Search, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,11 @@ const fmtDate = (v: string | undefined) => {
   if (!v) return '-';
   const [y, m, d] = v.split('T')[0].split('-');
   return `${d}/${m}/${y}`;
+};
+const maskData = (v: string) => {
+  const digitos = v.replace(/\D/g, '').slice(0, 8);
+  const partes = [digitos.slice(0, 2), digitos.slice(2, 4), digitos.slice(4, 8)].filter(Boolean);
+  return partes.join('/');
 };
 
 type Declaracao = {
@@ -45,7 +50,6 @@ const ListaProcessosPage = () => {
   const [buscaProcesso, setBuscaProcesso] = useState('');
   const [buscaAutor, setBuscaAutor] = useState('');
   const [buscaData, setBuscaData] = useState('');
-  const [nenhumEncontradoOpen, setNenhumEncontradoOpen] = useState(false);
 
   const grupos = useMemo<GrupoProcesso[]>(() => {
     if (!calculos) return [];
@@ -107,17 +111,10 @@ const ListaProcessosPage = () => {
     });
   }, [grupos, temFiltro, termoProcesso, termoAutor, termoData]);
 
-  const handleBuscar = () => {
-    if (temFiltro && gruposExibidos.length === 0) {
-      setNenhumEncontradoOpen(true);
-    }
-  };
-
   const handleLimpar = () => {
     setBuscaProcesso('');
     setBuscaAutor('');
     setBuscaData('');
-    setNenhumEncontradoOpen(false);
   };
 
   const handleRemover = async () => {
@@ -173,16 +170,15 @@ const ListaProcessosPage = () => {
               <Label>Data do ajuizamento</Label>
               <Input
                 value={buscaData}
-                onChange={(e) => setBuscaData(e.target.value)}
+                onChange={(e) => setBuscaData(maskData(e.target.value))}
                 placeholder="dd/mm/aaaa"
+                inputMode="numeric"
+                maxLength={10}
               />
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleBuscar} className="gap-2">
-              <Search className="w-4 h-4" /> Buscar
-            </Button>
-            <Button onClick={handleLimpar} variant="outline" className="gap-2">
+            <Button onClick={handleLimpar} className="gap-2">
               <X className="w-4 h-4" /> Limpar
             </Button>
           </div>
@@ -190,7 +186,11 @@ const ListaProcessosPage = () => {
 
         {isLoading && <p className="text-muted-foreground">Carregando...</p>}
         {!isLoading && gruposExibidos.length === 0 && (
-          <p className="text-muted-foreground">Nenhum processo registrado.</p>
+          <p className="text-muted-foreground">
+            {temFiltro
+              ? 'Nenhum Processo encontrado com as informações inseridas.'
+              : 'Nenhum processo registrado.'}
+          </p>
         )}
 
         {gruposExibidos.map((grupo) => (
@@ -272,20 +272,6 @@ const ListaProcessosPage = () => {
             <Button variant="destructive" onClick={handleRemover} disabled={removendo}>
               {removendo ? 'Removendo...' : 'Remover'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={nenhumEncontradoOpen} onOpenChange={setNenhumEncontradoOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nenhum Processo encontrado</DialogTitle>
-            <DialogDescription>
-              Nenhum Processo encontrado com as informações inseridas.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setNenhumEncontradoOpen(false)}>OK</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
