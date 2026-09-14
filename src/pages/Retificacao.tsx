@@ -528,7 +528,7 @@ const RetificacaoPage = () => {
         </div>
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
-          <DialogContent className="max-w-4xl h-[85vh] max-h-[85vh] overflow-hidden">
+          <DialogContent className="max-w-4xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-0 py-0">
                 <DialogHeader>
@@ -561,24 +561,26 @@ const RetificacaoPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-                  <CampoMonetario label="Rendimentos tributáveis" value={periodoDraft.rendimentos_tributaveis} onChange={(v) => setPeriodoDraft({ ...periodoDraft, rendimentos_tributaveis: v })} />
+                  <CampoMonetario label="Rendimentos tributáveis" value={periodoDraft.rendimentos_tributaveis} onChange={(v) => setPeriodoDraft({ ...periodoDraft, rendimentos_tributaveis: v })} inputClassName="min-w-[180px]" />
                   <CampoMonetario
                     label="Total das deduções"
                     value={periodoDraft.deducoes_legais}
                     onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_legais: v })}
                     disabled={periodoDraft.tipo_declaracao === 'simplificada'}
+                    inputClassName="min-w-[180px]"
                   />
                   <CampoMonetario
                     label="Deduções de incentivo"
                     value={periodoDraft.deducoes_incentivo}
                     onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_incentivo: v })}
                     disabled={periodoDraft.tipo_declaracao === 'simplificada'}
+                    inputClassName="min-w-[180px]"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-                  <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} />
-                  <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} />
+                  <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} inputClassName="min-w-[180px]" />
+                  <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} inputClassName="min-w-[180px]" />
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Saldo do ajuste anual (declaração original)</Label>
                     <Input
@@ -589,7 +591,7 @@ const RetificacaoPage = () => {
                         setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipoSaldoPeriodo === 'RESTITUIR' ? -magnitude : magnitude });
                       }}
                       placeholder="0,00"
-                      className="font-mono"
+                      className="font-mono min-w-[180px]"
                     />
                   </div>
                 </div>
@@ -678,7 +680,7 @@ const RetificacaoPage = () => {
         </Dialog>
 
         <Dialog open={alteracaoDialogOpen} onOpenChange={setAlteracaoDialogOpen}>
-          <DialogContent className="max-w-3xl h-[80vh] max-h-[80vh] overflow-hidden">
+          <DialogContent className="max-w-3xl h-[80vh] max-h-[80vh] overflow-hidden px-8">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-0 py-0">
                 <DialogHeader>

@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { currencyToMaskedDisplay, parseMaskedCurrency } from '@/lib/masks';
 
 interface CampoMonetarioProps {
@@ -7,9 +8,11 @@ interface CampoMonetarioProps {
   value: number;
   onChange: (value: number) => void;
   disabled?: boolean;
+  /** Classe extra aplicada ao input (ex.: min-w-[Npx] em telas com pouco espaço por campo). */
+  inputClassName?: string;
 }
 
-export function CampoMonetario({ label, value, onChange, disabled = false }: CampoMonetarioProps) {
+export function CampoMonetario({ label, value, onChange, disabled = false, inputClassName }: CampoMonetarioProps) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm font-medium">{label}</Label>
@@ -19,7 +22,7 @@ export function CampoMonetario({ label, value, onChange, disabled = false }: Cam
         onChange={(e) => onChange(parseMaskedCurrency(e.target.value))}
         placeholder="0,00"
         disabled={disabled}
-        className="font-mono"
+        className={cn('font-mono', inputClassName)}
       />
     </div>
   );
