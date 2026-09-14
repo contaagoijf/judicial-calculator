@@ -51,12 +51,12 @@ const TabelaParcelas = ({ linhas, titulo }: { linhas: LinhaAnoRetificacao[]; tit
             <tr key={`${l.ano_calendario}-${l.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
               <td className="border px-3 py-2">{l.ano_calendario}</td>
               <td className="border px-3 py-2">{fmtDate(l.inicio_correcao)}</td>
-              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_devido)}</td>
+              <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_devido)}</td>
               <td className="border px-3 py-2 text-right font-mono">{fmtFator(l.fator_cm)}</td>
-              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_cm)}</td>
+              <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_cm)}</td>
               <td className="border px-3 py-2 text-right font-mono">{fmtPct(l.fator_juros)}</td>
-              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_juros)}</td>
-              <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.total_com_juros)}</td>
+              <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_juros)}</td>
+              <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.total_com_juros)}</td>
             </tr>
           ))}
         </tbody>
