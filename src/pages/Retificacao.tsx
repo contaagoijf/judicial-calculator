@@ -105,7 +105,24 @@ const RetificacaoPage = () => {
   const [periodoDialogOpen, setPeriodoDialogOpen] = useState(false);
   const [editingPeriodoIndex, setEditingPeriodoIndex] = useState<number | null>(null);
   const [periodoDraft, setPeriodoDraft] = useState<DadosEntradaAjusteAnual>(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
-  const [tipoSaldoPeriodo, setTipoSaldoPeriodo] = useState<'PAGAR' | 'RESTITUIR'>('PAGAR');
+
+  // Tipo do saldo do ajuste anual (A pagar/A restituir) é sempre definido
+  // automaticamente a partir do imposto devido apurado na própria declaração
+  // — nunca escolhido manualmente pelo usuário (mesma regra da tela de
+  // Ajuste Anual, pedido do contador).
+  const impostoDevidoPreviewPeriodo = useMemo(() => {
+    const faixasAno = faixasAll?.filter((f) => f.ano_calendario === periodoDraft.ano_calendario) ?? [];
+    const param = parametros?.find((p) => p.ano_calendario === periodoDraft.ano_calendario);
+    if (faixasAno.length === 0 || !param) return null;
+    const resultado = calcularAjusteAnual(
+      { ...periodoDraft, ajuste_anual: 0, rend_somar: 0, rend_sub: 0, ded_somar: 0, ded_sub: 0, incentivo_somar: 0, incentivo_sub: 0, rra_somar: 0, rra_sub: 0 },
+      faixasAno,
+      param
+    );
+    return resultado.imposto_devido;
+  }, [faixasAll, parametros, periodoDraft.ano_calendario, periodoDraft.tipo_declaracao, periodoDraft.rendimentos_tributaveis, periodoDraft.deducoes_legais, periodoDraft.deducoes_incentivo, periodoDraft.imposto_rra, periodoDraft.imposto_pago]);
+  const tipoSaldoPeriodo: 'PAGAR' | 'RESTITUIR' =
+    impostoDevidoPreviewPeriodo !== null && impostoDevidoPreviewPeriodo < periodoDraft.imposto_pago ? 'RESTITUIR' : 'PAGAR';
 
   const [alteracaoDialogOpen, setAlteracaoDialogOpen] = useState(false);
   const [editingAlteracaoId, setEditingAlteracaoId] = useState<string | null>(null);
@@ -208,14 +225,12 @@ const RetificacaoPage = () => {
   const openNovoPeriodo = () => {
     setEditingPeriodoIndex(null);
     setPeriodoDraft(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
-    setTipoSaldoPeriodo('PAGAR');
     setPeriodoDialogOpen(true);
   };
 
   const openEditarPeriodo = (index: number) => {
     setEditingPeriodoIndex(index);
     setPeriodoDraft({ ...periodos[index], alteracoes: periodos[index].alteracoes ?? [] });
-    setTipoSaldoPeriodo(periodos[index].ajuste_anual < 0 ? 'RESTITUIR' : 'PAGAR');
     setPeriodoDialogOpen(true);
   };
 
@@ -582,16 +597,10 @@ const RetificacaoPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tipo do saldo do ajuste anual</Label>
-                    <Select
-                      value={tipoSaldoPeriodo}
-                      onValueChange={(v) => {
-                        const tipo = v as 'PAGAR' | 'RESTITUIR';
-                        setTipoSaldoPeriodo(tipo);
-                        const magnitude = Math.abs(periodoDraft.ajuste_anual);
-                        setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipo === 'RESTITUIR' ? -magnitude : magnitude });
-                      }}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select value={tipoSaldoPeriodo} disabled>
+                      <SelectTrigger title="Definido automaticamente pelo sistema, a partir do imposto devido apurado na declaração.">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="PAGAR">A pagar</SelectItem>
                         <SelectItem value="RESTITUIR">A restituir</SelectItem>

@@ -23,8 +23,11 @@ const fmt = (v: number | undefined) =>
   (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtFator = (v: number | undefined) =>
   (v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
+// fator_juros/fator_juros_fim representam o multiplicador total (1 = sem
+// juros, 1.05 = 5% de juros) — subtrai 1 antes de exibir como percentual,
+// senão a coluna mostra 100 pontos percentuais além do juros real.
 const fmtPct = (v: number | undefined) =>
-  `${((v ?? 0) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  `${(((v ?? 1) - 1) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 const fmtDate = (v: string | undefined) => {
   if (!v) return '-';
   const [y, m, d] = v.split('T')[0].split('-');

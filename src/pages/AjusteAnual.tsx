@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,6 @@ const AjusteAnualPage = () => {
   const [deducoesIncentivo, setDeducoesIncentivo] = useState(0);
   const [impostoRRA, setImpostoRRA] = useState(0);
   const [ajusteAnualMagnitude, setAjusteAnualMagnitude] = useState(0);
-  const [tipoSaldoOriginal, setTipoSaldoOriginal] = useState<'PAGAR' | 'RESTITUIR'>('PAGAR');
   const [impostoPago, setImpostoPago] = useState(0);
   const [rendSomar, setRendSomar] = useState(0);
   const [rendSub, setRendSub] = useState(0);
@@ -77,9 +76,7 @@ const AjusteAnualPage = () => {
     setDeducoesLegais(draft.dados.deducoes_legais || 0);
     setDeducoesIncentivo(draft.dados.deducoes_incentivo || 0);
     setImpostoRRA(draft.dados.imposto_rra || 0);
-    const saldoOriginal = draft.dados.ajuste_anual || 0;
-    setTipoSaldoOriginal(saldoOriginal < 0 ? 'RESTITUIR' : 'PAGAR');
-    setAjusteAnualMagnitude(Math.abs(saldoOriginal));
+    setAjusteAnualMagnitude(Math.abs(draft.dados.ajuste_anual || 0));
     setImpostoPago(draft.dados.imposto_pago || 0);
     setRendSomar(draft.dados.rend_somar || 0);
     setRendSub(draft.dados.rend_sub || 0);
@@ -147,6 +144,35 @@ const AjusteAnualPage = () => {
     setProcessoDuplicadoOpen(false);
     navigate('/calculo/retificacao', { state: { editDraft: draft } });
   };
+
+  // Tipo do saldo do ajuste anual (A pagar/A restituir) é sempre definido
+  // automaticamente pelo sistema a partir do imposto devido apurado na
+  // própria declaração — nunca escolhido manualmente pelo usuário (pedido
+  // do contador: evita que o usuário selecione um tipo incompatível com o
+  // resultado apurado).
+  const param = parametros?.find((p) => p.ano_calendario === anoCalendario);
+  const impostoDevidoPreview = useMemo(() => {
+    if (!faixas || faixas.length === 0 || !param) return null;
+    const resultado = calcularAjusteAnual(
+      {
+        tipo_declaracao: tipoDeclaracao,
+        ano_calendario: anoCalendario ?? 0,
+        rendimentos_tributaveis: rendTrib,
+        deducoes_legais: deducoesLegais,
+        deducoes_incentivo: deducoesIncentivo,
+        imposto_rra: impostoRRA,
+        ajuste_anual: 0,
+        imposto_pago: impostoPago,
+        rend_somar: 0, rend_sub: 0, ded_somar: 0, ded_sub: 0,
+        incentivo_somar: 0, incentivo_sub: 0, rra_somar: 0, rra_sub: 0,
+      },
+      faixas,
+      param
+    );
+    return resultado.imposto_devido;
+  }, [faixas, param, tipoDeclaracao, anoCalendario, rendTrib, deducoesLegais, deducoesIncentivo, impostoRRA, impostoPago]);
+  const tipoSaldoOriginal: 'PAGAR' | 'RESTITUIR' =
+    impostoDevidoPreview !== null && impostoDevidoPreview < impostoPago ? 'RESTITUIR' : 'PAGAR';
 
   const isCompleta = tipoDeclaracao === 'completa';
   const toolEnabled = isAdmin || ((settings?.system_enabled ?? true) && (settings?.ajuste_anual_enabled ?? true));
@@ -334,8 +360,10 @@ const AjusteAnualPage = () => {
                   placeholder="0,00"
                   className="font-mono"
                 />
-                <Select value={tipoSaldoOriginal} onValueChange={(v) => setTipoSaldoOriginal(v as 'PAGAR' | 'RESTITUIR')}>
-                  <SelectTrigger className="w-40 shrink-0"><SelectValue /></SelectTrigger>
+                <Select value={tipoSaldoOriginal} disabled>
+                  <SelectTrigger className="w-40 shrink-0" title="Definido automaticamente pelo sistema, a partir do imposto devido apurado na declaração.">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PAGAR">A pagar</SelectItem>
                     <SelectItem value="RESTITUIR">A restituir</SelectItem>

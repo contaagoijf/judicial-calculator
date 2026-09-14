@@ -19,8 +19,11 @@ function formatPercent(val: number): string {
 function formatFator(val: number): string {
   return (val ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 8, maximumFractionDigits: 8 });
 }
+// fator_juros/fator_juros_fim representam o multiplicador total (1 = sem
+// juros, 1.05 = 5% de juros) — subtrai 1 antes de exibir como percentual,
+// senão a coluna mostra 100 pontos percentuais além do juros real.
 function formatPctDecimal(val: number): string {
-  return ((val ?? 0) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+  return (((val ?? 1) - 1) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 }
 function formatDateBR(s: string | undefined): string {
   if (!s) return '-';
