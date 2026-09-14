@@ -39,3 +39,6 @@ dist-ssr
 
 # Scripts avulsos de uso local (ex.: migrações manuais de banco), nunca versionados
 src/script/
+
+# Material de apoio para reuniões com o contador (nunca versionado, qualquer extensão)
+docs/contador/
