@@ -537,7 +537,7 @@ const RetificacaoPage = () => {
         </div>
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
-          <DialogContent className="w-[calc(100%-2rem)] max-w-5xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
+          <DialogContent className="w-[calc(100%-2rem)] max-w-7xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-1.5 py-0">
                 <DialogHeader>
