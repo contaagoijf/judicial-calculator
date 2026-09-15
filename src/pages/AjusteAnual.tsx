@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ClipboardPaste } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +63,33 @@ const AjusteAnualPage = () => {
   const handleProcessoBlur = () => {
     if (processo.trim() && !isNumeroProcessoCompleto(processo)) {
       setProcessoInvalidoOpen(true);
+    }
+  };
+
+  const handleColarProcesso = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      skipDuplicateCheckRef.current = false;
+      setProcesso(formatNumeroProcesso(texto));
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleColarNomeAutor = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      setNomeAutor(texto);
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -292,21 +319,45 @@ const AjusteAnualPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Número do Processo *</Label>
-              <Input
-                value={processo}
-                onChange={(e) => {
-                  skipDuplicateCheckRef.current = false;
-                  setProcesso(formatNumeroProcesso(e.target.value));
-                }}
-                onBlur={handleProcessoBlur}
-                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                placeholder="0000000-00.0000.0.00.0000"
-                inputMode="numeric"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={processo}
+                  onChange={(e) => {
+                    skipDuplicateCheckRef.current = false;
+                    setProcesso(formatNumeroProcesso(e.target.value));
+                  }}
+                  onBlur={handleProcessoBlur}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                  placeholder="0000000-00.0000.0.00.0000"
+                  inputMode="numeric"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarProcesso}
+                  title="Colar número do processo da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Nome do Autor *</Label>
-              <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" />
+              <div className="flex gap-2">
+                <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarNomeAutor}
+                  title="Colar nome do autor da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -38,7 +38,7 @@ const TabelaParcelas = ({ linhas, titulo }: { linhas: LinhaAnoRetificacao[]; tit
             <th className="border px-3 py-2 text-right">Diferença devida</th>
             <th className="border px-3 py-2 text-right">Coef. atualização</th>
             <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-            <th className="border px-3 py-2 text-right">Juros/Selic %</th>
+            <th className="border px-3 py-2 text-right whitespace-nowrap">Juros/Selic %</th>
             <th className="border px-3 py-2 text-right">Juros valor</th>
             <th className="border px-3 py-2 text-right">Valor atualizado</th>
           </tr>
@@ -202,7 +202,7 @@ const ResultadoRetificacaoPage = () => {
                       <th className="border px-3 py-2 text-right">Diferença devida</th>
                       <th className="border px-3 py-2 text-right">Coef. atualização</th>
                       <th className="border px-3 py-2 text-right">Diferença atualizada</th>
-                      <th className="border px-3 py-2 text-right">Juros/Selic %</th>
+                      <th className="border px-3 py-2 text-right whitespace-nowrap">Juros/Selic %</th>
                       <th className="border px-3 py-2 text-right">Juros valor</th>
                       <th className="border px-3 py-2 text-right">Valor atualizado</th>
                     </tr>
@@ -255,7 +255,7 @@ const ResultadoRetificacaoPage = () => {
           </Card>
         </div>
 
-        <div className="flex gap-4 justify-end mt-6">
+        <div className="flex gap-4 justify-end mt-6 mb-40">
           <Button variant="outline" onClick={handleEditar} className="gap-2">
             <Edit className="w-4 h-4" /> Editar
           </Button>

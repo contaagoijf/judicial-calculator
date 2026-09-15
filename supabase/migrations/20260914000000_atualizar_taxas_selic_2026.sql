@@ -2,9 +2,13 @@
 -- abril a agosto de 2026), para eliminar a diferença residual apontada pelo
 -- contador entre o percentual de Juros/Selic do sistema e da planilha oficial.
 --
--- SUBSTITUA os valores 0.00 abaixo pelo percentual mensal oficial da SELIC
--- (Banco Central / planilha da DCAL) de cada mês, antes de executar. Não
--- inventar/estimar esses valores — usar sempre a taxa oficial publicada.
+-- Valores oficiais obtidos em 14/09/2026 na API pública do Banco Central do
+-- Brasil (SGS, série 4390 — "Taxa de juros - Selic acumulada no mês"):
+-- https://api.bcb.gov.br/dados/serie/bcdata.sgs.4390/dados?formato=json&dataInicial=01/04/2026&dataFinal=31/08/2026
+-- Conferidos por duas requisições independentes; os valores devolvidos pela
+-- mesma série para jan/fev/mar de 2026 bateram exatamente com os já
+-- cadastrados na base, confirmando a fonte. Registro completo em
+-- supabase/migrations/percentuais.txt.
 --
 -- Basta informar o id_indice e o valor_percentual de cada mês: fator_multiplicador
 -- e fator_acumulado são recalculados automaticamente pelos triggers já existentes
@@ -19,11 +23,11 @@
 INSERT INTO public.taxas_historicas (id_indice, data_referencia, valor_percentual)
 SELECT idx.id, v.data_referencia, v.valor_percentual
 FROM (VALUES
-  ('2026-04-01'::date, 0.00::numeric),  -- TODO: taxa oficial SELIC de abril/2026
-  ('2026-05-01'::date, 0.00::numeric),  -- TODO: taxa oficial SELIC de maio/2026
-  ('2026-06-01'::date, 0.00::numeric),  -- TODO: taxa oficial SELIC de junho/2026
-  ('2026-07-01'::date, 0.00::numeric),  -- TODO: taxa oficial SELIC de julho/2026
-  ('2026-08-01'::date, 0.00::numeric)   -- TODO: taxa oficial SELIC de agosto/2026
+  ('2026-04-01'::date, 1.09::numeric),  -- SELIC de abril/2026 (BCB SGS 4390)
+  ('2026-05-01'::date, 1.07::numeric),  -- SELIC de maio/2026 (BCB SGS 4390)
+  ('2026-06-01'::date, 1.12::numeric),  -- SELIC de junho/2026 (BCB SGS 4390)
+  ('2026-07-01'::date, 1.22::numeric),  -- SELIC de julho/2026 (BCB SGS 4390)
+  ('2026-08-01'::date, 1.09::numeric)   -- SELIC de agosto/2026 (BCB SGS 4390)
 ) AS v(data_referencia, valor_percentual)
 CROSS JOIN LATERAL (SELECT id FROM public.indices_economicos WHERE sigla = 'SELIC') AS idx
 ON CONFLICT (id_indice, data_referencia) DO UPDATE

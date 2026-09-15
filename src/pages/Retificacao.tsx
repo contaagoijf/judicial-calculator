@@ -14,6 +14,7 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   AlteracaoRetificacao,
+  calcularAjusteAnual,
   calcularRetificacao,
   type DadosEntradaAjusteAnual,
   type DadosEntradaRetificacao,
@@ -381,7 +382,7 @@ const RetificacaoPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="page-container">
+      <div className="page-container max-w-7xl">
         <Button variant="ghost" onClick={() => navigate('/')} className="mb-6 gap-2">
           <ArrowLeft className="w-4 h-4" /> Voltar
         </Button>
@@ -486,6 +487,7 @@ const RetificacaoPage = () => {
                   <th className="px-4 py-3">Ano calendário</th>
                   <th className="px-4 py-3">Tipo decl.</th>
                   <th className="px-4 py-3 text-right">Rendimentos</th>
+                  <th className="px-4 py-3 text-right">Deduções</th>
                   <th className="px-4 py-3 text-right">Imposto pago</th>
                   <th className="px-4 py-3 text-right">Ajuste anual</th>
                   <th className="px-4 py-3 text-center">Alterações</th>
@@ -498,6 +500,7 @@ const RetificacaoPage = () => {
                     <td className="px-4 py-3">{periodo.ano_calendario}</td>
                     <td className="px-4 py-3">{periodo.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}</td>
                     <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.rendimentos_tributaveis.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.deducoes_legais.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.imposto_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {periodo.ajuste_anual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     <td className="px-4 py-3 text-center">{(periodo.alteracoes ?? []).length}</td>
@@ -513,7 +516,7 @@ const RetificacaoPage = () => {
                 ))}
                 {periodos.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-4 text-sm text-muted-foreground">Nenhum ano cadastrado.</td>
+                    <td colSpan={8} className="px-4 py-4 text-sm text-muted-foreground">Nenhum ano cadastrado.</td>
                   </tr>
                 )}
               </tbody>
@@ -528,9 +531,9 @@ const RetificacaoPage = () => {
         </div>
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
-          <DialogContent className="max-w-4xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
+          <DialogContent className="w-[calc(100%-2rem)] max-w-4xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-0 py-0">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-1.5 py-0">
                 <DialogHeader>
                   <DialogTitle>{editingPeriodoIndex === null ? 'Adicionar ano' : 'Editar ano'}</DialogTitle>
                   <DialogDescription>Preencha os dados originais e as alterações para o ano selecionado.</DialogDescription>
@@ -680,9 +683,9 @@ const RetificacaoPage = () => {
         </Dialog>
 
         <Dialog open={alteracaoDialogOpen} onOpenChange={setAlteracaoDialogOpen}>
-          <DialogContent className="max-w-3xl h-[80vh] max-h-[80vh] overflow-hidden px-8">
+          <DialogContent className="w-[calc(100%-2rem)] max-w-3xl h-[80vh] max-h-[80vh] overflow-hidden px-8">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-0 py-0">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-1.5 py-0">
                 <DialogHeader>
                   <DialogTitle>{editingAlteracaoId ? 'Editar alteração' : 'Nova alteração'}</DialogTitle>
                   <DialogDescription>Preencha os campos de soma/subtração e motivo.</DialogDescription>
