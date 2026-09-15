@@ -11,9 +11,9 @@ O contador que solicitou os testes relatou que uma divergência encontrada pode 
 
 ## 1. Planilhas de referência (gabarito)
 
-Arquivos: `docs/irpfanual.xlt` (Ajuste Anual) e `docs/ir-recalculo.xlt` (Retificação/recálculo), com o manual `docs/manualir.pdf`.
+Arquivos: `docs/reference/planilhas/irpfanual.xlt` (Ajuste Anual) e `docs/reference/planilhas/ir-recalculo.xlt` (Retificação/recálculo), com o manual `docs/manualir.pdf`.
 
-**Status: acessíveis.** As duas planilhas contêm macros VBA e chegaram a bloquear a execução das macros ao clicar em botões ("Não é possível executar a macro '...!b_cadastro'..."). Isso foi resolvido cadastrando a pasta `docs` como **Local Confiável** no Excel:
+**Status: acessíveis.** As duas planilhas contêm macros VBA e chegaram a bloquear a execução das macros ao clicar em botões ("Não é possível executar a macro '...!b_cadastro'..."). Isso foi resolvido cadastrando a pasta `docs` (hoje, `docs/reference/planilhas`) como **Local Confiável** no Excel:
 
 `Arquivo → Opções → Central de Confiabilidade → Configurações da Central de Confiabilidade → Locais Confiáveis → Adicionar novo local → OK`
 

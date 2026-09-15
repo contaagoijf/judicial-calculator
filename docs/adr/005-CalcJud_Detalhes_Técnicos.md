@@ -138,21 +138,7 @@ supabase/
 - **SGBD**: PostgreSQL, hospedado e gerenciado pelo **Supabase**, que também fornece autenticação (Supabase Auth), API REST/RPC automática (PostgREST) e Row Level Security (RLS).
 - **Definição do esquema**: consolidada em `supabase/schema.sql` (script idempotente, pode ser reaplicado com segurança) e versionada de forma incremental em `supabase/migrations/`.
 
-**Principais tabelas:**
-
-| Tabela | Finalidade |
-|---|---|
-| `ir_parametros` | Parâmetros gerais de IR por ano-calendário: teto do desconto simplificado e data de início de correção do ano. |
-| `ir_faixas` | Faixas progressivas de alíquota e parcela a deduzir, por ano-calendário. |
-| `calculos` | Histórico de cálculos realizados (tipo — ajuste anual ou retificação —, ano, processo, autor, dados de entrada e resultado em JSONB); é a tabela usada na Consulta pública por ID. |
-| `salario_minimo` | Série histórica de salário mínimo por data de referência, usada para apurar o teto do RPV (60 salários mínimos). |
-| `indices_economicos` | Cadastro de índices de correção monetária e de juros (ex.: SELIC, poupança, UFIR), com sua natureza (`CORRECAO` ou `JUROS`). |
-| `taxas_historicas` | Série mensal de percentuais por índice, com fator multiplicador e fator acumulado recalculados automaticamente (trigger `handle_taxas_historicas_write` / função `recalculate_taxas_historicas`) sempre que uma taxa é inserida, alterada ou removida. |
-| `templates_calculo` | Templates de cálculo correspondentes aos tipos de correção disponíveis na Retificação (SELIC, SELIC + poupança, sem correção). |
-| `regras_subperiodo` | Regras de correção/juros vigentes por sub-período dentro de cada template (qual índice de correção e de juros usar em cada intervalo de datas). |
-| `admin_invites` | Convites pendentes/aceitos de novos administradores, por e-mail. |
-| `admin_users` | Usuários com privilégio de administrador (vinculados a `auth.users` do Supabase Auth). |
-| `system_settings` | Chave única (linha singleton) com as chaves de disponibilidade pública: sistema inteiro, Ajuste Anual e Retificação. |
+**Principais tabelas:** ver a tabela completa em [ADR 003](003-CalcJud_Banco_de_dados.md#5-referência-rápida--tabelas-do-sistema), seção 5.
 
 **Segurança dos dados:**
 
@@ -208,7 +194,7 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 > Os links de intranet e do Nextcloud interno só são acessíveis a partir da rede do TRF2/JFRJ; a descrição do contexto de origem do projeto (seção acima) foi montada a partir de material de levantamento já disponível localmente, que resume o conteúdo dessas mesmas fontes.
 
-> **Observação de segurança**: as credenciais do Supabase (URL e chave pública/anon) usadas pela aplicação não concedem privilégios administrativos por si só — o acesso de administrador é controlado pela tabela `admin_users` e pelas políticas de RLS descritas acima. Foi identificado que o script `supabase/schema.sql` contém, em texto claro, e-mail e senha de um administrador inicial usado no processo de bootstrap do banco; recomenda-se rotacionar essa senha e, se possível, remover o segredo do histórico do repositório.
+> **Observação de segurança**: as credenciais do Supabase (URL e chave pública/anon) usadas pela aplicação não concedem privilégios administrativos por si só — o acesso de administrador é controlado pela tabela `admin_users` e pelas políticas de RLS descritas acima. Há também uma pendência de segurança conhecida (senha de um administrador de bootstrap em texto claro em `supabase/schema.sql`) — ver [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md) para o achado completo e o plano de correção.
 
 ## 6. Acesso ao Sistema
 

@@ -1,4 +1,4 @@
-# CalcJud — Funcionalidades e Correções
+# Changelog — CalcJud: Funcionalidades e Correções
 
 Este documento reúne, em ordem cronológica, tudo o que foi corrigido, ajustado
 ou implementado no CalcJud desde que o projeto foi clonado para o ambiente
@@ -33,7 +33,7 @@ identificada).
   o resultado da tela com um caso de referência já conferido manualmente
   (ano-calendário 2020), para confirmar que a fórmula básica do sistema
   estava correta antes de investigar problemas relatados pela contadoria.
-- Resultado registrado em `docs/Resumo-Reuniao-AGOI.md`, preparado para
+- Resultado registrado em [`docs/history/Resumo-Reuniao-AGOI.md`](history/Resumo-Reuniao-AGOI.md), preparado para
   apresentação à contadoria (AGOI/DCAL).
 
 ## 03/09/2026 — Reunião com a AGOI e organização da documentação
@@ -63,7 +63,7 @@ identificada).
 - **Pendência registrada**: a regra de transição corrigida está no arquivo de
   configuração do repositório (`supabase/seed_templates_regras.sql`), mas o
   **banco de dados de produção ainda não recebeu essa migração** — documentado
-  em `docs/supabase-migracao.md`, com o script pronto para um administrador
+  no [ADR 008](adr/008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md), com o script pronto para um administrador
   aplicar. Essa pendência foi reconfirmada em 09/09/2026, durante a reunião
   com o contador Sérgio (ver seção 5 do resumo dessa reunião), ao reproduzir
   o mesmo tipo de divergência num teste em produção.
@@ -92,7 +92,7 @@ restituir** (em vez de a pagar).
 - Nenhuma fórmula de cálculo de imposto foi alterada nesta correção.
 - Testado ao vivo com os dois casos reais enviados pela contadoria (1996 a
   pagar R$ 673,10; 2019 a restituir R$ 3.091,73), isoladamente e combinados.
-  Documentado em `docs/recalculo_imposto_a_pagar_restituir.md`.
+  Documentado no [ADR 009](adr/009-corrigir-validacao-de-recalculo-com-imposto-a-restituir.md).
 
 ## 09/09/2026 — Reunião com o contador Sérgio (DCAL) e novos itens levantados
 
@@ -182,8 +182,8 @@ autorização para publicar em produção (ainda não commitado).**
 
 **Corrigido, publicado e validado em produção.**
 
-- Aplicada manualmente, via SQL Editor do Supabase, a migração documentada em
-  `docs/supabase-migracao.md` (pendente desde 04/09/2026): ajuste da regra de
+- Aplicada manualmente, via SQL Editor do Supabase, a migração documentada no
+  [ADR 008](adr/008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md) (pendente desde 04/09/2026): ajuste da regra de
   transição UFIR → SELIC de janeiro de 1996 nos templates de correção do
   banco de produção.
 - Antes de aplicar, foi feito um backup rápido (cópia da tabela
@@ -199,28 +199,6 @@ autorização para publicar em produção (ainda não commitado).**
 
 ## 11/09/2026 — Tela de listagem de todos os processos, com busca
 
-**Implementado, testado e publicado em produção.**
-
-- Nova página **`/calculo/listaprocessos`**, mostrando a quantidade total de
-  processos cadastrados ("Processos: N") e, para cada processo, os dados
-  gerais (número, nome do autor, data do ajuizamento) e a tabela de
-  Declarações Anuais cadastradas (ano-calendário, tipo de declaração,
-  rendimentos, imposto pago, ajuste anual, alterações), com botão "Editar"
-  (leva ao Ajuste Anual já preenchido, disponível para qualquer usuário) e
-  "Remover" (visível só para administradores logados).
-- Adicionada uma seção de busca, com campos para número do processo, nome do
-  autor e data do ajuizamento — o filtro é aplicado **automaticamente**
-  enquanto o usuário digita ou cola em qualquer um dos campos, sem precisar
-  clicar em nenhum botão; um botão "Limpar" reseta os três campos de uma vez
-  e volta a mostrar a lista completa.
-- Quando o filtro não encontra nenhum processo, a mensagem "Nenhum Processo
-  encontrado com as informações inseridas" aparece no lugar da lista.
-- O campo de busca "Número do processo" usa a mesma máscara e validação da
-  tela de Ajuste Anual (padrão do e-Proc `NNNNNNN-DD.AAAA.J.TR.OOOO`, com o
-  mesmo alerta de "Número de processo inválido" se o número ficar
-  incompleto); o campo "Data do ajuizamento" aplica a máscara `dd/mm/aaaa`
-  automaticamente enquanto o usuário digita.
-
 ### Pendência nova: permissão de remoção no banco de produção
 
 - O botão "Remover" depende de uma política de acesso nova (UPDATE/DELETE)
@@ -230,3 +208,120 @@ autorização para publicar em produção (ainda não commitado).**
   **Ainda não aplicada no banco de produção**; enquanto isso não for feito
   manualmente por um administrador (mesmo processo usado na migração de
   10/09/2026), o botão "Remover" retorna erro de permissão.
+
+## 14/09/2026 — Correção dos dois erros apontados pela contadoria na Retificação
+
+**Corrigido, testado e publicado em produção.**
+
+A contadoria reportou dois problemas na tela de Retificação de IRPF, comparando o
+sistema com a planilha oficial da DCAL (processo de referência: ano-calendário
+1996, correção SELIC).
+
+### Erro 1 — Tipo do saldo do ajuste anual definido manualmente
+
+- **Causa**: o campo "A Pagar" / "A Restituir" era um seletor manual, sem
+  vínculo com o imposto devido apurado a partir dos demais campos da
+  declaração — podia ficar incompatível com o resultado real.
+- **Correção**: o campo passou a ser calculado automaticamente pelo sistema
+  (comparando o imposto devido apurado com o imposto pago) nas telas de
+  Ajuste Anual e de Retificação; fica travado para edição.
+
+### Erro 2 — Percentual de Juros/Selic muito acima do esperado (438,24% em vez de 372,77%)
+
+Duas causas raiz independentes, ambas corrigidas:
+
+- **Corte silencioso de dados históricos**: a Retificação carregava as
+  tabelas de correção monetária e juros (SELIC, Poupança, UFIR etc.) sem
+  paginação; o Supabase/PostgREST limita automaticamente qualquer consulta
+  sem paginação a 1.000 linhas, sem aviso e sem erro. A tabela
+  `taxas_historicas` já tinha 1.147 linhas, então cerca de 13% dos meses
+  eram descartados a cada carregamento, de forma imprevisível. Corrigido em
+  `useRetificacaoContexto.ts`, buscando os dados em lotes completos.
+- **Fórmula de exibição do percentual**: a coluna "Juros/Selic %" (tela e
+  PDF) exibia o multiplicador total do período (onde 100% = "sem juros")
+  diretamente como se fosse o percentual de juros, somando 100 pontos
+  percentuais a mais em todo valor exibido. Corrigido em `Relatorio.tsx`,
+  `ResultadoRetificacao.tsx` e `pdfGenerator.ts`, descontando a base de 100%
+  antes de exibir.
+- **Pendência residual identificada**: mesmo após as duas correções, sobrava
+  uma diferença de ~4,5 pontos percentuais em relação à planilha — não por
+  erro de cálculo, mas porque a base de dados ainda não tinha os meses de
+  abril a agosto de 2026 da SELIC cadastrados. **Resolvida no mesmo dia**,
+  ver seção abaixo.
+
+### Atualização da base de SELIC (abril a agosto de 2026)
+
+- Obtidos os 5 percentuais oficiais faltantes diretamente na API pública do
+  Banco Central do Brasil (SGS, série 4390 — "Taxa de juros - Selic
+  acumulada no mês"), conferidos por cruzamento com os meses já cadastrados
+  (jan-mar/2026, que bateram exatamente).
+- Migração criada e aplicada em produção
+  (`supabase/migrations/20260914000000_atualizar_taxas_selic_2026.sql`);
+  procedimento documentado em
+  [ADR 006](adr/006-Atualizar_taxas_selic_banco_central_brasil.md),
+  como referência reutilizável para atualizações futuras.
+
+### Ajustes de layout
+
+- Aumentadas as margens laterais dos diálogos "Editar ano" e "Nova
+  alteração" (Retificação), que cortavam a borda de alguns campos.
+- Aumentada a largura dos campos de valor monetário na tela "Editar ano" e
+  na seção "Cálculo das parcelas devidas" da Retificação, para exibir a
+  máscara completa `R$ 999.999,99`.
+
+## 15/09/2026 — Correção de bug crítico (tela em branco) e ajustes de layout na Retificação
+
+**Corrigido, testado e publicado em produção.**
+
+### Bug crítico — tela em branco na Retificação
+
+- **Causa**: ao automatizar o cálculo de "A Pagar/A Restituir" (14/09/2026),
+  uma chamada à função `calcularAjusteAnual()` foi adicionada em
+  `Retificacao.tsx` sem o import correspondente — gerando um
+  `ReferenceError` que derrubava a tela inteira (sem *error boundary*) toda
+  vez que esse trecho executava: ao digitar um processo com faixas de IR já
+  cadastradas, ou ao abrir "Editar ano". **Esteve em produção desde a
+  publicação do commit de 14/09/2026.**
+- **Correção**: adicionado o import que faltava. Reproduzido e confirmado o
+  problema e a correção ao vivo, no navegador, antes de publicar.
+
+### Nova coluna e botões de colar
+
+- Adicionada a coluna "Deduções" na tabela "Dados de Declarações Anuais" da
+  Retificação (mesmo valor do campo "Total das deduções" da tela "Editar
+  ano").
+- Adicionado botão para colar da área de transferência nos campos "Número
+  do Processo" (tela de Ajuste Anual) e "Nome do Autor", preenchendo o
+  campo automaticamente a partir do conteúdo copiado.
+
+### Correções de layout e usabilidade
+
+- Corrigido o anel de foco (contorno ao clicar) que ficava cortado nos
+  campos das bordas esquerda/direita dos diálogos "Editar ano" e "Nova
+  alteração" — o contêiner interno de rolagem não tinha espaço suficiente
+  para o anel, que se estende alguns pixels além da borda do campo.
+- Aumentada a largura da página de Retificação e do diálogo "Editar ano"
+  (até `max-w-7xl`), para caber a tabela "Alterações da Declaração" sem
+  rolagem horizontal, mesmo com todos os campos monetários preenchidos com
+  o valor máximo (`R$ 999.999,99`).
+- Corrigida a coluna "Data" da tabela "Alterações da Declaração", que
+  exibia a data crua do banco (`aaaa-mm-dd`) em vez do formato brasileiro
+  (`dd/mm/aaaa`); aplicado `whitespace-nowrap` em todas as colunas dessa
+  tabela para impedir quebra de linha.
+- Aumentada a margem inferior após os botões "Editar" e "Finalizar e
+  Salvar" na tela de Simulação de Retificação, e impedida a quebra de linha
+  do rótulo "Juros/Selic %".
+
+### Correções no ambiente de desenvolvimento
+
+- Corrigido o travamento (`EBUSY`) do `npm run dev`, causado por dois
+  motivos distintos: o perfil do navegador de testes automatizados
+  (`glpi-profile/`) vivia dentro da pasta do projeto e o Chromium mantinha
+  arquivos dele abertos; e arquivos em `docs/contador/` (materiais para
+  reuniões com o contador) ficavam abertos por outros programas. O perfil
+  do navegador foi movido para fora do projeto, e `docs/contador/` passou a
+  ser ignorado pelo observador de arquivos do Vite.
+- Adotados antecipadamente os *future flags* `v7_startTransition` e
+  `v7_relativeSplatPath` do React Router, removendo os avisos de depreciação
+  do console.
+

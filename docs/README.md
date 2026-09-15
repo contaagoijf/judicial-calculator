@@ -2,21 +2,32 @@
 
 ## Sumário
 
-1. [Contexto e origem do projeto](#contexto-e-origem-do-projeto)
-2. [Objetivo](#objetivo)
-3. [Como utilizar](#como-utilizar)
-4. [Detalhes Técnicos](#detalhes-técnicos)
-5. [Regras de versionamento (Git)](#regras-de-versionamento-git)
-6. [Referências e materiais relacionados](#referências-e-materiais-relacionados)
-7. [Siglas](#siglas)
-8. [Acesso ao Sistema](#acesso-ao-sistema)
+1. [Estrutura da documentação](#estrutura-da-documentação)
+2. [Contexto e origem do projeto](#contexto-e-origem-do-projeto)
+3. [Objetivo](#objetivo)
+4. [Como utilizar](#como-utilizar)
+5. [Detalhes Técnicos](#detalhes-técnicos)
+6. [Regras de versionamento (Git)](#regras-de-versionamento-git)
+7. [Referências e materiais relacionados](#referências-e-materiais-relacionados)
+8. [Siglas](#siglas)
+9. [Acesso ao Sistema](#acesso-ao-sistema)
+
+## Estrutura da documentação
+
+Este arquivo é o manual funcional e técnico completo do CalcJud. O restante de `docs/` está organizado por tipo de conteúdo:
+
+- [`docs/adr/`](adr/) — decisões de arquitetura e correções relevantes já tomadas, uma por arquivo numerado (`NNN-descricao.md`), no formato Contexto/Decisão/Consequências. Comece por [`docs/adr/001-registros-de-decisao-arquitetural-adrs.md`](adr/001-registros-de-decisao-arquitetural-adrs.md); use [`docs/adr/template.md`](adr/template.md) para registrar uma decisão nova.
+- [`docs/specs/`](specs/) — specs de feature/tarefa não triviais, escritas antes da implementação (ver [`AGENTS.md`](../AGENTS.md)). Numeradas (`NNN-nome-da-feature.md`); `000` é o template.
+- [`docs/reference/`](reference/) — planilhas de referência da DCAL em [`docs/reference/planilhas/`](reference/planilhas/). Os manuais e guias de referência (banco de dados, validação contábil, testes de cálculo, atualização de taxas) que viviam aqui foram reorganizados para `docs/adr/002` a `006`.
+- [`docs/history/`](history/) — investigações e atas de reunião sem uma decisão formal associada (ou que já viraram um ADR em `docs/adr/`), mantidas como registro histórico.
+- [`docs/CHANGELOG.md`](CHANGELOG.md) — histórico cronológico de funcionalidades e correções desde que o projeto foi clonado para desenvolvimento local.
 
 ## Contexto e origem do projeto
 
 O CALCJUD nasceu como iniciativa para **unificar duas planilhas Excel** mantidas pela **DCAL (Divisão de Cálculos)** do TRF2/JFRJ, hoje distribuídas pela intranet e usadas manualmente pelas contadorias:
 
-- **Planilha de Cálculo de Ajuste Anual de IRPF** (arquivo `irpfanual.xlt`, acompanhado do manual `manualir.pdf`) — calcula o ajuste anual do Imposto de Renda Pessoa Física de um único ano, com acréscimo/decréscimo de valores não tributáveis.
-- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (arquivo `ir-recalculo.xlt`, seção "Soluções para Contadorias") — recalcula uma declaração de IRPF já entregue, aplicando alterações (acréscimos e decréscimos) aos valores originais de qualquer rubrica, para múltiplos anos.
+- **Planilha de Cálculo de Ajuste Anual de IRPF** (arquivo [`docs/reference/planilhas/irpfanual.xlt`](reference/planilhas/irpfanual.xlt), acompanhado do manual `manualir.pdf`) — calcula o ajuste anual do Imposto de Renda Pessoa Física de um único ano, com acréscimo/decréscimo de valores não tributáveis.
+- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (arquivo [`docs/reference/planilhas/ir-recalculo.xlt`](reference/planilhas/ir-recalculo.xlt), seção "Soluções para Contadorias") — recalcula uma declaração de IRPF já entregue, aplicando alterações (acréscimos e decréscimos) aos valores originais de qualquer rubrica, para múltiplos anos.
 
 Ambas as planilhas são mantidas pela DCAL, foram atualizadas pela última vez em 22/08/2024 e estão protegidas por senha (a estrutura de fórmulas não pôde ser aberta para conferência direta); dúvidas sobre elas podem ser encaminhadas ao contato administrativo da intranet, **tssedus@jfrj.jus.br**.
 
@@ -226,8 +237,8 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 - **Sistema em produção**: <https://calcjud.vercel.app/>
 - **Repositório de código**: <https://github.com/contaagoijf/judicial-calculator>
-- **Planilha de Cálculo de Ajuste Anual de IRPF** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/planilhas-para-calculo-simples-projef-web/planilha-de-calculo-de-ajuste-anual-de> — arquivo `irpfanual.xlt`, protegido por senha, com o manual `manualir.pdf`; atualizado em 22/08/2024.
-- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/solucoes-para-contadorias/planilha-de-calculo-de-declaracao-anual-do-imposto-de-renda> — arquivo `ir-recalculo.xlt`, protegido por senha; atualizado em 22/08/2024.
+- **Planilha de Cálculo de Ajuste Anual de IRPF** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/planilhas-para-calculo-simples-projef-web/planilha-de-calculo-de-ajuste-anual-de> — arquivo [`irpfanual.xlt`](reference/planilhas/irpfanual.xlt), protegido por senha, com o manual `manualir.pdf`; atualizado em 22/08/2024.
+- **Planilha de Cálculo de Declaração Anual do Imposto de Renda** (DCAL, intranet JFRJ — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://intranet.jfrj.jus.br/unidade/dcal/solucoes-para-contadorias/planilha-de-calculo-de-declaracao-anual-do-imposto-de-renda> — arquivo [`ir-recalculo.xlt`](reference/planilhas/ir-recalculo.xlt), protegido por senha; atualizado em 22/08/2024.
 - **Conteúdo de referência das tabelas do banco de dados** (Nextcloud interno — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://nuvem.trf2.jus.br/s/7P2xp6QLsWNf65q> — planilha `bd calcjud.xlsx`, um export de referência das tabelas `ir_faixas`, `ir_parametros`, `salario_minimo`, `indices_economicos`, `taxas_historicas`, `templates_calculo` e `regras_subperiodo`; foi conferida e é consistente com o [esquema do banco](../supabase/schema.sql) e com o conteúdo hoje semeado pelos scripts `seed*.sql` do repositório — útil como referência/backup para conferência dos dados cadastrados.
 - **Documento de especificação funcional do projeto original** (Nextcloud interno — acessível apenas a partir da rede interna do TRF2/JFRJ): <https://nuvem.trf2.jus.br/s/xNMMC9ZrcRi3sXZ> — arquivo `retificação irpf-anual (varios anos).docx`; foi conferido e confirma o conteúdo já refletido nas seções deste documento (dados de entrada, cálculo em 8 partes, dados de saída, mockups de tela), sem detalhes adicionais além dos já incorporados.
 - **Contato administrativo da DCAL** (planilhas na intranet JFRJ): tssedus@jfrj.jus.br
@@ -240,7 +251,7 @@ Glossário das siglas e termos técnicos usados neste documento e nos relatório
 
 **AGOI** — Assessoria de Governança Institucional.
 
-**DCAL** — Divisão de Cálculos do TRF2/JFRJ, a área que hoje mantém e usa manualmente as duas planilhas Excel (`irpfanual.xlt` e `ir-recalculo.xlt`) que o CALCJUD pretende substituir.
+**DCAL** — Divisão de Cálculos do TRF2/JFRJ, a área que hoje mantém e usa manualmente as duas planilhas Excel ([`irpfanual.xlt`](reference/planilhas/irpfanual.xlt) e [`ir-recalculo.xlt`](reference/planilhas/ir-recalculo.xlt)) que o CALCJUD pretende substituir.
 
 **IRPF** — Imposto de Renda Pessoa Física. É o imposto recalculado pelo CALCJUD nos módulos de Ajuste Anual e Retificação.
 

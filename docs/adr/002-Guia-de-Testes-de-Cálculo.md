@@ -30,7 +30,7 @@ Inclui: verificação das planilhas de referência (senha/macros), a hipótese l
 
 ## 1. Planilhas de referência (irpfanual.xlt e ir-recalculo.xlt)
 
-Os dois arquivos foram baixados para `docs/irpfanual.xlt` e `docs/ir-recalculo.xlt`, junto com `docs/manualir.pdf`.
+Os dois arquivos foram baixados para [`docs/reference/planilhas/irpfanual.xlt`](../reference/planilhas/irpfanual.xlt) e [`docs/reference/planilhas/ir-recalculo.xlt`](../reference/planilhas/ir-recalculo.xlt), junto com `docs/manualir.pdf` (não versionado — ver [regras de versionamento](../README.md#regras-de-versionamento-git)).
 
 **Resultado da verificação técnica (inspeção direta da estrutura binária dos arquivos):**
 
@@ -53,7 +53,7 @@ Ou seja: **a senha sozinha não é a senha de abertura do arquivo.** Apesar diss
 
 ### 1.1 Erro "Não é possível executar a macro '...!b_cadastro'" ao clicar em um botão da planilha — RESOLVIDO
 
-**Status:** O procedimento abaixo foi aplicado (opção "Locais Confiáveis", passo 6) e confirmado: as duas planilhas (`irpfanual.xlt` e `ir-recalculo.xlt`) já **abrem e executam as macros normalmente**, com a pasta `\judicial-calculator\docs` cadastrada como local confiável no Excel. Não foi necessário usar a opção "Habilitar todas as macros" (mais abrangente/menos segura). Esse ajuste vale apenas na máquina onde foi feito; se o teste for repetido em outro computador, o mesmo cadastro de local confiável precisa ser refeito lá.
+**Status:** O procedimento abaixo foi aplicado (opção "Locais Confiáveis", passo 6) e confirmado: as duas planilhas (`irpfanual.xlt` e `ir-recalculo.xlt`) já **abrem e executam as macros normalmente**, com a pasta `\judicial-calculator\docs` cadastrada como local confiável no Excel. Não foi necessário usar a opção "Habilitar todas as macros" (mais abrangente/menos segura). Esse ajuste vale apenas na máquina onde foi feito; se o teste for repetido em outro computador, o mesmo cadastro de local confiável precisa ser refeito lá — **atualização**: as planilhas foram movidas para `\judicial-calculator\docs\reference\planilhas`, então o local confiável cadastrado no Excel também precisa apontar para essa subpasta (ou para `docs` recursivamente).
 
 Registro do problema original e do passo a passo aplicado, para referência:
 
@@ -253,7 +253,7 @@ Reforçando o achado da seção 3.8: mesmo que as variáveis `VITE_SUPABASE_URL`
 
 ## 8. Resumo executivo (o que fazer, em ordem)
 
-1. **[Concluído]** Já é possível abrir as planilhas `irpfanual.xlt` e `ir-recalculo.xlt` com as macros habilitadas, visto que a pasta `docs` foi cadastrada como Local Confiável no Excel (ver seção 1.1). Já é possível usá-las como gabarito e comparar o código VBA (senha `scasca`) com `calculoIRPF.ts`.
+1. **[Concluído]** Já é possível abrir as planilhas [`irpfanual.xlt`](../reference/planilhas/irpfanual.xlt) e [`ir-recalculo.xlt`](../reference/planilhas/ir-recalculo.xlt) (hoje em `docs/reference/planilhas/`) com as macros habilitadas, visto que a pasta `docs` foi cadastrada como Local Confiável no Excel (ver seção 1.1). Já é possível usá-las como gabarito e comparar o código VBA (senha `scasca`) com `calculoIRPF.ts`.
 2. Reproduzir o caso relatado pelo contador (mesmos dados de entrada) para ter um cenário concreto de divergência — sem isso, a investigação fica genérica.
 3. Rodar a **Frente A** (seção 2.1): testar a fórmula isoladamente via Vitest, com dados fixos (sem depender do banco), para descartar (ou confirmar) erro na fórmula.
 4. Rodar a **Frente B** (seção 2.2): comparar os índices/taxas cadastrados em produção com as fontes oficiais (BACEN, IBGE, Receita Federal), focando no período do caso divergente, para descartar (ou confirmar) erro na base de dados.
