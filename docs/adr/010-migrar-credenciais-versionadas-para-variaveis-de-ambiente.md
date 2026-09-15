@@ -1,19 +1,43 @@
-# CalcJud — Investigação de credenciais versionadas no repositório
+# ADR 010: Migrar credenciais versionadas para variáveis de ambiente
 
-Tribunal Regional Federal da 2ª Região (TRF2)
-10/09/2026
+**Date:** 10/09/2026
 
-## Contexto
+**Status:** Proposed — nenhuma mudança de código aplicada ainda; plano de ação para execução posterior
 
-Investigação feita a pedido, para verificar se o projeto tem credenciais
-importantes versionadas no repositório remoto (GitHub) e, se sim, avaliar
-como migrá-las para variáveis de ambiente locais (`.env`) sem quebrar o
-deploy automático em produção (Vercel).
+**Tribunal Regional Federal da 2ª Região (TRF2)**
 
-**Nenhuma mudança de código foi aplicada ainda** — este documento é o
-resultado da investigação e o plano de ação, para execução posterior.
+## Context
+
+Investigação realizada para verificar se o projeto tem credenciais importantes versionadas no repositório remoto (GitHub) e, avaliar como migrá-las para variáveis de ambiente locais (`.env`) sem quebrar o deploy automático em produção (Vercel).
+
+A investigação identificou dois pontos importantes:
+
+(1) a senha de um administrador de bootstrap em texto claro em `supabase/schema.sql` e numa migração versionada, já era uma pendência conhecida em [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md);
+
+(2) a URL e a chave `anon`/`publishable` do Supabase hardcoded em `src/integrations/supabase/externalClient.ts` (o cliente efetivamente usado pela aplicação), em vez de virem de `import.meta.env`.
+
+A chave `anon`/`publishable` é, por natureza, uma chave pública protegida por RLS e já 100% visível no bundle JavaScript publicado, migrá-la para `.env` é boa prática de organização, mas não fecha uma vulnerabilidade real por si só. Já a senha do administrador de bootstrap é uma credencial de login real e precisa ser trocada no Supabase, não apenas removida do código.
+
+Trocar o `externalClient.ts` para ler de `import.meta.env` sem antes configurar as variáveis correspondentes no painel do Vercel derrubaria a aplicação em produção (cliente Supabase criado com `undefined`), essa dependência está descrita em [ADR 008](008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md).
+
+## Decision
+
+- Configurar `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no painel do Vercel (Settings → Environment Variables) e confirmar com um redeploy de verificação **antes** de qualquer mudança de código.
+- Só então alterar `src/integrations/supabase/externalClient.ts` para ler de `import.meta.env`, remover o arquivo `client.ts` (código morto) e corrigir `.env.example` para conter um placeholder genérico em vez do valor real.
+- Tratar a rotação da senha do administrador de bootstrap (`agoiagoi`) como prioridade independente e mais urgente: trocar a senha real no Supabase (Authentication → Users) e redigir/remover o valor dos arquivos `supabase/schema.sql` e da migração de `admin_access_controls`, deixando um placeholder ou instrução de geração de senha nova.
+- Decidir separadamente (fora do escopo imediato) se vale reescrever o histórico do Git para remover o rastro da senha antiga.
+
+## Consequences
+
+- Enquanto este ADR estiver `Proposed`, a URL/chave pública do Supabase continua hardcoded no código-fonte (risco de organização, não de segurança real) e a senha do administrador de bootstrap continua em texto claro no repositório (risco de segurança real, mitigado apenas quando a senha for rotacionada no Supabase).
+- A migração da URL/chave depende de coordenação prévia com o painel do Vercel, não pode ser feita apenas no código, sob risco de derrubar a aplicação em produção.
+- A rotação da senha de bootstrap não depende da migração de variáveis de ambiente e pode/deve ser feita antes, independentemente do restante deste ADR.
 
 ---
+
+## Detalhamento da investigação
+
+> Conteúdo original da investigação, preservado como registro detalhado.
 
 ## Resumo do que foi encontrado, por ordem de gravidade real
 
@@ -22,7 +46,7 @@ resultado da investigação e o plano de ação, para execução posterior.
 Em **`supabase/schema.sql`** e **`supabase/migrations/20260428120000_admin_access_controls.sql`**
 (ambos versionados), o script de instalação do banco cria/reseta o admin
 `contaagoijf@gmail.com` com a senha em texto claro `agoiagoi`. Essa era uma
-pendência já conhecida (documentada em `docs/CalcJud_Banco_de_dados.md`,
+pendência já conhecida (documentada em [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md),
 linha 99), e a investigação confirmou que ela continua presente nos dois
 arquivos.
 
@@ -65,8 +89,8 @@ precisaria dessas variáveis já configuradas no **projeto Vercel** — senão o
 cliente Supabase seria criado com `undefined`, e a aplicação inteira pararia
 de funcionar em produção (nenhuma tela carregaria dados).
 
-Essa é uma pendência já conhecida e documentada em `docs/supabase-migracao.md`:
-as variáveis **não estão configuradas no Vercel hoje** — é justamente por
+Essa é uma pendência já conhecida e documentada no [ADR 008](008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md):
+as variáveis **não estão configuradas no Vercel hoje**, é justamente por
 isso que a aplicação funciona mesmo sem elas (usa o valor fixo no código).
 
 Foi verificado se seria possível configurar essas variáveis remotamente via
