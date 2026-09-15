@@ -32,6 +32,12 @@ type RetificacaoDraft = DadosEntradaRetificacao;
 
 const makeId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+const fmtDataAlt = (v: string | undefined) => {
+  if (!v) return '-';
+  const [y, m, d] = v.split('T')[0].split('-');
+  return `${d}/${m}/${y}`;
+};
+
 const defaultAlteracao = (): AlteracaoRetificacao => ({
   id: makeId(),
   data_alt: '',
@@ -531,7 +537,7 @@ const RetificacaoPage = () => {
         </div>
 
         <Dialog open={periodoDialogOpen} onOpenChange={setPeriodoDialogOpen}>
-          <DialogContent className="w-[calc(100%-2rem)] max-w-4xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
+          <DialogContent className="w-[calc(100%-2rem)] max-w-7xl h-[85vh] max-h-[85vh] overflow-hidden px-8">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-1.5 py-0">
                 <DialogHeader>
@@ -629,29 +635,29 @@ const RetificacaoPage = () => {
                     <table className="min-w-full text-sm">
                       <thead className="border-b bg-slate-100 text-left">
                         <tr>
-                          <th className="px-3 py-2">Data</th>
-                          <th className="px-3 py-2">Folha</th>
-                          <th className="px-3 py-2 text-right">Rend. +</th>
-                          <th className="px-3 py-2 text-right">Rend. -</th>
-                          <th className="px-3 py-2 text-right">Ded. +</th>
-                          <th className="px-3 py-2 text-right">Ded. -</th>
-                          <th className="px-3 py-2 text-right">RRA +</th>
-                          <th className="px-3 py-2 text-right">RRA -</th>
-                          <th className="px-3 py-2 text-center">Ações</th>
+                          <th className="px-3 py-2 whitespace-nowrap">Data</th>
+                          <th className="px-3 py-2 whitespace-nowrap">Folha</th>
+                          <th className="px-3 py-2 text-right whitespace-nowrap">Rend. +</th>
+                          <th className="px-3 py-2 text-right whitespace-nowrap">Rend. -</th>
+                          <th className="px-3 py-2 text-right whitespace-nowrap">Ded. +</th>
+                          <th className="px-3 py-2 text-right whitespace-nowrap">Ded. -</th>
+                          <th className="px-3 py-2 text-right whitespace-nowrap">RRA +</th>
+                          <th className="px-3 py-2 text-right whitespace-nowrap">RRA -</th>
+                          <th className="px-3 py-2 text-center whitespace-nowrap">Ações</th>
                         </tr>
                       </thead>
                       <tbody>
                         {(periodoDraft.alteracoes ?? []).map((alteracao) => (
                           <tr key={alteracao.id} className="border-b even:bg-slate-50">
-                            <td className="px-3 py-2">{alteracao.data_alt}</td>
-                            <td className="px-3 py-2">{alteracao.num_folha ?? '-'}</td>
-                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rend_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rend_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.ded_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.ded_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rra_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-right font-mono">R$ {alteracao.rra_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                            <td className="px-3 py-2 text-center space-x-1">
+                            <td className="px-3 py-2 whitespace-nowrap">{fmtDataAlt(alteracao.data_alt)}</td>
+                            <td className="px-3 py-2 whitespace-nowrap">{alteracao.num_folha ?? '-'}</td>
+                            <td className="px-3 py-2 text-right font-mono whitespace-nowrap">R$ {alteracao.rend_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono whitespace-nowrap">R$ {alteracao.rend_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono whitespace-nowrap">R$ {alteracao.ded_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono whitespace-nowrap">R$ {alteracao.ded_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono whitespace-nowrap">R$ {alteracao.rra_somar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-right font-mono whitespace-nowrap">R$ {alteracao.rra_sub.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-3 py-2 text-center whitespace-nowrap space-x-1">
                               <Button size="sm" variant="outline" onClick={() => openEditarAlteracao(alteracao.id)} className="gap-1">
                                 <Edit className="w-4 h-4" />
                               </Button>
