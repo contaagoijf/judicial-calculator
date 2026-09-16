@@ -139,15 +139,8 @@ Relação dos pontos do documento de análise que afetam diretamente a eficiênc
 
 As credenciais já estão versionadas no próprio repositório — não é preciso pedir a ninguém:
 
-- Em `.env.example`, já preenchido com valores reais (não são placeholders):
-
-  ```
-  VITE_SUPABASE_PROJECT_ID="xitpsqtcxraejzlxvvmn"
-  VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGci...MdJXkgi6hVWVvg74ndI3iaAvKX-iCYmfdZHBPDm-js0"
-  VITE_SUPABASE_URL="https://xitpsqtcxraejzlxvvmn.supabase.co"
-  ```
-
-- Os mesmos valores também estão fixos (hardcoded) em `src/integrations/supabase/externalClient.ts`.
+- `.env.example` tinha, no momento desta análise (31/08/2026), os valores reais preenchidos em vez de um placeholder — **corrigido em 16/09/2026** (ver [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md), item A.3); hoje `.env.example` tem só um placeholder genérico.
+- Os valores reais continuam disponíveis, se precisar deles para rodar localmente: estão fixos (hardcoded) em `src/integrations/supabase/externalClient.ts` — é esse arquivo, não o `.env`, que a aplicação realmente usa (ver ponto 8 abaixo).
 
 Essa chave é a chave pública **anon** do Supabase (protegida por Row Level Security no banco) — não é um segredo de administrador; é normal e esperado que ela apareça no código-fonte do front-end, e é a mesma chave que pode ser usada para consultar a base de índices diretamente (seção 2.2).
 
@@ -158,7 +151,7 @@ git clone https://github.com/contaagoijf/judicial-calculator
 cd judicial-calculator
 npm install
 
-cp .env.example .env    # os valores ja vêm preenchidos, não precisa editar nada
+cp .env.example .env    # preencha com as credenciais do projeto Supabase (ver ADR 003, seção 2)
 
 npm run dev
 ```
@@ -258,7 +251,7 @@ Reforçando o achado da seção 3.8: mesmo que as variáveis `VITE_SUPABASE_URL`
 3. Rodar a **Frente A** (seção 2.1): testar a fórmula isoladamente via Vitest, com dados fixos (sem depender do banco), para descartar (ou confirmar) erro na fórmula.
 4. Rodar a **Frente B** (seção 2.2): comparar os índices/taxas cadastrados em produção com as fontes oficiais (BACEN, IBGE, Receita Federal), focando no período do caso divergente, para descartar (ou confirmar) erro na base de dados.
 5. Cruzar os dois resultados usando a tabela da seção 2.3 para concluir onde está o erro.
-6. Paralelamente, rodar `npm install` (feito) → `cp .env.example .env` (não precisa editar) → `npm run dev` para ter uma cópia local, se quiser comparar local vs. produção.
+6. Paralelamente, rodar `npm install` (feito) → `cp .env.example .env` (preencher com as credenciais reais — não é obrigatório, ver ponto 8 da seção 3) → `npm run dev` para ter uma cópia local, se quiser comparar local vs. produção.
 7. Testar manualmente pelo navegador em <https://calcjud.vercel.app/calculo/ajuste-anual> e <https://calcjud.vercel.app/calculo/retificacao> (hoje ambos liberados publicamente), documentando entrada e saída de cada caso.
 8. Ao final, reportar à equipe de desenvolvimento:
    - A conclusão sobre a origem do erro (fórmula, dados, ou ambos);

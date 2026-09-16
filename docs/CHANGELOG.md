@@ -258,7 +258,7 @@ Duas causas raiz independentes, ambas corrigidas:
 - Migração criada e aplicada em produção
   (`supabase/migrations/20260914000000_atualizar_taxas_selic_2026.sql`);
   procedimento documentado em
-  [ADR 006](adr/006-Atualizar_taxas_selic_banco_central_brasil.md),
+  [ADR 006](adr/006-atualizar_taxas_selic_banco_central_brasil.md),
   como referência reutilizável para atualizações futuras.
 
 ### Ajustes de layout

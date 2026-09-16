@@ -1,4 +1,4 @@
-# Ferramenta para Cálculos Judiciais
+# CalcJud é uma Ferramenta para Cálculos Judiciais
 
 Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física (IRPF), especificamente projetada para processos judiciais envolvendo ajustes anuais de imposto.
 
@@ -66,7 +66,3 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
 3. Faça suas alterações
 4. Execute os testes
 5. Envie um pull request
-
-## Licença
-
-[Adicione a licença se aplicável]

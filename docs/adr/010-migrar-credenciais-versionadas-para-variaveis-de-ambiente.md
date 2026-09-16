@@ -12,7 +12,7 @@ Investigação realizada para verificar se o projeto tem credenciais importantes
 
 A investigação identificou dois pontos importantes:
 
-(1) a senha de um administrador de bootstrap em texto claro em `supabase/schema.sql` e numa migração versionada, já era uma pendência conhecida em [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md);
+(1) a senha de um administrador de bootstrap em texto claro em `supabase/schema.sql` e numa migração versionada, já era uma pendência conhecida em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md);
 
 (2) a URL e a chave `anon`/`publishable` do Supabase hardcoded em `src/integrations/supabase/externalClient.ts` (o cliente efetivamente usado pela aplicação), em vez de virem de `import.meta.env`.
 
@@ -46,7 +46,7 @@ Trocar o `externalClient.ts` para ler de `import.meta.env` sem antes configurar 
 Em **`supabase/schema.sql`** e **`supabase/migrations/20260428120000_admin_access_controls.sql`**
 (ambos versionados), o script de instalação do banco cria/reseta o admin
 `contaagoijf@gmail.com` com a senha em texto claro `agoiagoi`. Essa era uma
-pendência já conhecida (documentada em [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md),
+pendência já conhecida (documentada em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md),
 linha 99), e a investigação confirmou que ela continua presente nos dois
 arquivos.
 
@@ -153,7 +153,8 @@ aplicada antes** de as variáveis existirem no painel do Vercel.
 
 - [ ] A.1 — Variáveis criadas no Vercel
 - [ ] A.2 — Redeploy de confirmação feito
-- [ ] A.3 — Código do `externalClient.ts`/`.env.example` corrigido
+- [x] A.3a — `.env.example` corrigido para placeholder genérico (16/09/2026)
+- [ ] A.3b — Código do `externalClient.ts` corrigido (depende de A.1/A.2 antes)
 - [ ] A.4 — Deploy final conferido em produção
 - [ ] B.1 — Senha do admin de bootstrap rotacionada no Supabase
 - [ ] B.2 — Arquivos `schema.sql`/migração corrigidos
