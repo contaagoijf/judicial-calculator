@@ -138,7 +138,7 @@ supabase/
 - **SGBD**: PostgreSQL, hospedado e gerenciado pelo **Supabase**, que também fornece autenticação (Supabase Auth), API REST/RPC automática (PostgREST) e Row Level Security (RLS).
 - **Definição do esquema**: consolidada em `supabase/schema.sql` (script idempotente, pode ser reaplicado com segurança) e versionada de forma incremental em `supabase/migrations/`.
 
-**Principais tabelas:** ver a tabela completa em [ADR 003](003-CalcJud_Banco_de_dados.md#5-referência-rápida--tabelas-do-sistema), seção 5.
+**Principais tabelas:** ver a tabela completa em [ADR 003](003-calcjud_banco_de_dados.md#5-referência-rápida--tabelas-do-sistema), seção 5.
 
 **Segurança dos dados:**
 

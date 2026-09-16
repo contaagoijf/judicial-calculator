@@ -47,7 +47,7 @@ API REST do Supabase (chave anon, somente leitura) em 04/09/2026:
 
 ## 3. Configurações de acesso ao banco
 
-Confirmado em [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md) (seção 2) e nos arquivos do
+Confirmado em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md) (seção 2) e nos arquivos do
 repositório:
 
 - **Projeto Supabase de produção:** `xitpsqtcxraejzlxvvmn`
@@ -63,7 +63,7 @@ repositório:
   `postgres`, connection string, nem projeto Supabase linkado via CLI
   (`supabase/config.toml` aponta para `bydirbbhuhihxrgxvrlb`, projeto
   **diferente** do de produção — ver alerta na seção 6).
-- **Como obter acesso administrativo real:** ver [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md), seções 2.1 (convite/login no painel) e 2.2 (senha do usuário `postgres` para `psql`).
+- **Como obter acesso administrativo real:** ver [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md), seções 2.1 (convite/login no painel) e 2.2 (senha do usuário `postgres` para `psql`).
 - **Alternativa sem acesso ao Supabase:** aplicar via painel administrativo do
   próprio CalcJud (Parâmetros → Tabelas → `regras_subperiodo`), logado como
   administrador do sistema — mais lento por ser manual linha a linha, mas não
@@ -144,7 +144,7 @@ numérica limpa, renumere manualmente a regra POUPANCA/TR do Template_2 de
    projeto diferente e precisa ser corrigido separadamente (risco: alguém
    rodar `supabase db push` e atingir o projeto errado).
 2. **Gerar backup manual** antes de aplicar — comando pronto em
-   [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md), seção 3.2.
+   [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md), seção 3.2.
 3. **Rodar o script da seção 5** via SQL Editor do painel Supabase (mais
    simples) ou via `psql` com a connection string de Project Settings →
    Database.
@@ -168,7 +168,7 @@ numérica limpa, renumere manualmente a regra POUPANCA/TR do Template_2 de
   descrição original da correção e da pendência.
 - [`docs/history/analise-dos-testes-03-09-2026.md`](../history/analise-dos-testes-03-09-2026.md) — causa raiz da divergência de
   cálculo que originou toda a investigação.
-- [`CalcJud_Banco_de_dados.md`](003-CalcJud_Banco_de_dados.md) — guia geral de acesso, backup e segurança
+- [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md) — guia geral de acesso, backup e segurança
   do banco de dados do CalcJud.
 - `supabase/seed_templates_regras.sql` — script de configuração já corrigido
   (mas não substitui a regra antiga em produção; ver seção 4 acima).

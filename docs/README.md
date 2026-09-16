@@ -17,8 +17,7 @@
 Este arquivo é o manual funcional e técnico completo do CalcJud. O restante de `docs/` está organizado por tipo de conteúdo:
 
 - [`docs/adr/`](adr/) — decisões de arquitetura e correções relevantes já tomadas, uma por arquivo numerado (`NNN-descricao.md`), no formato Contexto/Decisão/Consequências. Comece por [`docs/adr/001-registros-de-decisao-arquitetural-adrs.md`](adr/001-registros-de-decisao-arquitetural-adrs.md); use [`docs/adr/template.md`](adr/template.md) para registrar uma decisão nova.
-- [`docs/specs/`](specs/) — specs de feature/tarefa não triviais, escritas antes da implementação (ver [`AGENTS.md`](../AGENTS.md)). Numeradas (`NNN-nome-da-feature.md`); `000` é o template.
-- [`docs/reference/`](reference/) — planilhas de referência da DCAL em [`docs/reference/planilhas/`](reference/planilhas/). Os manuais e guias de referência (banco de dados, validação contábil, testes de cálculo, atualização de taxas) que viviam aqui foram reorganizados para `docs/adr/002` a `006`.
+- [`docs/reference/`](reference/) — planilhas de referência da DCAL em [`docs/reference/planilhas/`](reference/planilhas/). Os manuais e guias de referência (banco de dados, validação contábil, testes de cálculo, atualização de taxas) foram reorganizados em `docs/adr/002` a `006`.
 - [`docs/history/`](history/) — investigações e atas de reunião sem uma decisão formal associada (ou que já viraram um ADR em `docs/adr/`), mantidas como registro histórico.
 - [`docs/CHANGELOG.md`](CHANGELOG.md) — histórico cronológico de funcionalidades e correções desde que o projeto foi clonado para desenvolvimento local.
 
@@ -228,9 +227,9 @@ O deploy de produção é feito na **Vercel**, como site estático gerado por `v
 
 ## Regras de versionamento (Git)
 
-- **Não versionar arquivos `.docx` e `.pdf`.** Documentos Word e PDF (relatórios, atas de reunião, resumos, manuais, planilhas de referência exportadas etc.) gerados durante o trabalho no repositório **não devem ser enviados ao GitHub** — nem em `docs/`, nem em qualquer outra pasta do projeto.
+- **Não versionar arquivos `.docx`, `.txt` e `.pdf`.** Documentos Word e PDF (relatórios, atas de reunião, resumos, manuais, planilhas de referência exportadas etc.) gerados durante o trabalho no repositório **não devem ser enviados ao GitHub** — nem em `docs/`, nem em qualquer outra pasta do projeto.
 - Essa regra já está aplicada em [.gitignore](../.gitignore) (`*.docx` e `*.pdf`), então esses arquivos ficam automaticamente fora de qualquer `git add`/`git commit` feito normalmente.
-- Ao gerar um documento `.docx`/`.pdf` como entregável de uma tarefa, mantenha-o apenas localmente (ou em `C:\temp\...`/outra pasta fora do repositório); se for necessário um registro versionado do mesmo conteúdo, gere a versão equivalente em **Markdown (`.md`)** e versiona-se essa, não o binário.
+- Ao gerar um documento `.docx`/`.txt`/`.pdf` como entregável de uma tarefa, mantenha-o apenas localmente (ou em `C:\temp\...`/outra pasta fora do repositório); se for necessário um registro versionado do mesmo conteúdo, gere a versão equivalente em **Markdown (`.md`)** e versiona-se essa, não o binário.
 - Antes de um `git add` amplo (`git add .`/`git add -A`), confira com `git status` se nenhum `.docx`/`.pdf` aparece para ser adicionado — caso apareça, é sinal de que o arquivo foi criado antes da regra do `.gitignore` existir, ou que o `.gitignore` precisa ser ajustado.
 
 ## Referências e materiais relacionados
