@@ -15,10 +15,6 @@ dist-ssr
 .env.*
 !.env.example
 
-# Documentos Word e PDF (versionados apenas localmente)
-*.docx
-*.pdf
-
 # Saida gerada pelo Playwright (npx playwright test)
 /playwright-report/
 /test-results/
@@ -44,7 +40,16 @@ src/script/
 # Material de apoio para reuniões com o contador (nunca versionado, qualquer extensão)
 docs/contador/
 
-# Arquivos .txt não são versionados (notas/anotações locais), exceto o
-# robots.txt, que é servido de fato pela aplicação em produção.
+# Arquivos .txt, .docx e .pdf não são versionados (documentos gerados
+# localmente), exceto o robots.txt, que é servido de fato pela aplicação em
+# produção.
 *.txt
+*.docx
+*.pdf
 !public/robots.txt
+
+# Arquivos e pastas de tooling de agente de IA (nunca versionados)
+AGENTS.md
+.agents/
+docs/adr/template.md
+.claude/

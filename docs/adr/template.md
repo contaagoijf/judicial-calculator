@@ -1,4 +1,4 @@
-# ADR NNN: _titulo curto da decisao_
+# ADR NNN: _titulo curto da decisao sem acento e sempre em minúsculo_
 
 **Date:** DD/MM/AAAA
 
@@ -17,4 +17,4 @@ O que foi decidido, de forma direta e verificável (não "vamos considerar", mas
 O que fica mais fácil, o que fica mais difícil, e qual trade-off foi aceito conscientemente.
 
 ---
-> Copie este arquivo para `docs/adr/NNN-descricao-curta-em-kebab-case.md`, não use acentos no nome do arquivo, usando o próximo número sequencial de 3 dígitos disponível em `docs/adr/`.
+> Copie este arquivo para `docs/adr/NNN-descricao-curta-em-kebab-case.md`, não use acentos no nome do arquivo que deve estar sempre em minúsculo, usando o próximo número sequencial de 3 dígitos disponível em `docs/adr/`.

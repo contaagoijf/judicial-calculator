@@ -4,12 +4,12 @@
 
 ## 0. Contexto crítico: produção sem staging
 
-**Todo push para `main` dispara deploy automático em produção** (`calcjud.vercel.app`, via Vercel), lendo direto do mesmo banco Supabase de produção — não existe ambiente de staging. Por isso:
+**Todo push para `main` dispara deploy automático em produção** (`calcjud.vercel.app`, via Vercel), lendo direto do mesmo banco Supabase de produção, não existe ambiente de staging. Por isso:
 
 - Nenhuma mudança de código vai para `main` sem ter sido testada localmente (`npm run dev` / `npm run test` / `npm run test:e2e`).
-- Mudanças que dependem de variáveis de ambiente novas no Vercel (ver [ADR 010](docs/adr/010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md)) só entram em código depois que a variável já existe no painel do Vercel — nunca antes.
+- Mudanças que dependem de variáveis de ambiente novas no Vercel (ver [ADR 010](docs/adr/010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md)) só entram em código depois que a variável já existe no painel do Vercel, nunca antes.
 - Migrações de banco (`supabase/migrations/`, `supabase/schema.sql`, `supabase/seed*.sql`) não se aplicam sozinhas ao banco de produção — see [Comandos do projeto](#5-comandos-do-projeto) e [ADR 008](docs/adr/008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md) para o processo manual hoje em uso.
-- Documentos Word/PDF (`.docx`/`.pdf`) nunca são versionados — ver [`docs/README.md#regras-de-versionamento-git`](docs/README.md#regras-de-versionamento-git).
+- Documentos Word/PDF (`.docx`/`.txt`/`.pdf`) nunca são versionados — ver [`docs/README.md#regras-de-versionamento-git`](docs/README.md#regras-de-versionamento-git).
 
 ## 1. Antes de qualquer código: Spec primeiro
 
@@ -47,7 +47,7 @@ Decisões de arquitetura, correção estrutural ou trade-off técnico relevante 
 | Lint | `npm run lint` (ESLint) |
 | Type-check | `npx tsc --noEmit` |
 | Build | `npm run build` |
-| Configurar ambiente local | `cp .env.example .env` e preencha com credenciais do projeto Supabase (ver [`docs/adr/003-CalcJud_Banco_de_dados.md`](docs/adr/003-CalcJud_Banco_de_dados.md)) |
+| Configurar ambiente local | `cp .env.example .env` e preencha com credenciais do projeto Supabase (ver [`docs/adr/003-calcjud_banco_de_dados.md`](docs/adr/003-calcjud_banco_de_dados.md)) |
 | Aplicar migração no banco de produção | Manual, via SQL Editor do Supabase ou `psql` — não há pipeline automático hoje; ver [ADR 008](docs/adr/008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md) para o processo e os riscos |
 
 ## 6. Convenções globais
