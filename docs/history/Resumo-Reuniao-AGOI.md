@@ -29,7 +29,7 @@ Os dois testes abaixo usam o **mesmo caso de exemplo, do ano-calendário de 2020
 
 ### 2.1 Teste 1 — Ajuste Anual do IRPF (ano-calendário 2020)
 
-**Arquivo:** `Calculo-de-Ajuste-Anual-do-IRPF.md`
+**Arquivo:** `calculo-de-ajuste-anual-do-irpf.md`
 
 O teste simulou, no site em produção (calcjud.vercel.app), o preenchimento completo de um Ajuste Anual para o ano de 2020, com dados de entrada que já tinham um resultado esperado conferido de antemão (o mesmo caso usado como gabarito no teste automatizado de fórmula, ver seção 2.3 do documento técnico).
 
@@ -48,7 +48,7 @@ O teste simulou, no site em produção (calcjud.vercel.app), o preenchimento com
 
 ### 2.2 Teste 2 — Retificação de dois anos (2019 e 2020), sem correção monetária
 
-**Arquivo:** `Retificacao-2019-e-2020-sem-correção.md`
+**Arquivo:** `retificacao-2019-e-2020-sem-correcao.md`
 
 O teste simulou uma Retificação envolvendo dois anos-calendário (2019 e 2020) no mesmo processo, com o tipo de correção monetária definido como **"sem correção"** (isto é, sem aplicar nenhum índice de correção monetária — apenas o somatório das diferenças apuradas em cada ano).
 
@@ -71,7 +71,7 @@ Ou seja: os testes preliminares eliminam uma possibilidade (erro grosseiro na f�
 
 ## 3. Testes ainda pendentes: Frente A, Frente B e cruzamento dos resultados
 
-**Estes testes ainda NÃO foram realizados.** Eles estão descritos no documento `CalcJud-Testes-de-Calculo-do-IRPF(guia-e-resultado-da-execucao).md` (seções 2.1 a 2.3) e são o próximo passo necessário para investigar a divergência relatada pelo contador.
+**Estes testes ainda NÃO foram realizados.** Eles estão descritos no documento `calcjud-testes-de-calculo-do-irpf(guia-e-resultado-da-execucao).md` (seções 2.1 a 2.3) e são o próximo passo necessário para investigar a divergência relatada pelo contador.
 
 ### 3.1 Frente A — validar a fórmula isoladamente
 
