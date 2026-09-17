@@ -325,3 +325,45 @@ Duas causas raiz independentes, ambas corrigidas:
   `v7_relativeSplatPath` do React Router, removendo os avisos de depreciação
   do console.
 
+## 17/09/2026 — Correção do mês final duplicado no juros SELIC da Retificação
+
+**Corrigido, testado e publicado em produção.**
+
+A contadoria enviou uma nova série de esclarecimentos (arquivos `15` a `22` em
+`docs/contadoria/`), fixando duas datas de referência específicas (vencimento
+e pagamento) para permitir comparação exata com a calculadora oficial da
+Receita Federal (Sicalc): vencimento 04/1997, pagamento 08/2026 → 372,77%.
+Refazendo o teste com essas datas, o sistema calculava 374,43% — uma
+diferença de +1,66 ponto percentual.
+
+- **Causa raiz**: o mês igual à `DATA_FIM` do cálculo (a data em que o
+  cálculo está sendo feito) somava, ao mesmo tempo, a taxa SELIC real
+  cadastrada em `taxas_historicas` **e** um `+ 0,01` fixo adicional — uma
+  duplicidade que só não era percebida antes porque, até a migração de
+  14/09/2026 (ver seção correspondente), o mês de `DATA_FIM` normalmente
+  ainda não tinha taxa real cadastrada, então o fixo era, por coincidência, o
+  único valor somado para aquele mês.
+- **Hipótese testada e descartada durante a investigação**: cogitou-se que a
+  soma deveria começar um mês antes do campo "Início da correção", por causa
+  de um esclarecimento da contadoria sobre a diferença entre esse campo e o
+  vencimento usado no Sicalc. Essa hipótese foi refutada numericamente,
+  cruzando dois exemplos independentes enviados pela contadoria com a tabela
+  oficial de Selic mensal da Receita Federal e a série 4390 do Banco Central:
+  o campo "Início da correção", como já está cadastrado no sistema, já
+  representa corretamente o mês em que a soma deve começar — nenhum
+  deslocamento é necessário aí.
+- **Correção**: em `calculoIRPF.ts`, nova função auxiliar `somarJurosSelic()`
+  garante que o mês de `DATA_FIM` sempre some 1,00 ponto percentual fixo no
+  lugar da (nunca em conjunto com) taxa real cadastrada, aplicada nos três
+  pontos do cálculo que somam juros SELIC/Poupança/Percentual.
+- Validado o caso de referência (ano-calendário 1996, vencimento 04/1997,
+  pagamento 08/2026) de forma isolada — bundle de `calculoIRPF.ts` gerado via
+  `esbuild` e executado em Node com dados reais do banco de produção, sem
+  depender de automação de navegador: resultado 372,77%, idêntico à
+  contadoria e à calculadora oficial do Sicalc. Documentado no
+  [ADR 011](adr/011-corrigir-mes-final-fixo-do-juros-selic-na-retificacao.md).
+- Aproveitado o mesmo commit para renomear `docs/contador/` para
+  `docs/contadoria/` no `.gitignore` (terminologia padronizada do projeto) e
+  reorganizar as planilhas de referência em `docs/reference/planilhas/`,
+  separando-as por período (`01`: 1996-2019/2023, `02`: 1996-2018).
+
