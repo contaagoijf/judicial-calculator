@@ -371,6 +371,13 @@ function primeiroDiaDoMes(s: string): string {
   return isoDate(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)));
 }
 
+// Primeiro dia do mês anterior ao mês de uma data (rola o ano automaticamente
+// em janeiro, via aritmética nativa de Date).
+function mesAnterior(s: string): string {
+  const d = parseDate(primeiroDiaDoMes(s));
+  return isoDate(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, 1)));
+}
+
 function dataDistribuicao(dataAjuiz: string): string {
   const d = parseDate(dataAjuiz);
   return isoDate(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)));
@@ -445,6 +452,32 @@ function somarValorPercentualNoPeriodo(
       return mes >= inicio && mes <= fim;
     })
     .reduce((soma, tx) => soma + Number(tx.valor_percentual), 0);
+}
+
+// Soma os juros Selic/Poupança/Percentual acumulados entre duas datas de
+// referência, aplicando a convenção confirmada pela contadoria em 17/09/2026
+// (ver ADR correspondente): o mês de início da soma é sempre o próprio mês
+// da data de início recebida (INICIO_CORRECAO já representa, por definição,
+// o mês seguinte ao vencimento usado pela Receita Federal/Sicalc — nenhum
+// ajuste é necessário aqui). Quando o fim do período é a própria DATA_FIM do
+// cálculo ("hoje", a data em que o cálculo está sendo feito), o mês da
+// própria DATA_FIM não usa a taxa real cadastrada em taxas_historicas:
+// usa-se sempre 1 ponto percentual fixo, independentemente do dia exato em
+// que o cálculo é feito ou de já existir taxa real cadastrada para aquele
+// mês. Datas de fim que não sejam essa referência (ex.: DATA_DIST, a
+// distribuição do processo) são somadas normalmente, com a taxa real do mês.
+function somarJurosSelic(
+  taxas: TaxaHistorica[],
+  idIndice: string | null,
+  dataInicio: string,
+  dataFim: string,
+  opts: { fimEhDataFinalCalculo?: boolean } = {}
+): number {
+  if (opts.fimEhDataFinalCalculo) {
+    const fimAjustado = mesAnterior(dataFim);
+    return somarValorPercentualNoPeriodo(taxas, idIndice, dataInicio, fimAjustado) + 1;
+  }
+  return somarValorPercentualNoPeriodo(taxas, idIndice, dataInicio, dataFim);
 }
 
 // ----- cálculo principal ----------------------------------------------------
@@ -559,8 +592,10 @@ export function calcularRetificacao(
         fator_cm = round8(cm_dist / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
         // Juros somados mês a mês entre INICIO_CORRECAO e DATA_DIST (ver
-        // somarValorPercentualNoPeriodo acima — não é um fator composto).
-        fator_juros = round8(1 + somarValorPercentualNoPeriodo(
+        // somarJurosSelic acima — não é um fator composto). DATA_DIST não é
+        // a data final do cálculo, então seu mês soma a taxa real, sem o
+        // ajuste de 1 ponto fixo.
+        fator_juros = round8(1 + somarJurosSelic(
           ctx.taxas, regraInicio?.id_indice_juros ?? null, inicio_correcao, data_dist
         ) / 100);
         valor_juros = round2(valor_cm * fator_juros);
@@ -569,11 +604,13 @@ export function calcularRetificacao(
         // Parte VII (CM) e Parte IX (CM novamente, juros entre INICIO_CORRECAO e FIM)
         fator_cm = round8(cm_fim / cm_aux);
         valor_cm = round2(valor_devido * fator_cm);
-        // Idem: soma direta dos juros mensais entre INICIO_CORRECAO e DATA_FIM.
+        // Idem: soma direta dos juros mensais entre INICIO_CORRECAO e
+        // DATA_FIM, com o ajuste de mês inicial/mês final de somarJurosSelic.
         fator_juros = dados.data_fim
-          ? round8(1 + somarValorPercentualNoPeriodo(
-              ctx.taxas, regraInicio?.id_indice_juros ?? null, inicio_correcao, dados.data_fim
-            ) / 100 + 0.01)
+          ? round8(1 + somarJurosSelic(
+              ctx.taxas, regraInicio?.id_indice_juros ?? null, inicio_correcao, dados.data_fim,
+              { fimEhDataFinalCalculo: true }
+            ) / 100)
           : round8(1.01);
         valor_juros = round2(valor_cm * fator_juros);
         total_com_juros = round2(valor_cm + valor_juros);
@@ -624,12 +661,15 @@ export function calcularRetificacao(
   const fator_cm_fim = cm_dist > 0 ? round8(cm_fim / cm_dist) : 1;
   const principal_ad = round2(total_principal_ad * fator_cm_fim);
   // Juros somados mês a mês entre DATA_DIST e DATA_FIM (mesma correção da
-  // Parte IV/VII acima — soma direta, não fator_acumulado dividido).
+  // Parte IV/VII acima — soma direta, não fator_acumulado dividido). DATA_FIM
+  // aqui também é a data final do cálculo, então recebe o mesmo ajuste do
+  // mês final fixo (ver somarJurosSelic acima).
   let fator_juros_fim = 1;
   if (atualiza_calculo && id_template && dados.data_fim) {
     const regraParaJurosFim = buscarRegraVigente(ctx.regras, id_template, dados.data_fim);
-    fator_juros_fim = round8(1 + somarValorPercentualNoPeriodo(
-      ctx.taxas, regraParaJurosFim?.id_indice_juros ?? null, data_dist, dados.data_fim
+    fator_juros_fim = round8(1 + somarJurosSelic(
+      ctx.taxas, regraParaJurosFim?.id_indice_juros ?? null, data_dist, dados.data_fim,
+      { fimEhDataFinalCalculo: true }
     ) / 100);
   }
   const juros_ad_val = round2(principal_ad * fator_juros_fim);

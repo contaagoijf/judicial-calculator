@@ -38,7 +38,7 @@ glpi-profile/
 src/script/
 
 # Material de apoio para reuniões com o contador (nunca versionado, qualquer extensão)
-docs/contador/
+docs/contadoria/
 
 # Arquivos .txt, .docx e .pdf não são versionados (documentos gerados
 # localmente), exceto o robots.txt, que é servido de fato pela aplicação em
