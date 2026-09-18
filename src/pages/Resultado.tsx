@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/externalClient';
 import { useToast } from '@/hooks/use-toast';
 import type { ResultadoCalculo, DadosEntradaAjusteAnual } from '@/services/calculoIRPF';
@@ -14,6 +16,8 @@ const ResultadoPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const [anoDuplicadoOpen, setAnoDuplicadoOpen] = useState(false);
+  const [idDeclaracaoExistente, setIdDeclaracaoExistente] = useState<string | null>(null);
 
   const state = location.state as {
     resultado: ResultadoCalculo;
@@ -54,6 +58,23 @@ const ResultadoPage = () => {
 
   const handleFinalizar = async () => {
     try {
+      // Garante que nenhuma declaração seja inserida em duplicidade para o
+      // mesmo processo/ano-calendário, mesmo que a checagem feita na tela
+      // anterior (Ajuste Anual) esteja desatualizada (ex.: duas abas abertas).
+      const { data: existentes, error: errBusca } = await supabase
+        .from('calculos')
+        .select('id')
+        .eq('tipo_calculo', 'ajuste_anual')
+        .eq('numero_processo', processo)
+        .eq('ano_calendario', anoCalendario)
+        .limit(1);
+      if (errBusca) throw errBusca;
+      if (existentes && existentes.length > 0) {
+        setIdDeclaracaoExistente(existentes[0].id);
+        setAnoDuplicadoOpen(true);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('calculos')
         .insert({
@@ -76,6 +97,12 @@ const ResultadoPage = () => {
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     }
+  };
+
+  const handleAlterarDeclaracaoExistente = () => {
+    if (!idDeclaracaoExistente) return;
+    setAnoDuplicadoOpen(false);
+    navigate(`/calculo/ajuste-anual?id=${idDeclaracaoExistente}`);
   };
 
   const isRestituir = resultado.imposto_a_pagar > 0;
@@ -117,6 +144,22 @@ const ResultadoPage = () => {
           </Button>
         </div>
       </div>
+
+      <Dialog open={anoDuplicadoOpen} onOpenChange={setAnoDuplicadoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Declaração já cadastrada</DialogTitle>
+            <DialogDescription>
+              Já existe uma declaração deste processo para o ano-calendário {anoCalendario}.
+              Deseja alterar a declaração já cadastrada para esse ano?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setAnoDuplicadoOpen(false)}>Não</Button>
+            <Button onClick={handleAlterarDeclaracaoExistente}>Sim, alterar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

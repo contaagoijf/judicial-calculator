@@ -1,12 +1,15 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type {
-  ResultadoCalculo,
-  ResultadoRetificacao,
-  FaixaIR,
-  PeriodoRetificacao,
-  DadosEntradaRetificacao,
-  AlteracaoRetificacao,
+import {
+  calcularBaseHonorarios,
+  calcularHonorariosEscalonados,
+  FAIXAS_HONORARIOS_ART_85_PADRAO,
+  type ResultadoCalculo,
+  type ResultadoRetificacao,
+  type FaixaIR,
+  type PeriodoRetificacao,
+  type DadosEntradaRetificacao,
+  type AlteracaoRetificacao,
 } from './calculoIRPF';
 
 function formatCurrency(val: number): string {
@@ -175,10 +178,11 @@ export function gerarRelatorioPDF(
       y = (doc as any).lastAutoTable.finalY + 6;
     }
 
+    const baseHonorarios = calcularBaseHonorarios(dadosRet?.base_honorarios, r.total_execucao, dadosRet?.valor_causa, dadosRet?.valor_certo);
     const honorariosPercent = ((dadosRet?.percentual_honorarios ?? 0) / 100);
-    const honorariosValue = Math.round(
-      ((r.periodos ?? []).reduce((sum, p) => sum + p.valor_devido, 0) * honorariosPercent) * 100
-    ) / 100;
+    const honorariosValue = dadosRet?.escalonar_honorarios
+      ? calcularHonorariosEscalonados(baseHonorarios, r.salario_min_atual, dadosRet?.faixas_honorarios ?? FAIXAS_HONORARIOS_ART_85_PADRAO)
+      : Math.round((baseHonorarios * honorariosPercent) * 100) / 100;
 
     // Resumo Geral
     doc.setFontSize(10);
@@ -189,7 +193,10 @@ export function gerarRelatorioPDF(
       body: [
         ['Principal devido:', formatCurrency(r.principal_devido)],
         ['Juros devido:', formatCurrency(r.juros_devido)],
-        [`Honorários (${formatPercent(honorariosPercent)}):`, formatCurrency(honorariosValue)],
+        [
+          dadosRet?.escalonar_honorarios ? 'Honorários (escalonado — art. 85, §3º do CPC):' : `Honorários (${formatPercent(honorariosPercent)}):`,
+          formatCurrency(honorariosValue),
+        ],
         [{ content: 'Total da execução:', styles: { fontStyle: 'bold' } }, { content: formatCurrency(r.total_execucao), styles: { fontStyle: 'bold' } }],
       ] as never[],
       styles: { fontSize: 9, cellPadding: 2 },

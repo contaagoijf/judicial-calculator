@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit, ClipboardPaste } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,12 +12,16 @@ import { useParametrosIR, useFaixasIRAll, useCalculo, useCalculosPorProcesso } f
 import { useRetificacaoContexto } from '@/hooks/useRetificacaoContexto';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { useAuth } from '@/contexts/AuthContext';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlteracaoRetificacao,
   calcularAjusteAnual,
   calcularRetificacao,
+  FAIXAS_HONORARIOS_ART_85_PADRAO,
+  type BaseHonorarios,
   type DadosEntradaAjusteAnual,
   type DadosEntradaRetificacao,
+  type FaixaHonorarios,
   type ParametrosIR,
   type FaixaIR,
   type TipoCorrecao,
@@ -98,10 +102,41 @@ const RetificacaoPage = () => {
     }
   };
 
+  const handleColarProcesso = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      setProcesso(formatNumeroProcesso(texto));
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleColarNomeAutor = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      setNomeAutor(texto);
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const [nomeAutor, setNomeAutor] = useState('');
   const [dataAjuizamento, setDataAjuizamento] = useState('');
   const [tipoCorrecao, setTipoCorrecao] = useState<TipoCorrecao>('SEM_CORRECAO');
   const [percentHonorarios, setPercentHonorarios] = useState(0);
+  const [baseHonorarios, setBaseHonorarios] = useState<BaseHonorarios>('VALOR_CONDENACAO');
+  const [valorCausa, setValorCausa] = useState(0);
+  const [valorCerto, setValorCerto] = useState(0);
+  const [escalonarHonorarios, setEscalonarHonorarios] = useState(false);
+  const [faixasHonorarios, setFaixasHonorarios] = useState<FaixaHonorarios[]>(FAIXAS_HONORARIOS_ART_85_PADRAO);
   const [limitaAjuiz, setLimitaAjuiz] = useState<TipoLimitaAjuiz>('NAO');
   const [dataFim, setDataFim] = useState('');
   const [informacoes, setInformacoes] = useState('');
@@ -111,6 +146,8 @@ const RetificacaoPage = () => {
 
   const [periodoDialogOpen, setPeriodoDialogOpen] = useState(false);
   const [editingPeriodoIndex, setEditingPeriodoIndex] = useState<number | null>(null);
+  const [anoDuplicadoPeriodoOpen, setAnoDuplicadoPeriodoOpen] = useState(false);
+  const [indiceAnoDuplicado, setIndiceAnoDuplicado] = useState<number | null>(null);
   const [periodoDraft, setPeriodoDraft] = useState<DadosEntradaAjusteAnual>(defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()));
 
   // Tipo do saldo do ajuste anual (A pagar/A restituir) é sempre definido
@@ -144,6 +181,11 @@ const RetificacaoPage = () => {
     setDataAjuizamento(draft.data_ajuizamento);
     setTipoCorrecao(draft.tipo_correcao);
     setPercentHonorarios(draft.percentual_honorarios);
+    setBaseHonorarios(draft.base_honorarios ?? 'VALOR_CONDENACAO');
+    setValorCausa(draft.valor_causa ?? 0);
+    setValorCerto(draft.valor_certo ?? 0);
+    setEscalonarHonorarios(draft.escalonar_honorarios ?? false);
+    setFaixasHonorarios(draft.faixas_honorarios ?? FAIXAS_HONORARIOS_ART_85_PADRAO);
     setLimitaAjuiz(draft.limita_ajuiz ?? 'NAO');
     setDataFim(draft.data_fim ?? '');
     setInformacoes(draft.informacoes ?? '');
@@ -251,9 +293,10 @@ const RetificacaoPage = () => {
       return;
     }
 
-    const anoDuplicado = periodos.some((periodo, idx) => idx !== editingPeriodoIndex && periodo.ano_calendario === periodoDraft.ano_calendario);
-    if (anoDuplicado) {
-      toast({ title: 'Erro', description: 'Já existe um ano cadastrado com esse ano calendário.', variant: 'destructive' });
+    const indiceExistente = periodos.findIndex((periodo, idx) => idx !== editingPeriodoIndex && periodo.ano_calendario === periodoDraft.ano_calendario);
+    if (indiceExistente !== -1) {
+      setIndiceAnoDuplicado(indiceExistente);
+      setAnoDuplicadoPeriodoOpen(true);
       return;
     }
 
@@ -269,6 +312,16 @@ const RetificacaoPage = () => {
       return current.map((periodo, idx) => idx === editingPeriodoIndex ? atual : periodo);
     });
     setPeriodoDialogOpen(false);
+  };
+
+  // Impede duplicidade de declaração do mesmo ano-calendário: se já existir
+  // um ano cadastrado nesta retificação, pergunta se o usuário deseja
+  // alterar essa declaração em vez de criar uma nova.
+  const handleAlterarPeriodoAnoDuplicado = () => {
+    if (indiceAnoDuplicado === null) return;
+    setEditingPeriodoIndex(indiceAnoDuplicado);
+    setPeriodoDraft({ ...periodos[indiceAnoDuplicado], alteracoes: periodos[indiceAnoDuplicado].alteracoes ?? [] });
+    setAnoDuplicadoPeriodoOpen(false);
   };
 
   const handleRemovePeriodo = (index: number) => {
@@ -363,6 +416,11 @@ const RetificacaoPage = () => {
         data_ajuizamento: dataAjuizamento,
         tipo_correcao: tipoCorrecao,
         percentual_honorarios: percentHonorarios,
+        base_honorarios: baseHonorarios,
+        valor_causa: baseHonorarios === 'VALOR_CAUSA' ? valorCausa : undefined,
+        valor_certo: baseHonorarios === 'VALOR_CERTO' ? valorCerto : undefined,
+        escalonar_honorarios: escalonarHonorarios,
+        faixas_honorarios: escalonarHonorarios ? faixasHonorarios : undefined,
         limita_ajuiz: tipoCorrecao !== 'SEM_CORRECAO' ? limitaAjuiz : undefined,
         data_fim: tipoCorrecao !== 'SEM_CORRECAO' ? dataFim : undefined,
         informacoes: tipoCorrecao !== 'SEM_CORRECAO' ? informacoes : undefined,
@@ -400,22 +458,47 @@ const RetificacaoPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Número do processo *</Label>
-              <Input
-                value={processo}
-                onChange={(e) => setProcesso(formatNumeroProcesso(e.target.value))}
-                onBlur={handleProcessoBlur}
-                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                placeholder="0000000-00.0000.0.00.0000"
-                inputMode="numeric"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={processo}
+                  onChange={(e) => setProcesso(formatNumeroProcesso(e.target.value))}
+                  onBlur={handleProcessoBlur}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                  placeholder="0000000-00.0000.0.00.0000"
+                  inputMode="numeric"
+                  className="min-w-0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarProcesso}
+                  title="Colar número do processo da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Nome do autor *</Label>
-              <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" />
+              <div className="flex gap-2">
+                <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" className="min-w-0" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarNomeAutor}
+                  title="Colar nome do autor da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Data do ajuizamento *</Label>
-              <Input type="date" value={dataAjuizamento} onChange={(e) => setDataAjuizamento(e.target.value)} />
+              <Input type="date" value={dataAjuizamento} onChange={(e) => setDataAjuizamento(e.target.value)} className="max-w-[220px]" />
             </div>
           </div>
         </div>
@@ -435,18 +518,99 @@ const RetificacaoPage = () => {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Percentual de honorários *</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={percentHonorarios}
-                onChange={(e) => setPercentHonorarios(parseFloat(e.target.value) || 0)}
-                placeholder="0,00"
-                className="font-mono"
-              />
+              <Label>Base de cálculo dos honorários *</Label>
+              <Select value={baseHonorarios} onValueChange={(value) => setBaseHonorarios(value as BaseHonorarios)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VALOR_CONDENACAO">Valor da condenação (principal + juros)</SelectItem>
+                  <SelectItem value="VALOR_CAUSA">Valor da causa ou proveito econômico</SelectItem>
+                  <SelectItem value="VALOR_CERTO">Valor certo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {baseHonorarios === 'VALOR_CAUSA' && (
+              <CampoMonetario label="Valor da causa *" value={valorCausa} onChange={setValorCausa} />
+            )}
+            {baseHonorarios === 'VALOR_CERTO' && (
+              <CampoMonetario label="Valor certo *" value={valorCerto} onChange={setValorCerto} />
+            )}
           </div>
+
+          <div className="flex items-center gap-2 mt-4">
+            <Checkbox
+              id="escalonar-honorarios"
+              checked={escalonarHonorarios}
+              onCheckedChange={(checked) => setEscalonarHonorarios(checked === true)}
+            />
+            <Label htmlFor="escalonar-honorarios" className="cursor-pointer">
+              Escalonar honorários (se Fazenda Pública for parte — art. 85, §3º do CPC)
+            </Label>
+          </div>
+
+          {escalonarHonorarios ? (
+            <div className="mt-4 border rounded-md p-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Percentual aplicado sobre a parcela do valor em cada faixa (em múltiplos do salário mínimo
+                vigente na data do cálculo). Os percentuais abaixo são os tetos legais do art. 85, §3º do CPC
+                e podem ser reduzidos quando o juiz fixar valor diferente.
+              </p>
+              <div className="mx-auto w-fit max-w-full space-y-2">
+                {faixasHonorarios.map((faixa, idx) => {
+                  const limiteAnterior = idx === 0 ? 0 : faixasHonorarios[idx - 1].limite_salarios_minimos;
+                  const tetoLegal = FAIXAS_HONORARIOS_ART_85_PADRAO[idx]?.percentual;
+                  const label = faixa.limite_salarios_minimos != null
+                    ? `Inciso ${['I', 'II', 'III', 'IV', 'V'][idx] ?? idx + 1} — ${idx === 0 ? 'até' : 'acima de ' + limiteAnterior + ' até'} ${faixa.limite_salarios_minimos} SMs (até ${tetoLegal}%):`
+                    : `Inciso ${['I', 'II', 'III', 'IV', 'V'][idx] ?? idx + 1} — acima de ${limiteAnterior} SMs (até ${tetoLegal}%):`;
+                  return (
+                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                      <Label className="text-sm text-left sm:text-right w-full sm:w-[400px] shrink-0">{label}</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={faixa.percentual}
+                          onChange={(e) => {
+                            const novoPercentual = parseFloat(e.target.value) || 0;
+                            setFaixasHonorarios((prev) =>
+                              prev.map((f, i) => (i === idx ? { ...f, percentual: novoPercentual } : f))
+                            );
+                          }}
+                          className="font-mono w-20 shrink-0"
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <div className="space-y-1.5 w-fit">
+                <Label>Percentual de honorários *</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="1"
+                    maxLength={2}
+                    value={percentHonorarios}
+                    onChange={(e) => {
+                      const digits = e.target.value.slice(0, 2);
+                      const parsed = parseInt(digits, 10);
+                      setPercentHonorarios(Number.isNaN(parsed) ? 0 : Math.min(parsed, 20));
+                    }}
+                    placeholder="0"
+                    className="font-mono w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {tipoCorrecao !== 'SEM_CORRECAO' && (
@@ -456,7 +620,7 @@ const RetificacaoPage = () => {
               <div className="space-y-1.5">
                 <Label>Limita total na data do ajuizamento</Label>
                 <Select value={limitaAjuiz} onValueChange={(value) => setLimitaAjuiz(value as TipoLimitaAjuiz)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="max-w-[160px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SIM">SIM</SelectItem>
                     <SelectItem value="NAO">NÃO</SelectItem>
@@ -465,7 +629,7 @@ const RetificacaoPage = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>Atualiza cálculo até</Label>
-                <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+                <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="max-w-[220px]" />
               </div>
               <div className="space-y-1.5">
                 <Label>Informações</Label>
@@ -549,7 +713,7 @@ const RetificacaoPage = () => {
                   <div className="space-y-1.5">
                     <Label>Ano calendário</Label>
                     <Select value={periodoDraft.ano_calendario.toString()} onValueChange={(value) => setPeriodoDraft({ ...periodoDraft, ano_calendario: parseInt(value) })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="max-w-[140px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {anosOptions.map((ano) => (
                           <SelectItem key={ano} value={ano.toString()}>{ano}</SelectItem>
@@ -560,7 +724,7 @@ const RetificacaoPage = () => {
                   <div className="space-y-1.5">
                     <Label>Tipo de declaração</Label>
                     <Select value={periodoDraft.tipo_declaracao} onValueChange={(value) => setPeriodoDraft({ ...periodoDraft, tipo_declaracao: value as 'completa' | 'simplificada' })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="max-w-[180px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="completa">Completa</SelectItem>
                         <SelectItem value="simplificada">Simplificada</SelectItem>
@@ -570,26 +734,26 @@ const RetificacaoPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-                  <CampoMonetario label="Rendimentos tributáveis" value={periodoDraft.rendimentos_tributaveis} onChange={(v) => setPeriodoDraft({ ...periodoDraft, rendimentos_tributaveis: v })} inputClassName="min-w-[180px]" />
+                  <CampoMonetario label="Rendimentos tributáveis" value={periodoDraft.rendimentos_tributaveis} onChange={(v) => setPeriodoDraft({ ...periodoDraft, rendimentos_tributaveis: v })} inputClassName="max-w-[210px]" />
                   <CampoMonetario
                     label="Total das deduções"
                     value={periodoDraft.deducoes_legais}
                     onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_legais: v })}
                     disabled={periodoDraft.tipo_declaracao === 'simplificada'}
-                    inputClassName="min-w-[180px]"
+                    inputClassName="max-w-[210px]"
                   />
                   <CampoMonetario
                     label="Deduções de incentivo"
                     value={periodoDraft.deducoes_incentivo}
                     onChange={(v) => setPeriodoDraft({ ...periodoDraft, deducoes_incentivo: v })}
                     disabled={periodoDraft.tipo_declaracao === 'simplificada'}
-                    inputClassName="min-w-[180px]"
+                    inputClassName="max-w-[210px]"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-                  <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} inputClassName="min-w-[180px]" />
-                  <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} inputClassName="min-w-[180px]" />
+                  <CampoMonetario label="Imposto RRA" value={periodoDraft.imposto_rra} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_rra: v })} inputClassName="max-w-[210px]" />
+                  <CampoMonetario label="Total do imposto pago / retido" value={periodoDraft.imposto_pago} onChange={(v) => setPeriodoDraft({ ...periodoDraft, imposto_pago: v })} inputClassName="max-w-[210px]" />
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Saldo do ajuste anual (declaração original)</Label>
                     <Input
@@ -600,7 +764,7 @@ const RetificacaoPage = () => {
                         setPeriodoDraft({ ...periodoDraft, ajuste_anual: tipoSaldoPeriodo === 'RESTITUIR' ? -magnitude : magnitude });
                       }}
                       placeholder="0,00"
-                      className="font-mono min-w-[180px]"
+                      className="font-mono max-w-[210px]"
                     />
                   </div>
                 </div>
@@ -609,7 +773,7 @@ const RetificacaoPage = () => {
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Tipo do saldo do ajuste anual</Label>
                     <Select value={tipoSaldoPeriodo} disabled>
-                      <SelectTrigger title="Definido automaticamente pelo sistema, a partir do imposto devido apurado na declaração.">
+                      <SelectTrigger className="max-w-[210px]" title="Definido automaticamente pelo sistema, a partir do imposto devido apurado na declaração.">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -685,6 +849,23 @@ const RetificacaoPage = () => {
                 <Button onClick={handleSalvarPeriodo}>Salvar</Button>
               </DialogFooter>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={anoDuplicadoPeriodoOpen} onOpenChange={setAnoDuplicadoPeriodoOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Declaração já cadastrada</DialogTitle>
+              <DialogDescription>
+                Já existe uma declaração deste processo para o ano-calendário{' '}
+                {indiceAnoDuplicado !== null ? periodos[indiceAnoDuplicado]?.ano_calendario : ''}.
+                Deseja alterar a declaração já cadastrada para esse ano?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setAnoDuplicadoPeriodoOpen(false)}>Não</Button>
+              <Button onClick={handleAlterarPeriodoAnoDuplicado}>Sim, alterar</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

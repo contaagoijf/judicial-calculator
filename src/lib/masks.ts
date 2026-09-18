@@ -41,8 +41,13 @@ export function currencyToMaskedDisplay(value: number): string {
   return formatCurrencyDigits(cents);
 }
 
+// Máximo de dígitos aceitos num campo de valor monetário digitado — mesmo
+// tamanho da máscara de referência "1.313.213.213,21" (10 dígitos inteiros +
+// 2 decimais), para impedir que o campo cresça além do que a máscara comporta.
+const MAX_CURRENCY_DIGITS = 12;
+
 /** Extrai o valor numérico (em reais) a partir do texto digitado com máscara de moeda. */
 export function parseMaskedCurrency(displayValue: string): number {
-  const digits = displayValue.replace(/\D/g, '');
+  const digits = displayValue.replace(/\D/g, '').slice(0, MAX_CURRENCY_DIGITS);
   return digits ? parseInt(digits, 10) / 100 : 0;
 }
