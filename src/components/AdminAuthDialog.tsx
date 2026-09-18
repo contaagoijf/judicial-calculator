@@ -19,9 +19,25 @@ type Props = {
   compact?: boolean;
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidEmail(value: string): boolean {
+  return EMAIL_REGEX.test(value.trim());
+}
+
 export function AdminAuthDialog({ compact = false }: Props) {
   const { toast } = useToast();
-  const { user, isAdmin, signIn, signOut, completeFirstAccess, changePassword } = useAuth();
+  const {
+    user,
+    isAdmin,
+    signIn,
+    signOut,
+    completeFirstAccess,
+    changePassword,
+    isRegisteredAdminEmail,
+    requestPasswordRecovery,
+    verifyRecoveryCode,
+  } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
@@ -30,12 +46,101 @@ export function AdminAuthDialog({ compact = false }: Props) {
   const [firstAccessPassword, setFirstAccessPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  // Fluxo "Esqueceu a senha?"
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'email' | 'code'>('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [emailNaoEncontradoOpen, setEmailNaoEncontradoOpen] = useState(false);
+  const [novaSenhaOpen, setNovaSenhaOpen] = useState(false);
+  const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
+  const [emailInvalidoOpen, setEmailInvalidoOpen] = useState(false);
+
+  const handleEmailBlur = (value: string) => {
+    if (value.trim() && !isValidEmail(value)) {
+      setEmailInvalidoOpen(true);
+    }
+  };
+
   const resetFields = () => {
     setLoginEmail('');
     setLoginPassword('');
     setFirstAccessEmail('');
     setFirstAccessPassword('');
     setNewPassword('');
+  };
+
+  const resetForgotFields = () => {
+    setForgotStep('email');
+    setForgotEmail('');
+    setRecoveryCode('');
+  };
+
+  const handleAbrirEsqueceuSenha = () => {
+    resetForgotFields();
+    setForgotOpen(true);
+  };
+
+  const handleEnviarCodigoRecuperacao = async () => {
+    try {
+      setLoading(true);
+      const existe = await isRegisteredAdminEmail(forgotEmail);
+      if (!existe) {
+        setForgotOpen(false);
+        setEmailNaoEncontradoOpen(true);
+        return;
+      }
+      await requestPasswordRecovery(forgotEmail);
+      toast({
+        title: 'Código enviado',
+        description: 'Confira o e-mail informado e digite o código de 6 dígitos recebido.',
+      });
+      setForgotStep('code');
+    } catch (error: any) {
+      toast({
+        title: 'Não foi possível enviar o código',
+        description: error.message ?? 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerificarCodigoRecuperacao = async () => {
+    try {
+      setLoading(true);
+      await verifyRecoveryCode(forgotEmail, recoveryCode);
+      setForgotOpen(false);
+      resetForgotFields();
+      setNovaSenhaOpen(true);
+    } catch (error: any) {
+      toast({
+        title: 'Código inválido',
+        description: error.message ?? 'Verifique o código recebido por e-mail e tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSalvarNovaSenhaRecuperacao = async () => {
+    try {
+      setLoading(true);
+      await changePassword(recoveryNewPassword);
+      toast({ title: 'Senha atualizada', description: 'Use a nova senha no próximo login.' });
+      setNovaSenhaOpen(false);
+      setRecoveryNewPassword('');
+    } catch (error: any) {
+      toast({
+        title: 'Não foi possível salvar a nova senha',
+        description: error.message ?? 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const withFeedback = async (action: () => Promise<void>, successTitle: string, successDescription: string) => {
@@ -57,6 +162,7 @@ export function AdminAuthDialog({ compact = false }: Props) {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {user ? (
@@ -137,15 +243,27 @@ export function AdminAuthDialog({ compact = false }: Props) {
             <TabsContent value="login" className="space-y-4">
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} type="email" />
+                <Input
+                  value={loginEmail}
+                  onChange={(event) => setLoginEmail(event.target.value)}
+                  onBlur={(event) => handleEmailBlur(event.target.value)}
+                  type="email"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Senha</Label>
                 <Input value={loginPassword} onChange={(event) => setLoginPassword(event.target.value)} type="password" />
+                <button
+                  type="button"
+                  className="block w-full text-center text-sm text-primary underline-offset-4 hover:underline"
+                  onClick={handleAbrirEsqueceuSenha}
+                >
+                  Esqueceu a senha?
+                </button>
               </div>
               <Button
                 className="w-full"
-                disabled={!loginEmail || !loginPassword || loading}
+                disabled={!loginEmail || !isValidEmail(loginEmail) || !loginPassword || loading}
                 onClick={() =>
                   withFeedback(
                     () => signIn(loginEmail, loginPassword),
@@ -164,7 +282,12 @@ export function AdminAuthDialog({ compact = false }: Props) {
               </div>
               <div className="space-y-2">
                 <Label>Email convidado</Label>
-                <Input value={firstAccessEmail} onChange={(event) => setFirstAccessEmail(event.target.value)} type="email" />
+                <Input
+                  value={firstAccessEmail}
+                  onChange={(event) => setFirstAccessEmail(event.target.value)}
+                  onBlur={(event) => handleEmailBlur(event.target.value)}
+                  type="email"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Crie sua senha</Label>
@@ -176,7 +299,7 @@ export function AdminAuthDialog({ compact = false }: Props) {
               </div>
               <Button
                 className="w-full gap-2"
-                disabled={!firstAccessEmail || !firstAccessPassword || loading}
+                disabled={!firstAccessEmail || !isValidEmail(firstAccessEmail) || !firstAccessPassword || loading}
                 onClick={() =>
                   withFeedback(
                     () => completeFirstAccess(firstAccessEmail, firstAccessPassword),
@@ -193,5 +316,109 @@ export function AdminAuthDialog({ compact = false }: Props) {
         )}
       </DialogContent>
     </Dialog>
+
+      <Dialog open={forgotOpen} onOpenChange={(next) => { setForgotOpen(next); if (!next) resetForgotFields(); }}>
+        <DialogContent className="min-h-[420px] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Esqueceu a senha?</DialogTitle>
+            <DialogDescription>
+              {forgotStep === 'email'
+                ? 'Informe o e-mail cadastrado para receber um código de verificação.'
+                : 'Digite o código de 6 dígitos enviado para o seu e-mail.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotStep === 'email' ? (
+            <div className="flex flex-col">
+              <div className="space-y-2 mt-12">
+                <Label>E-mail cadastrado</Label>
+                <Input
+                  value={forgotEmail}
+                  onChange={(event) => setForgotEmail(event.target.value)}
+                  onBlur={(event) => handleEmailBlur(event.target.value)}
+                  type="email"
+                />
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button variant="outline" className="flex-1" onClick={() => setForgotOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" disabled={!forgotEmail || !isValidEmail(forgotEmail) || loading} onClick={handleEnviarCodigoRecuperacao}>
+                  Enviar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col justify-between">
+              <div className="space-y-2">
+                <Label>Código recebido por e-mail</Label>
+                <Input
+                  value={recoveryCode}
+                  onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  className="font-mono tracking-widest"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setForgotOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button className="flex-1" disabled={recoveryCode.length !== 6 || loading} onClick={handleVerificarCodigoRecuperacao}>
+                  Verificar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailNaoEncontradoOpen} onOpenChange={setEmailNaoEncontradoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>E-mail não encontrado</DialogTitle>
+            <DialogDescription>
+              O e-mail informado não existe! Solicite ao admin para cadastrar seu acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <Button className="w-full" onClick={() => setEmailNaoEncontradoOpen(false)}>OK</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailInvalidoOpen} onOpenChange={setEmailInvalidoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>E-mail inválido</DialogTitle>
+            <DialogDescription>
+              O e-mail informado está incompleto ou não segue o padrão nome@dominio.com. Corrija o e-mail para continuar.
+            </DialogDescription>
+          </DialogHeader>
+          <Button className="w-full" onClick={() => setEmailInvalidoOpen(false)}>OK</Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={novaSenhaOpen} onOpenChange={setNovaSenhaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova senha</DialogTitle>
+            <DialogDescription>Defina a nova senha de acesso ao sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nova senha</Label>
+              <Input
+                value={recoveryNewPassword}
+                onChange={(event) => setRecoveryNewPassword(event.target.value)}
+                type="password"
+              />
+            </div>
+            <Button className="w-full" disabled={!recoveryNewPassword || loading} onClick={handleSalvarNovaSenhaRecuperacao}>
+              Salvar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

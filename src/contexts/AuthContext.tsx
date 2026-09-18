@@ -12,6 +12,9 @@ type AuthContextValue = {
   completeFirstAccess: (email: string, password: string) => Promise<void>;
   changePassword: (password: string) => Promise<void>;
   refreshAdminStatus: () => Promise<void>;
+  isRegisteredAdminEmail: (email: string) => Promise<boolean>;
+  requestPasswordRecovery: (email: string) => Promise<void>;
+  verifyRecoveryCode: (email: string, code: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -141,6 +144,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       refreshAdminStatus: async () => {
         await refreshAdminStatus();
+      },
+      isRegisteredAdminEmail: async (email) => {
+        const { data, error } = await supabase.rpc('is_registered_admin_email', {
+          check_email: normalizeEmail(email),
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        return Boolean(data);
+      },
+      requestPasswordRecovery: async (email) => {
+        // Envia o código de recuperação por e-mail (template "Reset Password"
+        // do Supabase Auth, configurado para incluir {{ .Token }} — um código
+        // numérico de 6 dígitos gerado e invalidado automaticamente pelo
+        // próprio Supabase a cada novo pedido, nunca repetindo o anterior).
+        const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email));
+
+        if (error) {
+          throw error;
+        }
+      },
+      verifyRecoveryCode: async (email, code) => {
+        const { error } = await supabase.auth.verifyOtp({
+          email: normalizeEmail(email),
+          token: code,
+          type: 'recovery',
+        });
+
+        if (error) {
+          throw error;
+        }
       },
     }),
     [session, user, isAdmin, isLoading],
