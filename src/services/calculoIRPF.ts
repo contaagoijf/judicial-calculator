@@ -262,12 +262,43 @@ export function calcularAjusteAnual(
 // Retificação (multi-ano com correção/juros)
 // ============================================================================
 
+/** Base de cálculo dos honorários advocatícios (aba "Honorários Advocatícios" do Projef Web). */
+export type BaseHonorarios = 'VALOR_CONDENACAO' | 'VALOR_CAUSA' | 'VALOR_CERTO';
+
+/** Uma faixa do escalonamento do art. 85, §3º do CPC (honorários contra a Fazenda Pública). */
+export interface FaixaHonorarios {
+  /** Limite superior da faixa, em múltiplos do salário mínimo vigente; null = última faixa, sem limite. */
+  limite_salarios_minimos: number | null;
+  /** Percentual aplicado sobre a parcela do valor que cai nesta faixa (ex.: 20 = 20%). */
+  percentual: number;
+}
+
+/** Faixas padrão do art. 85, §3º do CPC (tetos legais; editáveis pelo usuário, pois o juiz pode fixar valor diferente). */
+export const FAIXAS_HONORARIOS_ART_85_PADRAO: FaixaHonorarios[] = [
+  { limite_salarios_minimos: 200, percentual: 20 },
+  { limite_salarios_minimos: 2000, percentual: 10 },
+  { limite_salarios_minimos: 20000, percentual: 8 },
+  { limite_salarios_minimos: 100000, percentual: 5 },
+  { limite_salarios_minimos: null, percentual: 3 },
+];
+
 export interface DadosEntradaRetificacao {
   numero_processo: string;
   nome_autor: string;
   data_ajuizamento: string;
   tipo_correcao: TipoCorrecao;
   percentual_honorarios: number;
+  /** Base usada para os honorários (default VALOR_CONDENACAO = principal + juros apurados pelo sistema). */
+  base_honorarios?: BaseHonorarios;
+  /** Obrigatório quando base_honorarios === 'VALOR_CAUSA'. */
+  valor_causa?: number;
+  /** Obrigatório quando base_honorarios === 'VALOR_CERTO'. */
+  valor_certo?: number;
+  /** Se true, os honorários são calculados pelo escalonamento progressivo do art. 85, §3º do CPC,
+   *  em vez do percentual simples (percentual_honorarios) sobre a base. */
+  escalonar_honorarios?: boolean;
+  /** Faixas do escalonamento; default FAIXAS_HONORARIOS_ART_85_PADRAO quando escalonar_honorarios === true. */
+  faixas_honorarios?: FaixaHonorarios[];
   limita_ajuiz?: TipoLimitaAjuiz;
   data_fim?: string;
   informacoes?: string;
@@ -300,6 +331,8 @@ export interface ResultadoRetificacao {
   data_dist: string;                // DATA_DIST
   atualiza_calculo: boolean;        // ATUALIZA_CALCULO
   salario_min: number;              // SALARIO_MIN
+  /** Salário mínimo vigente em DATA_FIM (data do cálculo) — base do escalonamento de honorários do art. 85, §3º do CPC. */
+  salario_min_atual: number;
   val_teto: number;                 // VAL_TETO
   id_template: string | null;       // ID_TEMPLATE
   juros_dist: number;
@@ -496,6 +529,10 @@ export function calcularRetificacao(
   const atualiza_calculo = dados.tipo_correcao !== 'SEM_CORRECAO';
   const salario_min = buscarSalarioMin(ctx.salariosMinimos, data_dist);
   const val_teto = round2(60 * salario_min);
+  // Salário mínimo vigente na data do cálculo (DATA_FIM) — usado como base
+  // do escalonamento de honorários do art. 85, §3º do CPC, que se apura pela
+  // data em que o cálculo é feito, não pela data de distribuição do processo.
+  const salario_min_atual = dados.data_fim ? buscarSalarioMin(ctx.salariosMinimos, dados.data_fim) : salario_min;
 
   const nomeTpl = nomeTemplatePorTipo(dados.tipo_correcao);
   const template = ctx.templates.find((t) => t.nome === nomeTpl) ?? null;
@@ -685,7 +722,7 @@ export function calcularRetificacao(
   const total_execucao = round2(principal_devido + juros_devido);
 
   return {
-    data_dist, atualiza_calculo, salario_min, val_teto, id_template,
+    data_dist, atualiza_calculo, salario_min, salario_min_atual, val_teto, id_template,
     juros_dist, juros_fim, cm_dist, cm_fim,
     linhas_ad, linhas_pos,
     total_cm_dif_ad, total_juros_dif_ad, totais_dif_ad,
@@ -702,6 +739,47 @@ export function calcularRetificacao(
     total_principal_devido: principal_devido,
     total_juros_devido: juros_devido,
   };
+}
+
+// ----- honorários advocatícios ----------------------------------------------
+
+// Valor sobre o qual os honorários incidem, conforme a base escolhida (aba
+// "Honorários Advocatícios" do Projef Web). VALOR_CONDENACAO usa o total já
+// apurado pelo sistema (principal + juros, ResultadoRetificacao.total_execucao);
+// VALOR_CAUSA e VALOR_CERTO usam um valor informado manualmente pelo usuário.
+export function calcularBaseHonorarios(
+  base: BaseHonorarios | undefined,
+  totalExecucao: number,
+  valorCausa?: number,
+  valorCerto?: number
+): number {
+  if (base === 'VALOR_CAUSA') return valorCausa ?? 0;
+  if (base === 'VALOR_CERTO') return valorCerto ?? 0;
+  return totalExecucao;
+}
+
+// Escalonamento progressivo do art. 85, §3º do CPC: cada faixa (definida em
+// múltiplos do salário mínimo vigente na data do cálculo) aplica seu próprio
+// percentual só sobre a parcela da base que cai naquela faixa — mesma lógica
+// de apuração por faixas já usada em calcularAjusteAnual() para o IR.
+export function calcularHonorariosEscalonados(
+  base: number,
+  salarioMinimo: number,
+  faixas: FaixaHonorarios[]
+): number {
+  if (base <= 0 || salarioMinimo <= 0 || faixas.length === 0) return 0;
+  let honorarios = 0;
+  let limiteAnterior = 0;
+  for (const faixa of faixas) {
+    const limiteFaixa = faixa.limite_salarios_minimos != null
+      ? faixa.limite_salarios_minimos * salarioMinimo
+      : Infinity;
+    if (base <= limiteAnterior) break;
+    const parcela = Math.min(base, limiteFaixa) - limiteAnterior;
+    honorarios += parcela * (faixa.percentual / 100);
+    limiteAnterior = limiteFaixa;
+  }
+  return round2(honorarios);
 }
 
 // Re-export para retrocompat (Resultado/Relatorio/PDF antigos podem importar PeriodoRetificacao)

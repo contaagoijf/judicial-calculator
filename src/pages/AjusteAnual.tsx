@@ -58,6 +58,8 @@ const AjusteAnualPage = () => {
   const [rraSub, setRraSub] = useState(0);
   const [processoDuplicadoOpen, setProcessoDuplicadoOpen] = useState(false);
   const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
+  const [anoDuplicadoOpen, setAnoDuplicadoOpen] = useState(false);
+  const [declaracaoAnoDuplicado, setDeclaracaoAnoDuplicado] = useState<{ id: string; ano_calendario: number } | null>(null);
   const skipDuplicateCheckRef = useRef(false);
 
   const handleProcessoBlur = () => {
@@ -172,6 +174,37 @@ const AjusteAnualPage = () => {
     navigate('/calculo/retificacao', { state: { editDraft: draft } });
   };
 
+  // Impede duplicidade de declaração do mesmo ano-calendário no mesmo
+  // processo: se já existir uma declaração cadastrada para o ano escolhido,
+  // pergunta se o usuário deseja alterá-la em vez de criar uma nova.
+  const handleAlterarDeclaracaoAnoDuplicado = () => {
+    if (!declaracaoAnoDuplicado) return;
+    setAnoDuplicadoOpen(false);
+    navigate(`/calculo/ajuste-anual?id=${declaracaoAnoDuplicado.id}`);
+  };
+
+  // Pedido do contador: permitir cadastrar mais de uma declaração do mesmo
+  // processo sem sair da tela de Ajuste Anual — mantém processo/autor e limpa
+  // só os campos da declaração em si, ficando pronto para a próxima.
+  const handleNovaDeclaracaoMesmoProcesso = () => {
+    if (declaracoesDoProcesso && declaracoesDoProcesso.length > 0) {
+      setNomeAutor(declaracoesDoProcesso[0].nome_autor);
+    }
+    skipDuplicateCheckRef.current = true;
+    setTipoDeclaracao('completa');
+    setAnoCalendario(parametros?.[0]?.ano_calendario ?? null);
+    setRendTrib(0);
+    setDeducoesLegais(0);
+    setDeducoesIncentivo(0);
+    setImpostoRRA(0);
+    setAjusteAnualMagnitude(0);
+    setImpostoPago(0);
+    setRendSomar(0); setRendSub(0); setDedSomar(0); setDedSub(0);
+    setIncentivoSomar(0); setIncentivoSub(0); setRraSomar(0); setRraSub(0);
+    setProcessoDuplicadoOpen(false);
+    toast({ title: 'Pronto para uma nova declaração', description: 'Número do processo e autor mantidos — preencha os dados do próximo ano-calendário.' });
+  };
+
   // Tipo do saldo do ajuste anual (A pagar/A restituir) é sempre definido
   // automaticamente pelo sistema a partir do imposto devido apurado na
   // própria declaração — nunca escolhido manualmente pelo usuário (pedido
@@ -241,6 +274,14 @@ const AjusteAnualPage = () => {
       toast({ title: 'Erro', description: 'Selecione o ano calendário.', variant: 'destructive' });
       return;
     }
+    const declaracaoExistente = declaracoesDoProcesso?.find(
+      (d) => d.ano_calendario === anoCalendario && d.id !== idParam
+    );
+    if (declaracaoExistente) {
+      setDeclaracaoAnoDuplicado({ id: declaracaoExistente.id, ano_calendario: anoCalendario });
+      setAnoDuplicadoOpen(true);
+      return;
+    }
     if (!faixas || faixas.length === 0) {
       toast({ title: 'Erro', description: 'Faixas de IR não encontradas para o ano selecionado.', variant: 'destructive' });
       return;
@@ -306,7 +347,7 @@ const AjusteAnualPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="page-container">
+      <div className="page-container max-w-7xl">
         <Button variant="ghost" onClick={() => navigate('/')} className="mb-6 gap-2">
           <ArrowLeft className="w-4 h-4" /> Voltar
         </Button>
@@ -330,6 +371,7 @@ const AjusteAnualPage = () => {
                   onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                   placeholder="0000000-00.0000.0.00.0000"
                   inputMode="numeric"
+                  className="min-w-0"
                 />
                 <Button
                   type="button"
@@ -346,7 +388,7 @@ const AjusteAnualPage = () => {
             <div className="space-y-1.5">
               <Label>Nome do Autor *</Label>
               <div className="flex gap-2">
-                <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" />
+                <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" className="min-w-0" />
                 <Button
                   type="button"
                   variant="outline"
@@ -369,7 +411,7 @@ const AjusteAnualPage = () => {
             <div className="space-y-1.5">
               <Label>Tipo de Declaração *</Label>
               <Select value={tipoDeclaracao} onValueChange={(v) => setTipoDeclaracao(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="max-w-[180px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="completa">Completa</SelectItem>
                   <SelectItem value="simplificada">Simplificada</SelectItem>
@@ -379,7 +421,7 @@ const AjusteAnualPage = () => {
             <div className="space-y-1.5">
               <Label>Ano Calendário *</Label>
               <Select value={anoCalendario?.toString() || ''} onValueChange={(v) => setAnoCalendario(parseInt(v))}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger className="max-w-[140px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {parametros?.map(p => (
                     <SelectItem key={p.ano_calendario} value={p.ano_calendario.toString()}>
@@ -396,11 +438,11 @@ const AjusteAnualPage = () => {
         <div className="form-section mb-6">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Dados da Declaração</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <CampoMonetario label="Rendimentos Tributáveis" value={rendTrib} onChange={setRendTrib} />
-            <CampoMonetario label="Deduções Legais" value={deducoesLegais} onChange={setDeducoesLegais} disabled={!isCompleta} />
-            <CampoMonetario label="Deduções de Incentivo" value={deducoesIncentivo} onChange={setDeducoesIncentivo} disabled={!isCompleta} />
-            <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} />
-            <CampoMonetario label="Imposto Devido RRA" value={impostoRRA} onChange={setImpostoRRA} />
+            <CampoMonetario label="Rendimentos Tributáveis" value={rendTrib} onChange={setRendTrib} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Deduções Legais" value={deducoesLegais} onChange={setDeducoesLegais} disabled={!isCompleta} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Deduções de Incentivo" value={deducoesIncentivo} onChange={setDeducoesIncentivo} disabled={!isCompleta} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Imposto Pago" value={impostoPago} onChange={setImpostoPago} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Imposto Devido RRA" value={impostoRRA} onChange={setImpostoRRA} inputClassName="max-w-[210px]" />
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Saldo do Ajuste Anual (declaração original)</Label>
               <div className="flex gap-2">
@@ -409,7 +451,7 @@ const AjusteAnualPage = () => {
                   value={currencyToMaskedDisplay(ajusteAnualMagnitude)}
                   onChange={(e) => setAjusteAnualMagnitude(parseMaskedCurrency(e.target.value))}
                   placeholder="0,00"
-                  className="font-mono"
+                  className="font-mono max-w-[210px]"
                 />
                 <Select value={tipoSaldoOriginal} disabled>
                   <SelectTrigger className="w-40 shrink-0" title="Definido automaticamente pelo sistema, a partir do imposto devido apurado na declaração.">
@@ -429,14 +471,14 @@ const AjusteAnualPage = () => {
         <div className="form-section mb-6">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Alterações da Declaração</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CampoMonetario label="Rendimentos a Somar" value={rendSomar} onChange={setRendSomar} />
-            <CampoMonetario label="Rendimentos a Subtrair" value={rendSub} onChange={setRendSub} />
-            <CampoMonetario label="Deduções Legais a Somar" value={dedSomar} onChange={setDedSomar} disabled={!isCompleta} />
-            <CampoMonetario label="Deduções Legais a Subtrair" value={dedSub} onChange={setDedSub} disabled={!isCompleta} />
-            <CampoMonetario label="Deduções Incentivo a Somar" value={incentivoSomar} onChange={setIncentivoSomar} disabled={!isCompleta} />
-            <CampoMonetario label="Deduções Incentivo a Subtrair" value={incentivoSub} onChange={setIncentivoSub} disabled={!isCompleta} />
-            <CampoMonetario label="Imposto RRA a Somar" value={rraSomar} onChange={setRraSomar} />
-            <CampoMonetario label="Imposto RRA a Subtrair" value={rraSub} onChange={setRraSub} />
+            <CampoMonetario label="Rendimentos a Somar" value={rendSomar} onChange={setRendSomar} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Rendimentos a Subtrair" value={rendSub} onChange={setRendSub} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Deduções Legais a Somar" value={dedSomar} onChange={setDedSomar} disabled={!isCompleta} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Deduções Legais a Subtrair" value={dedSub} onChange={setDedSub} disabled={!isCompleta} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Deduções Incentivo a Somar" value={incentivoSomar} onChange={setIncentivoSomar} disabled={!isCompleta} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Deduções Incentivo a Subtrair" value={incentivoSub} onChange={setIncentivoSub} disabled={!isCompleta} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Imposto RRA a Somar" value={rraSomar} onChange={setRraSomar} inputClassName="max-w-[210px]" />
+            <CampoMonetario label="Imposto RRA a Subtrair" value={rraSub} onChange={setRraSub} inputClassName="max-w-[210px]" />
           </div>
         </div>
 
@@ -452,11 +494,30 @@ const AjusteAnualPage = () => {
           <DialogHeader>
             <DialogTitle>Processo já registrado</DialogTitle>
             <DialogDescription>
-              Este número de processo já foi registrado no sistema, portanto, os dados serão carregados para o Cálculo de Retificação de IRPF.
+              Este número de processo já tem declaração(ões) cadastrada(s). Você pode cadastrar mais uma
+              declaração de Ajuste Anual para o mesmo processo, ou seguir direto para a Retificação com os
+              dados já carregados.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button onClick={handleConfirmarProcessoDuplicado}>OK</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleNovaDeclaracaoMesmoProcesso}>Nova declaração deste processo</Button>
+            <Button onClick={handleConfirmarProcessoDuplicado}>Ir para Retificação</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={anoDuplicadoOpen} onOpenChange={setAnoDuplicadoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Declaração já cadastrada</DialogTitle>
+            <DialogDescription>
+              Já existe uma declaração deste processo para o ano-calendário {declaracaoAnoDuplicado?.ano_calendario}.
+              Deseja alterar a declaração já cadastrada para esse ano?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setAnoDuplicadoOpen(false)}>Não</Button>
+            <Button onClick={handleAlterarDeclaracaoAnoDuplicado}>Sim, alterar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

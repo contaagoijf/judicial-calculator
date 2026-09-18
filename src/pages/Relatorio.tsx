@@ -10,13 +10,16 @@ import TabelaAlteracoes from '@/components/TabelaAlteracoes';
 import BlocoCalculo from '@/components/BlocoCalculo';
 import TabelaFaixas from '@/components/TabelaFaixas';
 import { gerarRelatorioPDF } from '@/services/pdfGenerator';
-import type {
-  ResultadoCalculo,
-  ResultadoRetificacao,
-  DadosEntradaRetificacao,
-  LinhaAnoRetificacao,
-  AlteracaoRetificacao,
-  FaixaIR,
+import {
+  calcularBaseHonorarios,
+  calcularHonorariosEscalonados,
+  FAIXAS_HONORARIOS_ART_85_PADRAO,
+  type ResultadoCalculo,
+  type ResultadoRetificacao,
+  type DadosEntradaRetificacao,
+  type LinhaAnoRetificacao,
+  type AlteracaoRetificacao,
+  type FaixaIR,
 } from '@/services/calculoIRPF';
 
 const fmt = (v: number | undefined) =>
@@ -75,10 +78,13 @@ const RelatorioPage = () => {
   const resultadoAjuste = calculo.resultado as unknown as ResultadoCalculo;
   const isRestituir = !isRetificacao && resultadoAjuste.imposto_a_pagar > 0;
   const isPagar = !isRetificacao && resultadoAjuste.imposto_a_pagar < 0;
+  const baseHonorarios = isRetificacao
+    ? calcularBaseHonorarios(dadosEntrada?.base_honorarios, r.total_execucao, dadosEntrada?.valor_causa, dadosEntrada?.valor_certo)
+    : 0;
   const honorariosPercent = (dadosEntrada?.percentual_honorarios ?? 0) / 100;
-  const honorariosValue = Math.round(
-    ((r.periodos ?? []).reduce((sum, p) => sum + p.valor_devido, 0) * honorariosPercent) * 100
-  ) / 100;
+  const honorariosValue = dadosEntrada?.escalonar_honorarios
+    ? calcularHonorariosEscalonados(baseHonorarios, r.salario_min_atual, dadosEntrada?.faixas_honorarios ?? FAIXAS_HONORARIOS_ART_85_PADRAO)
+    : Math.round((baseHonorarios * honorariosPercent) * 100) / 100;
 
   const handleExportPDF = () => {
     const faixasParaPDF: FaixaIR[] = isRetificacao ? (faixasAll ?? []) : (faixas ?? []);
@@ -269,8 +275,12 @@ const RelatorioPage = () => {
               <h3 className="font-semibold mb-3 text-foreground">Honorários</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Percentual aplicado</p>
-                  <p className="font-mono">{dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</p>
+                  <p className="text-muted-foreground">{dadosEntrada.escalonar_honorarios ? 'Modo de cálculo' : 'Percentual aplicado'}</p>
+                  <p className="font-mono">
+                    {dadosEntrada.escalonar_honorarios
+                      ? 'Escalonado — art. 85, §3º do CPC'
+                      : `${dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Honorários totais</p>

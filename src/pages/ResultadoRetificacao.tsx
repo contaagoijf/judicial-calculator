@@ -4,7 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/externalClient';
 import { useToast } from '@/hooks/use-toast';
-import type { ResultadoRetificacao, DadosEntradaRetificacao, LinhaAnoRetificacao } from '@/services/calculoIRPF';
+import {
+  calcularBaseHonorarios,
+  calcularHonorariosEscalonados,
+  FAIXAS_HONORARIOS_ART_85_PADRAO,
+  type ResultadoRetificacao,
+  type DadosEntradaRetificacao,
+  type LinhaAnoRetificacao,
+} from '@/services/calculoIRPF';
 
 const RETIFICACAO_EDIT_DRAFT_KEY = 'retificacao-edit-draft';
 
@@ -35,12 +42,12 @@ const TabelaParcelas = ({ linhas, titulo }: { linhas: LinhaAnoRetificacao[]; tit
           <tr className="bg-slate-100 text-left">
             <th className="border px-3 py-2">Ano calendário</th>
             <th className="border px-3 py-2">Início correção</th>
-            <th className="border px-3 py-2 text-right">Diferença devida</th>
+            <th className="border px-3 py-2 text-right min-w-[145px]">Diferença devida</th>
             <th className="border px-3 py-2 text-right">Coef. atualização</th>
-            <th className="border px-3 py-2 text-right">Diferença atualizada</th>
+            <th className="border px-3 py-2 text-right min-w-[145px]">Diferença atualizada</th>
             <th className="border px-3 py-2 text-right whitespace-nowrap">Juros/Selic %</th>
-            <th className="border px-3 py-2 text-right">Juros valor</th>
-            <th className="border px-3 py-2 text-right">Valor atualizado</th>
+            <th className="border px-3 py-2 text-right min-w-[145px]">Juros valor</th>
+            <th className="border px-3 py-2 text-right min-w-[145px]">Valor atualizado</th>
           </tr>
         </thead>
         <tbody>
@@ -88,10 +95,20 @@ const ResultadoRetificacaoPage = () => {
 
   const { resultadoRetificacao: r, dadosEntrada, processo, nomeAutor } = state;
   const limitaAjuiz = dadosEntrada.limita_ajuiz === 'SIM';
+  const baseHonorarios = calcularBaseHonorarios(
+    dadosEntrada.base_honorarios,
+    r.total_execucao,
+    dadosEntrada.valor_causa,
+    dadosEntrada.valor_certo
+  );
   const honorariosPercent = (dadosEntrada.percentual_honorarios ?? 0) / 100;
-  const honorariosTotal = Math.round(
-    (r.periodos.reduce((sum, p) => sum + p.valor_devido, 0) * honorariosPercent) * 100
-  ) / 100;
+  const honorariosTotal = dadosEntrada.escalonar_honorarios
+    ? calcularHonorariosEscalonados(
+        baseHonorarios,
+        r.salario_min_atual,
+        dadosEntrada.faixas_honorarios ?? FAIXAS_HONORARIOS_ART_85_PADRAO
+      )
+    : Math.round((baseHonorarios * honorariosPercent) * 100) / 100;
 
   const handleEditar = () => {
     sessionStorage.setItem(RETIFICACAO_EDIT_DRAFT_KEY, JSON.stringify(dadosEntrada));
@@ -125,7 +142,7 @@ const ResultadoRetificacaoPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="page-container">
+      <div className="page-container max-w-6xl">
         <Button variant="ghost" onClick={handleEditar} className="mb-6 gap-2">
           <ArrowLeft className="w-4 h-4" /> Voltar ao Formulário
         </Button>
@@ -155,16 +172,22 @@ const ResultadoRetificacaoPage = () => {
             <CardContent><p className="text-2xl font-mono">R$ {fmt(r.juros_devido)}</p></CardContent>
           </Card>
           <Card className="md:col-span-4 border-primary/40">
-            <CardHeader><CardTitle className="text-sm">Total da execução</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-mono">R$ {fmt(r.total_execucao)}</p></CardContent>
-          </Card>
-        </div>
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Honorários</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-2xl font-mono">R$ {fmt(honorariosTotal)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Percentual: {dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</p>
+            <CardContent className="pt-6">
+              <div className="flex flex-wrap items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-muted-foreground mb-1">Total da execução</p>
+                  <p className="text-3xl font-mono break-all sm:whitespace-nowrap sm:break-normal">R$ {fmt(r.total_execucao)}</p>
+                </div>
+                <div className="min-w-0 text-left sm:text-right">
+                  <p className="text-sm font-semibold text-muted-foreground mb-1">Honorários</p>
+                  <p className="text-3xl font-mono break-all sm:whitespace-nowrap sm:break-normal">R$ {fmt(honorariosTotal)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {dadosEntrada.escalonar_honorarios
+                      ? 'Escalonado — art. 85, §3º do CPC'
+                      : `Percentual: ${dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
