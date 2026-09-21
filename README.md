@@ -18,7 +18,7 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
 - **Backend**: Supabase
 - **Gerenciamento de Estado**: TanStack Query
 - **Testes**: Vitest e Playwright
-- **Gerenciador de Pacotes**: Bun
+- **Gerenciador de Pacotes**: Bun (`npm` também funciona, via `package-lock.json`)
 
 ## Instalação
 
@@ -30,8 +30,10 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
 
 2. Instale as dependências:
    ```bash
-   bun install
+   bun install      # ou: npm install
    ```
+   (Bun precisa estar instalado separadamente — ver [Instalando o Bun](#instalando-o-bun) abaixo.
+   Sem ele, use `npm install` normalmente.)
 
 3. Configure as variáveis de ambiente:
    Copie `.env.example` para `.env` e preencha com suas credenciais do Supabase:
@@ -43,8 +45,28 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
 
 4. Execute o servidor de desenvolvimento:
    ```bash
-   bun run dev
+   bun run dev      # ou: npm run dev
    ```
+
+### Instalando o Bun
+
+Opcional — sem o Bun instalado, use `npm` em todos os comandos deste README.
+
+- **Windows (PowerShell)**:
+  ```powershell
+  powershell -c "irm bun.sh/install.ps1|iex"
+  ```
+- **macOS/Linux**:
+  ```bash
+  curl -fsSL https://bun.sh/install | bash
+  ```
+- **Alternativa multiplataforma (via npm)**:
+  ```bash
+  npm install -g bun
+  ```
+
+Depois de instalar, feche e abra um novo terminal (o instalador atualiza o `PATH`, mas o terminal
+atual não recarrega essa variável sozinho) e confirme com `bun --version`.
 
 ## Uso
 
@@ -53,6 +75,8 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
 - Insira os dados fiscais e gere relatórios
 
 ## Scripts Disponíveis
+
+(substitua `bun run` por `npm run` se não tiver o Bun instalado)
 
 - `bun run dev` - Inicia o servidor de desenvolvimento
 - `bun run build` - Compila para produção
