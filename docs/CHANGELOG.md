@@ -31,7 +31,7 @@ identificada).
 ## 28/08/2026 — Início da documentação do projeto
 
 - Criada a documentação completa do sistema na pasta `docs/` (visão geral,
-  telas, regras de cálculo), servindo de base para todo o trabalho seguinte.
+  telas, regras de cálculo).
 - Gerada uma versão da documentação, para leitura por
   pessoas fora da equipe técnica.
 
