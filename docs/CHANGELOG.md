@@ -8,6 +8,24 @@ Cada entrada indica a data, um resumo do que foi feito e, quando relevante, o
 status atual (corrigido, aguardando publicação em produção, ou pendência
 identificada).
 
+## Índice
+
+- [28/08/2026 — Início da documentação do projeto](#28082026--início-da-documentação-do-projeto)
+- [30 e 31/08/2026 — Documentação de banco de dados e organização dos arquivos](#30-e-31082026--documentação-de-banco-de-dados-e-organização-dos-arquivos)
+- [02/09/2026 — Testes automatizados e primeira verificação do motor de cálculo](#02092026--testes-automatizados-e-primeira-verificação-do-motor-de-cálculo)
+- [03/09/2026 — Reunião com a AGOI e organização da documentação](#03092026--reunião-com-a-agoi-e-organização-da-documentação)
+- [04/09/2026 — Correção do cálculo de juros SELIC/Poupança e da regra UFIR](#04092026--correção-do-cálculo-de-juros-selicpoupança-e-da-regra-ufir)
+- [09/09/2026 — Correção do recálculo com imposto a restituir na declaração original](#09092026--correção-do-recálculo-com-imposto-a-restituir-na-declaração-original)
+- [09/09/2026 — Reunião com o contador Sérgio (DCAL) e novos itens levantados](#09092026--reunião-com-o-contador-sérgio-dcal-e-novos-itens-levantados)
+- [10/09/2026 — Bateria de ajustes solicitados pela contadoria (AGOI/DCAL)](#10092026--bateria-de-ajustes-solicitados-pela-contadoria-agoidcal)
+- [10/09/2026 — Aplicação da correção de juros SELIC/Poupança no banco de produção](#10092026--aplicação-da-correção-de-juros-selicpoupança-no-banco-de-produção)
+- [11/09/2026 — Tela de listagem de todos os processos, com busca](#11092026--tela-de-listagem-de-todos-os-processos-com-busca)
+- [14/09/2026 — Correção dos dois erros apontados pela contadoria na Retificação](#14092026--correção-dos-dois-erros-apontados-pela-contadoria-na-retificação)
+- [15/09/2026 — Correção de bug crítico (tela em branco) e ajustes de layout na Retificação](#15092026--correção-de-bug-crítico-tela-em-branco-e-ajustes-de-layout-na-retificação)
+- [17/09/2026 — Correção do mês final duplicado no juros SELIC da Retificação](#17092026--correção-do-mês-final-duplicado-no-juros-selic-da-retificação)
+- [17 e 18/09/2026 — Correção da base de honorários e escalonamento por faixas (art. 85 do CPC)](#17-e-18092026--correção-da-base-de-honorários-e-escalonamento-por-faixas-art-85-do-cpc)
+- [18/09/2026 — Implementação do fluxo "Esqueceu a senha?" no acesso administrativo](#18092026--implementação-do-fluxo-esqueceu-a-senha-no-acesso-administrativo)
+
 ---
 
 ## 28/08/2026 — Início da documentação do projeto
@@ -199,6 +217,20 @@ autorização para publicar em produção (ainda não commitado).**
 
 ## 11/09/2026 — Tela de listagem de todos os processos, com busca
 
+**Implementado, testado e publicado em produção.**
+
+- Nova página `/calculo/listaprocessos`, mostrando a quantidade total de
+  processos cadastrados ("Processos: N") e, para cada um, os dados gerais
+  (número, autor, data do ajuizamento) e a tabela de declarações anuais
+  cadastradas, com botão "Editar" (abre o Ajuste Anual já preenchido) e
+  "Remover" (visível só para administradores logados).
+- Adicionada uma seção de busca por número do processo, nome do autor ou data
+  do ajuizamento: o filtro é aplicado automaticamente a cada digitação ou
+  colagem, sem precisar clicar em nenhum botão, e um botão "Limpar" reseta os
+  três campos de uma vez. O campo "Número do processo" usa a mesma máscara e
+  validação já usada na tela de Ajuste Anual, e "Data do ajuizamento" aplica a
+  máscara `dd/mm/aaaa` automaticamente.
+
 ### Pendência nova: permissão de remoção no banco de produção
 
 - O botão "Remover" depende de uma política de acesso nova (UPDATE/DELETE)
@@ -366,4 +398,61 @@ diferença de +1,66 ponto percentual.
   `docs/contadoria/` no `.gitignore` (terminologia padronizada do projeto) e
   reorganizar as planilhas de referência em `docs/reference/planilhas/`,
   separando-as por período (`01`: 1996-2019/2023, `02`: 1996-2018).
+
+## 17 e 18/09/2026 — Correção da base de honorários e escalonamento por faixas (art. 85 do CPC)
+
+**Corrigido, testado e publicado em produção.**
+
+Em reunião de validação com a contadoria (DCAL/AGOI), com prints de referência
+do Projef Web, foram identificados dois problemas na Retificação relacionados
+a honorários advocatícios.
+
+### Base de cálculo dos honorários
+
+- **Causa**: o percentual de honorários era calculado só sobre o "Principal
+  Devido", quando deveria ser sobre "Principal Devido + Juros Devidos" (o
+  total da execução).
+- **Correção**: `ResultadoRetificacao.tsx`, `Relatorio.tsx` e
+  `pdfGenerator.ts` passaram a usar o total da execução já calculado, em vez
+  de somar só o principal.
+
+### Escalonamento de honorários (art. 85, §3º do CPC)
+
+- Adicionado um novo critério de cálculo, além do percentual simples já
+  existente: escalonamento progressivo por faixas de múltiplo de salário
+  mínimo (Incisos I a V do art. 85, §3º do CPC), com seletor "Base de
+  cálculo", checkbox "Escalonar honorários" e tabela de faixas editável na
+  tela de Retificação.
+- Validado com um caso real da contadoria (condenação de
+  R$ 162.360.000,00): resultado batendo exatamente com o Projef Web
+  (R$ 5.617.744,00).
+- **Bug encontrado e corrigido no dia seguinte (18/09/2026)**: o
+  escalonamento usava o salário mínimo vigente na data de distribuição do
+  processo em vez do salário mínimo vigente na data do cálculo — corrigido
+  com um novo campo `salario_min_atual`.
+
+### Nova declaração no mesmo processo
+
+- Adicionada a opção "Nova declaração deste processo" no diálogo que já
+  avisa quando um número de processo já cadastrado é digitado de novo na
+  tela de Ajuste Anual, permitindo cadastrar mais de uma declaração do mesmo
+  processo sem precisar ir direto para a Retificação.
+- Documentado no [ADR 012](adr/012-corrigir-base-de-honorarios-e-escalonamento-art-85-cpc.md).
+
+## 18/09/2026 — Implementação do fluxo "Esqueceu a senha?" no acesso administrativo
+
+**Implementado no código; duas configurações fora do código-fonte ainda
+pendentes.**
+
+- Adicionado o link "Esqueceu a senha?" na tela de "Acesso administrativo":
+  o usuário informa o e-mail cadastrado, recebe um código de 6 dígitos por
+  e-mail e pode definir uma nova senha, usando o recurso nativo de
+  recuperação de senha do Supabase.
+- **Pendências para o fluxo funcionar de ponta a ponta em produção**,
+  documentadas no [ADR 013](adr/013-configurar-recuperacao-de-senha-por-codigo-no-supabase.md):
+  - aplicar manualmente, via SQL Editor do Supabase, a migração que permite
+    checar se um e-mail já é de um administrador cadastrado;
+  - configurar o template de e-mail "Reset Password" no painel do Supabase
+    para enviar o código de 6 dígitos em vez do link padrão (pode exigir
+    configurar um provedor de SMTP próprio, dependendo do plano do projeto).
 
