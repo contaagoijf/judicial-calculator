@@ -48,6 +48,29 @@ Uma aplicação web para cálculo de ajustes do Imposto de Renda Pessoa Física 
    bun run dev      # ou: npm run dev
    ```
 
+   Se aparecer o aviso abaixo, veja [Atualizando o Browserslist](#atualizando-o-browserslist) logo a seguir:
+   ```
+   Browserslist: browsers data (caniuse-lite) is 15 months old. Please run:
+     npx update-browserslist-db@latest
+   ```
+
+### Atualizando o Browserslist
+
+O Vite usa a base de dados do [Browserslist](https://github.com/browserslist/browserslist)
+(pacote `caniuse-lite`) para decidir, no build, quais navegadores/versões precisam de prefixos CSS
+e polyfills — ela vem embutida nas dependências instaladas e vai ficando desatualizada com o tempo,
+por isso o aviso aparece mesmo sem nenhuma mudança no código do projeto. Manter essa base atualizada
+evita duas coisas: prefixos/polyfills desnecessários para navegadores que já não são mais usados
+(aumentando o tamanho do build à toa), e a falta de suporte para navegadores mais novos que surgiram
+depois da última atualização. Para corrigir, rode:
+
+```bash
+npx update-browserslist-db@latest
+```
+
+Isso atualiza a versão do `caniuse-lite` no `package-lock.json` (ou lockfile equivalente); não é
+necessário alterar nenhum arquivo de configuração do projeto.
+
 ### Instalando o Bun
 
 Opcional — sem o Bun instalado, use `npm` em todos os comandos deste README.
@@ -70,7 +93,7 @@ atual não recarrega essa variável sozinho) e confirme com `bun --version`.
 
 ## Uso
 
-- Acesse a aplicação em `http://localhost:5173`
+- Acesse a aplicação em `http://localhost:8080`
 - Navegue pelas diferentes seções: Início, Ajuste Anual, Parâmetros, etc.
 - Insira os dados fiscais e gere relatórios
 
