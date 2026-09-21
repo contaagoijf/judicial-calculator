@@ -33,8 +33,8 @@ identificada).
   o resultado da tela com um caso de referência já conferido manualmente
   (ano-calendário 2020), para confirmar que a fórmula básica do sistema
   estava correta antes de investigar problemas relatados pela contadoria.
-- Resultado registrado em [`docs/history/Resumo-Reuniao-AGOI.md`](history/Resumo-Reuniao-AGOI.md), preparado para
-  apresentação à contadoria (AGOI/DCAL).
+- Resultado registrado em [ADR 002, seção 3](adr/002-guia-de-testes-de-calculo.md#3-testes-preliminares-já-confirmados-em-produção),
+  preparado para apresentação à contadoria (AGOI/DCAL).
 
 ## 03/09/2026 — Reunião com a AGOI e organização da documentação
 

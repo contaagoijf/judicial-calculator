@@ -11,7 +11,7 @@ Toda decisão de arquitetura, correção estrutural ou trade-off técnico releva
 - Nome de arquivo: `NNN-descricao-curta-em-kebab-case.md`, com `NNN` sequencial de 3 dígitos (`000`, `001`, `002`, ...) sem acentos e sempre em minúsculo.
 - Conteúdo mínimo: título, data, status (`Proposed` / `Accepted` / `Deprecated` / `Superseded by ADR-NNN`), contexto, decisão e consequências — ver [`docs/adr/template.md`](template.md).
 - Um ADR nunca é editado para mudar a decisão em si mesmo, se a decisão muda, cria-se um novo ADR que marca o antigo como `Superseded`.
-- Documentos que registram uma **decisão ou correção já tomada** (bugfix, migração, mudança de configuração) viram ADR. Manuais, guias de referência e material de apoio (sem uma decisão pontual associada) ficam em `docs/reference/`; investigações e atas sem decisão formal ficam em `docs/history/`.
+- Documentos que registram uma **decisão ou correção já tomada** (bugfix, migração, mudança de configuração) viram ADR — essa é a pasta padrão de documentação do projeto. Manuais e guias de referência (sem uma decisão pontual associada) ficam em `docs/reference/`. Investigações e atas de reunião que embasam uma decisão entram como parte do próprio ADR (seção "Context" ou um "Detalhamento" ao final); `docs/history/` fica reservada para arquivos temporários de análise/teste de funcionalidades (uso local, não é onde a documentação permanente do projeto deve morar) — todo o conteúdo que já estava lá foi consolidado em `docs/adr/` em 21/09/2026.
 
 ## Consequences
 

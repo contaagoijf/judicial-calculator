@@ -8,7 +8,7 @@
 
 ## Context
 
-A contadoria relatou uma divergência entre o resultado do CalcJud e a planilha oficial da DCAL num cálculo real de Retificação. A investigação da causa raiz (ver [`docs/history/analise-dos-testes-03-09-2026.md`](../history/analise-dos-testes-03-09-2026.md)) confirmou dois problemas distintos no cálculo de juros/correção de uma Retificação:
+A contadoria relatou uma divergência entre o resultado do CalcJud e a planilha oficial da DCAL num cálculo real de Retificação. A investigação da causa raiz (ver Detalhamento abaixo) confirmou dois problemas distintos no cálculo de juros/correção de uma Retificação:
 
 1. O cálculo de juros dos índices que se acumulam por **soma** (SELIC, Poupança, taxa fixa de 1% a.m.) usava **divisão** de fatores acumulados — operação só válida para índices que se acumulam por **produto** (juros compostos) — gerando um percentual de juros muito abaixo do correto (6,77% em vez de mais de 370% num caso real).
 2. A regra de transição de correção monetária UFIR → SELIC de janeiro/1996 estava um mês adiantada: a planilha da DCAL aplica UFIR até 01/1996 (inclusive), com os juros já calculados por SELIC nesse mesmo mês; no CalcJud, a regra de UFIR terminava em 12/1995.
@@ -30,6 +30,26 @@ A contadoria relatou uma divergência entre o resultado do CalcJud e a planilha 
 ## Detalhamento da correção e testes de confirmação
 
 > Conteúdo original da investigação, preservado como registro detalhado.
+
+## 1. Causa raiz — onde estava no código
+
+O sistema guarda o histórico de juros por **soma** mês a mês (forma correta para SELIC/Poupança/taxa
+fixa), mas calculava o juros de um período **dividindo** o acumulado final pelo inicial — operação só
+válida para índices que se acumulam por produto (juros compostos), não por soma. Confirmado cruzando os
+dados reais do sistema com o código-fonte:
+
+- **Guardava corretamente por soma:** função `recalculate_taxas_historicas()`, em `supabase/schema.sql`
+  (linhas 283–297), para índices de natureza "JUROS" (SELIC, Poupança, taxa fixa `PERCENTUAL`).
+- **Usava incorretamente por divisão:** função `calcularRetificacao()`, em
+  `src/services/calculoIRPF.ts` (linha 586: `fator_juros_fim = round8(juros_fim / juros_dist)`).
+
+Um caso comparativo direto contra a planilha oficial da DCAL (Retificação, ano-calendário 1996,
+rendimentos R$ 40.510,26, deduções R$ 13.326,62, imposto pago R$ 2.342,81, diferença devida R$
+1.504,85, início da correção 01/05/1997) confirmou a mesma diferença apurada nos dois sistemas, mas
+juros de apenas 6,77% no CalcJud contra 372,77% na planilha — a fórmula do imposto (Ajuste Anual)
+estava correta; só os juros da correção estavam errados. O problema afeta qualquer Retificação com
+correção por SELIC ou SELIC+Poupança; não afeta Ajuste Anual, Retificação "sem correção", nem os
+índices de correção monetária por produto (INPC/IPCA/UFIR/TR), que já eram consistentes.
 
 ## 2. Detalhe complementar — mês de transição UFIR → SELIC
 

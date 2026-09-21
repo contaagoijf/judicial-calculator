@@ -165,9 +165,8 @@ numérica limpa, renumere manualmente a regra POUPANCA/TR do Template_2 de
 ## 7. Referências
 
 - [ADR 007](007-corrigir-calculo-de-juros-selic-na-retificacao.md) —
-  descrição original da correção e da pendência.
-- [`docs/history/analise-dos-testes-03-09-2026.md`](../history/analise-dos-testes-03-09-2026.md) — causa raiz da divergência de
-  cálculo que originou toda a investigação.
+  descrição original da correção e da pendência, incluindo a causa raiz da divergência que originou
+  toda a investigação (seção "Detalhamento").
 - [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md) — guia geral de acesso, backup e segurança
   do banco de dados do CalcJud.
 - `supabase/seed_templates_regras.sql` — script de configuração já corrigido
