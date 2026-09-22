@@ -257,6 +257,14 @@ sistema com a planilha oficial da DCAL (processo de referência: ano-calendário
 - **Correção**: o campo passou a ser calculado automaticamente pelo sistema
   (comparando o imposto devido apurado com o imposto pago) nas telas de
   Ajuste Anual e de Retificação; fica travado para edição.
+- **Regra aplicada**: quando o imposto devido é maior que o imposto pago, o
+  saldo é "A Pagar"; quando é menor, é "A Restituir". Validada com casos de
+  teste reais da planilha de referência da DCAL, incluindo declarações de
+  anos diferentes (1996, 2019 e 2023), tanto de pagamento quanto de
+  restituição — ver os casos de 1996 (a pagar) e 2019 (a restituir) já
+  detalhados no [ADR 009](adr/009-corrigir-validacao-de-recalculo-com-imposto-a-restituir.md),
+  e o caso de 2023 no teste combinado de reaproveitamento de dados (ver
+  10/09/2026 acima).
 
 ### Erro 2 — Percentual de Juros/Selic muito acima do esperado (438,24% em vez de 372,77%)
 
