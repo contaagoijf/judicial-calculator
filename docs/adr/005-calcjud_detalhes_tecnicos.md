@@ -181,7 +181,11 @@ O servidor de desenvolvimento sobe em `http://localhost:8080` (porta definida em
 
 ### Deploy
 
-O deploy de produção é feito na **Vercel**, como site estático gerado por `vite build`, com todas as rotas reescritas para `index.html` (ver `vercel.json`) para suportar o roteamento client-side do `react-router-dom`. As variáveis de ambiente `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` (quando aplicável ao cliente gerado) devem estar configuradas no projeto Vercel.
+O deploy é feito na **Vercel**, como site estático gerado por `vite build`, com todas as rotas reescritas para `index.html` (ver `vercel.json`) para suportar o roteamento client-side do `react-router-dom`. As variáveis de ambiente `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` (quando aplicável ao cliente gerado) devem estar configuradas no projeto Vercel.
+
+> **Vercel/Supabase são o ambiente de desenvolvimento e validação atual, não a produção final.** O
+> Tribunal não autoriza usar esses provedores externos como produção real; a produção institucional
+> será a **Fábrica de Cálculos**, para onde o projeto será migrado. Ver [ADR 015](015-definir-fabrica-de-calculos-como-producao-final.md).
 
 ## 5. Referências e materiais relacionados
 

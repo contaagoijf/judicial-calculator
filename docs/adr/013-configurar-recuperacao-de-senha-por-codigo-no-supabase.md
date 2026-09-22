@@ -2,7 +2,7 @@
 
 **Date:** 18/09/2026
 
-**Status:** Proposed — pendências de configuração fora do código-fonte, ainda não aplicadas
+**Status:** Deferred — adiado até a migração do projeto para a Fábrica de Cálculos (ver [ADR 015](015-definir-fabrica-de-calculos-como-producao-final.md))
 
 **Tribunal Regional Federal da 2ª Região (TRF2)**
 
@@ -11,7 +11,13 @@
 O fluxo "Esqueceu a senha?" da tela de Acesso administrativo foi implementado usando o recovery nativo
 do Supabase Auth: o usuário informa o e-mail cadastrado, recebe um código de 6 dígitos, digita o código
 e define uma nova senha. Duas configurações fora do código-fonte são necessárias para esse fluxo
-funcionar de ponta a ponta em produção — nenhuma delas foi aplicada ainda.
+funcionar de ponta a ponta — nenhuma delas foi aplicada ainda.
+
+**Atualização (22/09/2026):** as duas pendências abaixo dependem de configuração avançada do Supabase
+(SMTP próprio ou upgrade de plano) que o Tribunal não autoriza fazer no ambiente atual (Vercel/Supabase
+é só desenvolvimento/validação — ver [ADR 015](015-definir-fabrica-de-calculos-como-producao-final.md)).
+Por isso, ficam adiadas para quando o projeto for migrado para a Fábrica de Cálculos, em vez de
+resolvidas agora. O passo a passo abaixo continua válido como referência para quando isso acontecer.
 
 ## Decision
 
