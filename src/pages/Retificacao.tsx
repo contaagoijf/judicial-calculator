@@ -92,8 +92,8 @@ const RetificacaoPage = () => {
   const { data: calculoAnterior } = useCalculo(idParam);
 
   const [processo, setProcesso] = useState('');
-  const { data: declaracoesAjuste } = useCalculosPorProcesso(processo, 'ajuste_anual');
-  const { data: retificacoesAnteriores } = useCalculosPorProcesso(processo, 'retificacao');
+  const { data: declaracoesAjuste, isLoading: carregandoAjuste } = useCalculosPorProcesso(processo, 'ajuste_anual');
+  const { data: retificacoesAnteriores, isLoading: carregandoRetificacoes } = useCalculosPorProcesso(processo, 'retificacao');
   const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
 
   const handleProcessoBlur = () => {
@@ -224,6 +224,11 @@ const RetificacaoPage = () => {
 
   useEffect(() => {
     if (idParam) return;
+    // Espera as duas consultas (ajuste_anual e retificacao) terminarem antes de decidir
+    // qual fonte usar — senão, se a de ajuste_anual responder primeiro, o preenchimento
+    // roda com base só nela e o guard abaixo impede a nova tentativa quando a de
+    // retificacao (mais completa) chega depois, perdendo as declaracoes adicionadas.
+    if (carregandoAjuste || carregandoRetificacoes) return;
 
     const temAjuste = !!declaracoesAjuste && declaracoesAjuste.length > 0;
     const temRetificacao = !!retificacoesAnteriores && retificacoesAnteriores.length > 0;
@@ -249,7 +254,7 @@ const RetificacaoPage = () => {
       description: 'Já havia declarações cadastradas para este processo — os dados foram preenchidos automaticamente.',
       duration: 4000,
     });
-  }, [declaracoesAjuste, retificacoesAnteriores, idParam, processo]);
+  }, [declaracoesAjuste, retificacoesAnteriores, carregandoAjuste, carregandoRetificacoes, idParam, processo]);
 
   if (!toolEnabled) {
     return (

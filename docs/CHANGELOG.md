@@ -25,6 +25,7 @@ identificada).
 - [17/09/2026 — Correção do mês final duplicado no juros SELIC da Retificação](#17092026--correção-do-mês-final-duplicado-no-juros-selic-da-retificação)
 - [17 e 18/09/2026 — Correção da base de honorários e escalonamento por faixas (art. 85 do CPC)](#17-e-18092026--correção-da-base-de-honorários-e-escalonamento-por-faixas-art-85-do-cpc)
 - [18/09/2026 — Implementação do fluxo "Esqueceu a senha?" no acesso administrativo](#18092026--implementação-do-fluxo-esqueceu-a-senha-no-acesso-administrativo)
+- [22/09/2026 — Correção de perda de declarações ao recarregar uma Retificação](#22092026--correção-de-perda-de-declarações-ao-recarregar-uma-retificação)
 
 ---
 
@@ -463,4 +464,23 @@ pendentes.**
   - configurar o template de e-mail "Reset Password" no painel do Supabase
     para enviar o código de 6 dígitos em vez do link padrão (pode exigir
     configurar um provedor de SMTP próprio, dependendo do plano do projeto).
+
+## 22/09/2026 — Correção de perda de declarações ao recarregar uma Retificação
+
+**Corrigido, testado e publicado em produção.**
+
+Relato: declarações adicionadas numa Retificação já salva (e até exportada em
+PDF) somem ao sair da tela e reabrir o mesmo processo, restando só a
+declaração original de Ajuste Anual.
+
+- **Causa raiz**: condição de corrida entre duas consultas paralelas
+  (declarações de Ajuste Anual e Retificações já salvas) no preenchimento
+  automático da tela. Se a consulta de Ajuste Anual respondia primeiro, o
+  formulário já era preenchido só com ela, e um controle interno impedia o
+  preenchimento de rodar de novo quando a consulta de Retificação (mais
+  completa) chegava em seguida. A Retificação estava sendo salva
+  corretamente o tempo todo — o problema era só ao reabrir a tela.
+- **Correção**: o preenchimento automático passa a esperar as duas consultas
+  terminarem antes de decidir qual fonte usar. Documentado no
+  [ADR 014](adr/014-corrigir-perda-de-declaracoes-ao-recarregar-retificacao.md).
 

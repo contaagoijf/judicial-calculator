@@ -63,8 +63,7 @@ processo já cadastrado).
 
 - **Painel administrativo**: ao clicar em "Login admin", o usuário com e-mail já cadastrado como
   administrador passa a poder atualizar as tabelas do sistema (Selic, faixas de IR, salário mínimo,
-  valor da condenação) pela própria interface, no botão "Visualizar parâmetros" da página principal —
-  não é necessário acesso direto ao Supabase para essa gestão.
-- **Segundo administrador**: procedimento em verificação junto à DCAL — foi comunicado por e-mail
+  valor da condenação) pela própria interface, no botão "Visualizar parâmetros" da página principal.
+- **Segundo administrador**: procedimento em verificação junto à DCAL. Foi comunicado por e-mail
   solicitando um novo convite com permissão administrativa, necessário para realizar as configurações
   pendentes no banco de dados do Supabase.
