@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardPaste, Edit, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -56,6 +56,32 @@ const ListaProcessosPage = () => {
   const handleBuscaProcessoBlur = () => {
     if (buscaProcesso.trim() && !isNumeroProcessoCompleto(buscaProcesso)) {
       setProcessoInvalidoOpen(true);
+    }
+  };
+
+  const handleColarProcesso = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      setBuscaProcesso(formatNumeroProcesso(texto));
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleColarNomeAutor = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      setBuscaAutor(texto);
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -160,21 +186,47 @@ const ListaProcessosPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="space-y-1.5">
               <Label>Número do processo</Label>
-              <Input
-                value={buscaProcesso}
-                onChange={(e) => setBuscaProcesso(formatNumeroProcesso(e.target.value))}
-                onBlur={handleBuscaProcessoBlur}
-                placeholder="0000000-00.0000.0.00.0000"
-                inputMode="numeric"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={buscaProcesso}
+                  onChange={(e) => setBuscaProcesso(formatNumeroProcesso(e.target.value))}
+                  onBlur={handleBuscaProcessoBlur}
+                  placeholder="0000000-00.0000.0.00.0000"
+                  inputMode="numeric"
+                  className="min-w-0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarProcesso}
+                  title="Colar número do processo da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Nome do autor</Label>
-              <Input
-                value={buscaAutor}
-                onChange={(e) => setBuscaAutor(e.target.value)}
-                placeholder="Nome completo"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={buscaAutor}
+                  onChange={(e) => setBuscaAutor(e.target.value)}
+                  placeholder="Nome completo"
+                  className="min-w-0"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarNomeAutor}
+                  title="Colar nome do autor da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Data do ajuizamento</Label>
