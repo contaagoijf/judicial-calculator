@@ -61,12 +61,10 @@ processo já cadastrado).
 
 ## Pendências relacionadas (fora do escopo desta decisão)
 
-- **Painel administrativo**: o login admin existe, mas não leva a nenhuma tela de gestão das tabelas do
-  sistema pela interface (Selic, faixas de IR, salário mínimo, valor da condenação) — pedido da
-  contadoria, tratado como funcionalidade própria a planejar separadamente.
-- **Segundo administrador**: convite ao contador para acesso administrativo ficou pendente de
-  confirmação (e-mail não chegou a tempo da reunião).
-- **Botão "Voltar" do relatório**: relato de que não retorna para a Retificação foi investigado em
-  17/09/2026, mas os botões existentes (`ResultadoRetificacao.tsx:130`, `Resultado.tsx:88`) já navegam
-  corretamente; sem uma transcrição clara de qual botão específico falha, nenhuma mudança foi aplicada.
-  Pendente confirmar com a contadoria, no próprio sistema, qual botão apresenta o problema.
+- **Painel administrativo**: ao clicar em "Login admin", o usuário com e-mail já cadastrado como
+  administrador passa a poder atualizar as tabelas do sistema (Selic, faixas de IR, salário mínimo,
+  valor da condenação) pela própria interface, no botão "Visualizar parâmetros" da página principal —
+  não é necessário acesso direto ao Supabase para essa gestão.
+- **Segundo administrador**: procedimento em verificação junto à DCAL — foi comunicado por e-mail
+  solicitando um novo convite com permissão administrativa, necessário para realizar as configurações
+  pendentes no banco de dados do Supabase.
