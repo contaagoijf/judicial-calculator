@@ -47,34 +47,18 @@ API REST do Supabase (chave anon, somente leitura) em 04/09/2026:
 
 ## 3. Configurações de acesso ao banco
 
-Confirmado em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md) (seção 2) e nos arquivos do
-repositório:
+O levantamento completo de credenciais e configurações de acesso ao banco de produção (chave disponível
+no repositório, credenciais administrativas ausentes, e a divergência do `supabase/config.toml`) foi
+consolidado em [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md).
 
-- **Projeto Supabase de produção:** `xitpsqtcxraejzlxvvmn`
-  (`VITE_SUPABASE_URL=https://xitpsqtcxraejzlxvvmn.supabase.co`, em `.env` /
-  `.env.example` na raiz do repositório).
-- **Chave disponível no repositório:** apenas a chave `anon`/`publishable`
-  (`VITE_SUPABASE_PUBLISHABLE_KEY`). Essa chave permite **somente leitura** em
-  `regras_subperiodo` — a política RLS `Admin manage regras_subperiodo`
-  (`supabase/schema.sql`, linhas 557–561) exige `public.is_admin()` para
-  qualquer `INSERT`/`UPDATE`/`DELETE`.
-- **Não existem no repositório nem no ambiente local:**
-  `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN`, senha do usuário
-  `postgres`, connection string, nem projeto Supabase linkado via CLI
-  (`supabase/config.toml` aponta para `bydirbbhuhihxrgxvrlb`, projeto
-  **diferente** do de produção — ver alerta na seção 6).
-- **Como obter acesso administrativo real:** ver [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md), seções 2.1 (convite/login no painel) e 2.2 (senha do usuário `postgres` para `psql`).
-- **Alternativa sem acesso ao Supabase:** aplicar via painel administrativo do
-  próprio CalcJud (Parâmetros → Tabelas → `regras_subperiodo`), logado como
-  administrador do sistema — mais lento por ser manual linha a linha, mas não
-  exige credenciais de infraestrutura.
-- **Atenção — credencial de bootstrap em texto claro:** `supabase/schema.sql`
-  (linhas ~396–472) contém e-mail e senha de um administrador criado no
-  processo de instalação do banco. Pendência de segurança já registrada —
-  ver [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md)
-  para o achado completo e o plano de correção. Não foi testado se ainda é
-  válida; o analista deve verificar e, se ainda ativa, trocá-la pelo painel
-  (Authentication → Users) independente deste ajuste.
+Para esta migração especificamente: a chave `anon`/`publishable` disponível no repositório permite
+apenas **leitura** em `regras_subperiodo` — a política RLS `Admin manage regras_subperiodo`
+(`supabase/schema.sql`, linhas 557–561) exige `public.is_admin()` para qualquer `INSERT`/`UPDATE`/`DELETE`
+— por isso a aplicação do script da seção 5 exigiu acesso administrativo real, obtido conforme
+[`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md), seções 2.1 (convite/login no painel) e 2.2
+(senha do usuário `postgres` para `psql`). **Alternativa sem acesso ao Supabase:** aplicar via painel
+administrativo do próprio CalcJud (Parâmetros → Tabelas → `regras_subperiodo`), logado como administrador
+do sistema — mais lento por ser manual linha a linha, mas não exige credenciais de infraestrutura.
 
 ## 4. Por que não basta rodar o `seed_templates_regras.sql` em produção
 
@@ -142,7 +126,8 @@ numérica limpa, renumere manualmente a regra POUPANCA/TR do Template_2 de
    `xitpsqtcxraejzlxvvmn`. **Não usar** `supabase/config.toml`
    (`bydirbbhuhihxrgxvrlb`) como referência — esse arquivo aponta para um
    projeto diferente e precisa ser corrigido separadamente (risco: alguém
-   rodar `supabase db push` e atingir o projeto errado).
+   rodar `supabase db push` e atingir o projeto errado) — ver
+   [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md).
 2. **Gerar backup manual** antes de aplicar — comando pronto em
    [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md), seção 3.2.
 3. **Rodar o script da seção 5** via SQL Editor do painel Supabase (mais
@@ -158,7 +143,8 @@ numérica limpa, renumere manualmente a regra POUPANCA/TR do Template_2 de
 5. **Recalcular** um caso real com período incluindo janeiro/1996 no CalcJud
    em produção para confirmar que o resultado passou a bater com a planilha
    da DCAL para esse mês específico.
-6. **Verificar a credencial de bootstrap** citada na seção 3 acima e rotacionar
+6. **Verificar a credencial de bootstrap** documentada em
+   [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md) e rotacionar
    se ainda estiver ativa (fora do escopo direto desta migração, mas
    pendência de segurança já identificada).
 
@@ -169,6 +155,8 @@ numérica limpa, renumere manualmente a regra POUPANCA/TR do Template_2 de
   toda a investigação (seção "Detalhamento").
 - [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md) — guia geral de acesso, backup e segurança
   do banco de dados do CalcJud.
+- [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md) — levantamento completo de
+  credenciais e configurações de acesso ao banco de produção.
 - `supabase/seed_templates_regras.sql` — script de configuração já corrigido
   (mas não substitui a regra antiga em produção; ver seção 4 acima).
 - `supabase/schema.sql` — definição das tabelas `regras_subperiodo`,

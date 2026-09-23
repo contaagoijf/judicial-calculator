@@ -96,7 +96,6 @@ Para conferências ou auditorias pontuais de uma única tabela (por exemplo, `ca
 
 ## 4. Manutenção e melhoria contínua
 
-- **Segurança — trocar a senha do administrador inicial de bootstrap**: pendência de segurança conhecida (senha em texto claro em `supabase/schema.sql`) — ver [ADR 010](010-migrar-credenciais-versionadas-para-variaveis-de-ambiente.md) para o achado completo e o plano de correção.
 - **Atualização anual dos parâmetros fiscais**: as tabelas `ir_parametros`, `ir_faixas`, `salario_minimo` e `indices_economicos`/`taxas_historicas` (SELIC, poupança etc.) precisam ser atualizadas a cada início de ano-calendário com os novos valores oficiais; hoje isso é feito manualmente pelo Table Editor ou SQL Editor — vale planejar um processo/checklist recorrente para que o cálculo do CALCJUD nunca fique defasado em relação aos índices oficiais vigentes.
 - **Revisão periódica da lista de administradores** (`admin_users`) e das políticas de RLS: conferir de tempos em tempos se todos os e-mails com privilégio de administrador ainda são de pessoas que devem ter esse acesso, removendo quem não precisa mais.
 - **Acompanhar o Database → Advisors** do painel do Supabase: ele aponta automaticamente alertas de segurança (por exemplo, uma tabela nova sem RLS habilitada) e de performance (por exemplo, um índice faltando) — vale revisar periodicamente, especialmente logo após qualquer alteração de esquema.

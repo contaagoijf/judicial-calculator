@@ -6,6 +6,15 @@
 
 **Tribunal Regional Federal da 2ª Região (TRF2)**
 
+## Links de acesso do projeto
+
+Links de acesso do CalcJud em cada provedor usado atualmente (ver [ADR 015](015-definir-fabrica-de-calculos-como-producao-final.md)
+sobre esse ambiente ser desenvolvimento/validação, não o destino final de produção):
+
+- **GitHub** (código-fonte): <https://github.com/contaagoijf/judicial-calculator>
+- **Vercel** (build e deploy do front-end): <https://vercel.com/agois-projects>
+- **Supabase** (banco de dados e autenticação): <https://supabase.com/dashboard/project/xitpsqtcxraejzlxvvmn>
+
 ## Context
 
 Investigação realizada para verificar se o projeto tem credenciais importantes versionadas no repositório remoto (GitHub) e, avaliar como migrá-las para variáveis de ambiente locais (`.env`) sem quebrar o deploy automático em produção (Vercel).
@@ -101,61 +110,169 @@ investigação** (nem `VERCEL_TOKEN`, nem projeto vinculado via
 remotamente. Por isso, a mudança do `externalClient.ts` **não deve ser
 aplicada antes** de as variáveis existirem no painel do Vercel.
 
+### 4. Configuração de acesso ao banco de produção (Supabase)
+
+Levantamento confirmado em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md) (seção 2) e nos
+arquivos do repositório:
+
+- **Projeto Supabase de produção:** `xitpsqtcxraejzlxvvmn`
+  (`VITE_SUPABASE_URL=https://xitpsqtcxraejzlxvvmn.supabase.co`, em `.env` /
+  `.env.example` na raiz do repositório).
+- **Chave disponível no repositório:** apenas a chave `anon`/`publishable`
+  (`VITE_SUPABASE_PUBLISHABLE_KEY`). Essa chave permite **somente leitura** nas tabelas protegidas por
+  RLS que exigem `public.is_admin()` (ex.: `regras_subperiodo`) — qualquer `INSERT`/`UPDATE`/`DELETE`
+  exige um administrador autenticado.
+- **Não existem no repositório nem no ambiente local:**
+  `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN`, senha do usuário
+  `postgres`, connection string, nem projeto Supabase linkado via CLI.
+- **`supabase/config.toml` aponta para o projeto errado:** o arquivo referencia `bydirbbhuhihxrgxvrlb`,
+  projeto **diferente** do de produção (`xitpsqtcxraejzlxvvmn`). Se alguém rodar `supabase db push`
+  confiando nesse arquivo, vai atingir o projeto errado — vale corrigir.
+- **Como obter acesso administrativo real:** ver [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md),
+  seções 2.1 (convite/login no painel) e 2.2 (senha do usuário `postgres` para `psql`).
+
 ---
 
 ## Passo a passo do que precisa ser feito
 
-### A. URL e chave do Supabase (`externalClient.ts` / `.env`)
+**Escopo ampliado (23/09/2026):** além da URL/chave do Supabase e da senha de bootstrap, a limpeza
+passou a incluir reescrever o histórico do Git para remover todo o rastro de: a senha antiga
+(`agoiagoi`), qualquer credencial versionada, assinaturas `Co-Authored-By: Claude` (ou variações), e
+menções a "Claude", "Anthropic", "Claude Code", "Agents", "Skills" ou termos equivalentes de ferramentas
+de IA em mensagens de commit, descrições de PR, código-fonte, comentários ou qualquer arquivo
+versionado — conforme a regra fixa do projeto sobre não mencionar IA no repositório público.
 
-1. No painel do Vercel do projeto CalcJud, ir em **Settings → Environment
-   Variables** e adicionar:
-   - `VITE_SUPABASE_URL` — mesmo valor de `.env.example`/`.env` local.
-   - `VITE_SUPABASE_PUBLISHABLE_KEY` — mesmo valor de `.env.example`/`.env`
-     local.
-2. Disparar um redeploy manual no Vercel (ou aguardar o próximo push) e
-   confirmar que o site continua funcionando normalmente com as variáveis
-   configuradas — nesse ponto o código ainda usa o valor hardcoded, então
-   nada deve mudar visualmente; é só para confirmar que as variáveis foram
-   salvas corretamente antes do próximo passo.
-3. Só então aplicar a mudança de código:
-   - Trocar `src/integrations/supabase/externalClient.ts` para ler de
-     `import.meta.env.VITE_SUPABASE_URL` e
-     `import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY`, em vez dos valores
-     fixos.
-   - Remover o arquivo `src/integrations/supabase/client.ts` (código morto,
-     não usado — ou, alternativamente, unificar os dois em um só arquivo).
-   - Corrigir `.env.example` para conter um placeholder genérico em vez do
-     valor real (ex.: `"sua-chave-aqui"`), mantendo `.env` (local, já
-     ignorado pelo Git) com o valor real de fato.
-4. Fazer commit e push para `main`, acompanhar o deploy automático no
-   Vercel e conferir que o site em produção carrega normalmente.
+A ordem abaixo existe para uma razão específica: **reescrever o histórico antes de corrigir o
+código/documentação atuais não adianta nada** — o próximo commit reintroduziria o mesmo conteúdo no
+histórico "limpo". Por isso, a sequência é sempre: primeiro corrigir o presente (Fase 1 e 2), só depois
+mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 
-### B. Senha do administrador de bootstrap (`agoiagoi`)
+### Fase 1 — Corrigir o código e a documentação atuais (antes de reescrever qualquer histórico)
 
-1. **Prioridade alta, independente do item A**: trocar a senha real da
-   conta `contaagoijf@gmail.com` no painel do Supabase, em
-   **Authentication → Users**.
-2. Redigir/remover o valor `agoiagoi` (e o e-mail, se fizer sentido) dos
-   arquivos `supabase/schema.sql` e
-   `supabase/migrations/20260428120000_admin_access_controls.sql`, deixando
-   um placeholder ou instrução para gerar uma senha nova a cada nova
-   instalação do banco.
-3. Decidir se vale reescrever o histórico do Git para remover de vez o
-   rastro da senha antiga (`git filter-repo` ou equivalente) — operação
-   mais invasiva, que reescreve hashes de commit e exige coordenação com
-   quem mais usa o repositório. Não é estritamente necessário se a senha já
-   tiver sido rotacionada (o valor antigo deixa de ser válido), mas é uma
-   boa prática de higiene caso o repositório seja ou venha a ser público.
+1. **URL e chave do Supabase** (`externalClient.ts` / `.env`) — as variáveis `VITE_SUPABASE_URL` e
+   `VITE_SUPABASE_PUBLISHABLE_KEY`/`VITE_SUPABASE_ANON_KEY` já foram confirmadas no ambiente de
+   **Production** do Vercel e já existem no `.env` local (23/09/2026), então este passo já pode ser
+   aplicado com segurança:
+   - Trocar `src/integrations/supabase/externalClient.ts` para ler de `import.meta.env.VITE_SUPABASE_URL`
+     e `import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY`, em vez dos valores fixos.
+   - Remover o arquivo `src/integrations/supabase/client.ts` (código morto, não usado — ou,
+     alternativamente, unificar os dois em um só arquivo).
+   - `.env.example` já está corrigido com placeholder genérico (16/09/2026).
+   - Fazer commit e push para `main`, acompanhar o deploy automático no Vercel e conferir que o site em
+     produção carrega normalmente **antes de seguir para o próximo item**.
+2. **Corrigir `supabase/config.toml`** — trocar a referência de `bydirbbhuhihxrgxvrlb` para
+   `xitpsqtcxraejzlxvvmn` (projeto de produção), evitando que um `supabase db push` local atinja o
+   projeto errado.
+3. **Redigir o valor literal da senha de bootstrap nos arquivos atuais** — trocar `agoiagoi` por um
+   placeholder/instrução de geração de senha nova em:
+   - `supabase/schema.sql`
+   - `supabase/migrations/20260428120000_admin_access_controls.sql`
+   - Este próprio ADR (a citação do achado deve continuar explicando o que foi encontrado, sem repetir o
+     valor literal, já que ele vai deixar de ser válido depois da Fase 2, mas continuaria "vazando" pelo
+     texto da documentação se não for redigido também).
+4. **Corrigir a lógica que reseta a senha a cada reexecução** — hoje, tanto `schema.sql` quanto a
+   migração fazem `UPDATE auth.users SET encrypted_password = crypt('agoiagoi', ...)` no branch `ELSE`
+   (ou seja, se o admin já existir, o script **sobrescreve a senha atual pela antiga toda vez que for
+   rodado de novo**). Isso precisa ser corrigido para não mexer mais na senha de um admin já existente
+   (gerar uma senha aleatória apenas na criação inicial, nunca um valor fixo) — **sem essa correção, uma
+   reexecução futura de `schema.sql` desfaz silenciosamente a rotação da Fase 2**, sem avisar ninguém.
+5. **Confirmar que não sobra nenhuma menção a IA no `main` atual** — rodar
+   `git grep -liE "claude|anthropic|co-authored-by"` (fora do `.gitignore`, que menciona `CLAUDE.md` de
+   propósito) e conferir manualmente qualquer resultado antes de seguir para a Fase 3.
+6. **Decidir o que fazer com a branch `ajuste-calcjud`** (publicada também em
+   `origin/ajuste-calcjud` no GitHub) — ela diverge de `main` desde 16/09/2026 e tem, hoje, **13 dos seus
+   22 commits** com menções a "agente de IA"/`SKILL.md`, expostas publicamente no GitHub agora mesmo
+   (independente de qualquer reescrita de histórico do `main`). Se for uma linha de trabalho já
+   superada pelas reorganizações feitas depois em `main`: a forma mais simples de resolver é apagar a
+   branch (local e remota). Se ainda tiver algo relevante não incorporado ao `main`: precisa ser
+   reescrita junto na Fase 3, senão a exposição continua ali mesmo depois de limpar o `main`.
+7. Rodar `npx tsc --noEmit`, a suíte de testes e `npm run build` antes de cada commit desta fase, como já
+   é praxe no projeto.
+
+### Fase 2 — Rotacionar a senha do administrador de bootstrap (Supabase)
+
+1. **Avisar a pessoa que hoje usa o login `contaagoijf@gmail.com` antes de trocar a senha** — a troca
+   feita pelo painel do Supabase é imediata e invalida a senha atual assim que aplicada; como essa
+   pessoa (não você) é quem efetivamente usa esse login para acessar o CalcJud, ela precisa saber que vai
+   trocar e como vai receber a nova senha.
+2. Trocar a senha real da conta `contaagoijf@gmail.com` no painel do Supabase, em
+   **Authentication → Users**. Duas formas possíveis:
+   - **Preferível:** usar a opção **"Send password recovery"** do próprio painel — o Supabase envia um
+     e-mail (usando o serviço de e-mail padrão do Supabase, independente do SMTP customizado ainda
+     pendente do ADR 013) para `contaagoijf@gmail.com`, e a própria pessoa define a senha nova. Ninguém
+     precisa gerar nem repassar uma senha por fora.
+   - **Alternativa:** definir uma senha nova diretamente pelo painel e repassá-la para a pessoa por um
+     canal seguro (nunca por e-mail em texto puro).
+3. **Não é necessária nenhuma ação adicional de "sincronização" na configuração do Supabase** — a tabela
+   `auth.users` é a única fonte de verdade, lida a cada tentativa de login; a troca pelo painel já vale
+   imediatamente para qualquer cliente (app CalcJud, painel do Supabase, etc.). O único ponto de atenção
+   real é o item 1.4 da Fase 1: sem corrigir o script, uma reexecução futura de `schema.sql` reverteria a
+   senha de volta para o valor antigo sem avisar ninguém — por isso a Fase 1 vem antes desta.
+4. Confirmar com a pessoa responsável que o novo acesso funciona antes de considerar este item concluído.
+
+### Fase 3 — Reescrever o histórico do Git
+
+1. **Confirmar que é seguro reescrever**: ninguém mais tem um clone local de `main` com trabalho
+   pendente que dependeria dos commits atuais (trabalho solo neste projeto até o momento).
+2. **Backup de segurança**: criar uma branch local a partir do `main` atual antes de qualquer reescrita
+   (ex.: `backup/main-antes-limpeza-<data>`) — regra fixa do projeto sempre que o histórico da `main`
+   for reescrito, por causa das credenciais que ainda estão nele.
+3. **Rodar a reescrita** (`git filter-repo`, preferível a `filter-branch`) removendo de todos os commits
+   antigos do `main` (e de `ajuste-calcjud`, se ela for mantida — ver Fase 1, item 6):
+   - o valor literal `agoiagoi`;
+   - qualquer trailer `Co-Authored-By: Claude ...` (e variações) de mensagens de commit;
+   - qualquer menção a "Claude", "Anthropic", "Claude Code", "Agents", "Skills" ou equivalentes de
+     ferramentas de IA, tanto em mensagens de commit quanto em conteúdo de arquivos antigos (ex.: os
+     arquivos de tooling de agente de IA já removidos do `main` atual, mas cujo conteúdo ainda existe em
+     blobs de commits antigos).
+4. Se `ajuste-calcjud` for considerada obsoleta (Fase 1, item 6): apagar a branch local e a remota
+   (`git push origin --delete ajuste-calcjud`) em vez de reescrevê-la.
+5. **Force-push com `--force-with-lease`** (nunca `--force` puro) de `main` para o GitHub — e de
+   `ajuste-calcjud`, se ela tiver sido reescrita em vez de apagada.
+6. Avaliar se as branches de backup locais antigas (`backup/main-antes-chamados-*`) ainda são necessárias
+   ou podem ser removidas, já que elas preservam justamente o rastro que está sendo removido do `main`
+   (elas nunca foram enviadas ao GitHub, então não afetam a exposição pública, mas continuam existindo
+   localmente).
+
+### Fase 4 — Verificação pós-limpeza (resumo de que a produção não foi afetada)
+
+Registrar o resultado de cada item abaixo (data e conferido por quem) como evidência de que a limpeza
+não teve impacto negativo em produção:
+
+1. **Conteúdo idêntico:** `git diff <branch-de-backup> main --stat` (ou `HEAD` após a reescrita) retorna
+   vazio para qualquer intervalo em que só o histórico mudou — confirma que a reescrita alterou apenas
+   metadados de commit, não o conteúdo final dos arquivos.
+2. **Deploy Vercel:** o deploy mais recente (disparado pelo push da Fase 3) terminou com sucesso, e
+   `calcjud.vercel.app` carrega normalmente — login administrativo, Ajuste Anual, Retificação e Consulta
+   pública testados manualmente.
+3. **Supabase:** nenhum erro de `undefined`/conexão no console do navegador (confirma que
+   `externalClient.ts` está lendo as variáveis de ambiente corretamente em produção).
+4. **Login do admin de bootstrap:** a pessoa responsável por `contaagoijf@gmail.com` confirma que
+   conseguiu entrar com a senha nova.
+5. **Nenhum rastro restante:** `git grep` (ou uma busca equivalente do GitHub) confirma que não há mais
+   `agoiagoi`, `Co-Authored-By: Claude` nem menções a IA em nenhum commit de nenhuma branch publicada.
+6. **GitHub são:** issues, pull requests e links para commits antigos (se algum já tiver sido
+   compartilhado por hash) podem quebrar depois do force-push, já que os hashes mudam — conferir se
+   existe algum link externo importante que precise ser atualizado.
 
 ---
 
 ## Status
 
-- [ ] A.1 — Variáveis criadas no Vercel
-- [ ] A.2 — Redeploy de confirmação feito
-- [x] A.3a — `.env.example` corrigido para placeholder genérico (16/09/2026)
-- [ ] A.3b — Código do `externalClient.ts` corrigido (depende de A.1/A.2 antes)
-- [ ] A.4 — Deploy final conferido em produção
-- [ ] B.1 — Senha do admin de bootstrap rotacionada no Supabase
-- [ ] B.2 — Arquivos `schema.sql`/migração corrigidos
-- [ ] B.3 — Decisão sobre reescrever histórico do Git
+- [ ] 1.1 — `externalClient.ts` corrigido para ler de variáveis de ambiente e deploy conferido
+- [ ] 1.2 — `supabase/config.toml` corrigido para apontar para o projeto de produção
+- [ ] 1.3 — Valor literal `agoiagoi` redigido em `schema.sql`/migração/este ADR
+- [ ] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida (não sobrescrever mais)
+- [x] 1.5a — `.env.example` corrigido para placeholder genérico (16/09/2026)
+- [ ] 1.5b — Confirmado (`git grep`) que `main` não tem menções a IA
+- [x] 1.6 — Branch `ajuste-calcjud` apagada do GitHub e do local (23/09/2026; backup local em
+      `backup/ajuste-calcjud-antes-delete-20260923`)
+- [ ] 2.1 — Pessoa responsável por `contaagoijf@gmail.com` avisada
+- [ ] 2.2 — Senha do admin de bootstrap rotacionada no Supabase
+- [ ] 2.3 — Novo acesso confirmado pela pessoa responsável
+- [ ] 3.1 — Backup de segurança da `main` atual criado
+- [ ] 3.2 — Histórico reescrito (`git filter-repo`) removendo senha antiga, `Co-Authored-By: Claude` e
+      menções a IA
+- [ ] 3.3 — `ajuste-calcjud` reescrita ou apagada do GitHub
+- [ ] 3.4 — Force-push com `--force-with-lease` feito
+- [ ] 4.1 — Verificação pós-limpeza registrada (Fase 4 completa, sem impacto negativo em produção)
