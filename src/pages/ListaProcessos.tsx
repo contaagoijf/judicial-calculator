@@ -60,8 +60,8 @@ const Paginacao = ({
   onProxima: () => void;
   onUltima: () => void;
 }) => (
-  <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
-    <div className="flex items-center gap-2 text-sm">
+  <div className="flex flex-wrap items-center gap-4 print:hidden">
+    <div className="flex items-center gap-2 text-sm mr-[100px]">
       <span className="text-muted-foreground">Processos por página</span>
       <Select value={porPagina.toString()} onValueChange={(v) => onPorPaginaChange(parseInt(v))}>
         <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
