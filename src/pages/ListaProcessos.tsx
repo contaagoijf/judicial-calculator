@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ClipboardPaste, Edit, X, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft, ArrowUp, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
+  ClipboardPaste, Edit, Printer, X, Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useTodosCalculos } from '@/hooks/useIRData';
@@ -42,6 +46,50 @@ type GrupoProcesso = {
   totalRegistros: number;
 };
 
+const OPCOES_POR_PAGINA = [15, 30, 50, 100];
+
+const Paginacao = ({
+  porPagina, onPorPaginaChange, paginaAtual, totalPaginas, onPrimeira, onAnterior, onProxima, onUltima,
+}: {
+  porPagina: number;
+  onPorPaginaChange: (valor: number) => void;
+  paginaAtual: number;
+  totalPaginas: number;
+  onPrimeira: () => void;
+  onAnterior: () => void;
+  onProxima: () => void;
+  onUltima: () => void;
+}) => (
+  <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-muted-foreground">Processos por página</span>
+      <Select value={porPagina.toString()} onValueChange={(v) => onPorPaginaChange(parseInt(v))}>
+        <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {OPCOES_POR_PAGINA.map((opcao) => (
+            <SelectItem key={opcao} value={opcao.toString()}>{opcao}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">Página {paginaAtual} de {totalPaginas}</span>
+      <Button size="icon" variant="outline" onClick={onPrimeira} disabled={paginaAtual === 1} title="Primeira página">
+        <ChevronsLeft className="w-4 h-4" />
+      </Button>
+      <Button size="icon" variant="outline" onClick={onAnterior} disabled={paginaAtual === 1} title="Página anterior">
+        <ChevronLeft className="w-4 h-4" />
+      </Button>
+      <Button size="icon" variant="outline" onClick={onProxima} disabled={paginaAtual === totalPaginas} title="Próxima página">
+        <ChevronRight className="w-4 h-4" />
+      </Button>
+      <Button size="icon" variant="outline" onClick={onUltima} disabled={paginaAtual === totalPaginas} title="Última página">
+        <ChevronsRight className="w-4 h-4" />
+      </Button>
+    </div>
+  </div>
+);
+
 const ListaProcessosPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -55,6 +103,15 @@ const ListaProcessosPage = () => {
   const [buscaAutor, setBuscaAutor] = useState('');
   const [buscaData, setBuscaData] = useState('');
   const [processoInvalidoOpen, setProcessoInvalidoOpen] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(15);
+  const [mostrarBotaoTopo, setMostrarBotaoTopo] = useState(false);
+
+  useEffect(() => {
+    const aoRolar = () => setMostrarBotaoTopo(window.scrollY > 300);
+    window.addEventListener('scroll', aoRolar);
+    return () => window.removeEventListener('scroll', aoRolar);
+  }, []);
 
   const handleBuscaProcessoBlur = () => {
     if (buscaProcesso.trim() && !isNumeroProcessoCompleto(buscaProcesso)) {
@@ -149,6 +206,22 @@ const ListaProcessosPage = () => {
     });
   }, [grupos, temFiltro, termoProcesso, termoAutor, termoData]);
 
+  // Volta para a primeira página sempre que o filtro ou a quantidade por página mudar,
+  // para não deixar a tela numa página que deixou de existir.
+  useEffect(() => {
+    setPagina(1);
+  }, [termoProcesso, termoAutor, termoData, porPagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(gruposExibidos.length / porPagina));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const inicioPagina = (paginaAtual - 1) * porPagina;
+
+  const irPrimeira = () => setPagina(1);
+  const irAnterior = () => setPagina((p) => Math.max(1, p - 1));
+  const irProxima = () => setPagina((p) => Math.min(totalPaginas, p + 1));
+  const irUltima = () => setPagina(totalPaginas);
+  const handleImprimir = () => window.print();
+
   const handleLimpar = () => {
     setBuscaProcesso('');
     setBuscaAutor('');
@@ -197,7 +270,7 @@ const ListaProcessosPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 print:hidden">
           <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Voltar
           </Button>
@@ -206,7 +279,7 @@ const ListaProcessosPage = () => {
 
         <h1 className="text-2xl font-bold mb-6">Processos: {gruposExibidos.length}</h1>
 
-        <div className="form-section mb-8">
+        <div className="form-section mb-8 print:hidden">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Busca</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="space-y-1.5">
@@ -268,6 +341,9 @@ const ListaProcessosPage = () => {
             <Button onClick={handleLimpar} className="gap-2">
               <X className="w-4 h-4" /> Limpar
             </Button>
+            <Button variant="outline" onClick={handleImprimir} className="gap-2">
+              <Printer className="w-4 h-4" /> Imprimir
+            </Button>
           </div>
         </div>
 
@@ -280,8 +356,28 @@ const ListaProcessosPage = () => {
           </p>
         )}
 
-        {gruposExibidos.map((grupo) => (
-          <div key={grupo.numero_processo} className="form-section mb-8">
+        {!isLoading && gruposExibidos.length > 0 && (
+          <div className="mb-6">
+            <Paginacao
+              porPagina={porPagina}
+              onPorPaginaChange={setPorPagina}
+              paginaAtual={paginaAtual}
+              totalPaginas={totalPaginas}
+              onPrimeira={irPrimeira}
+              onAnterior={irAnterior}
+              onProxima={irProxima}
+              onUltima={irUltima}
+            />
+          </div>
+        )}
+
+        {gruposExibidos.map((grupo, idx) => {
+          const dentroDaPaginaAtual = idx >= inicioPagina && idx < inicioPagina + porPagina;
+          return (
+          <div
+            key={grupo.numero_processo}
+            className={`form-section mb-8 ${dentroDaPaginaAtual ? '' : 'hidden print:block'}`}
+          >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-foreground">Dados do Processo</h2>
               {isAdmin && (
@@ -289,7 +385,7 @@ const ListaProcessosPage = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => setExcluirProcessoAlvo({ numero_processo: grupo.numero_processo, total: grupo.totalRegistros })}
-                  className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                  className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive gap-2 print:hidden"
                 >
                   <Trash2 className="w-4 h-4" /> Excluir Processo
                 </Button>
@@ -312,7 +408,7 @@ const ListaProcessosPage = () => {
                     <th className="px-4 py-3 text-right">Imposto pago</th>
                     <th className="px-4 py-3 text-right">Ajuste anual</th>
                     <th className="px-4 py-3 text-center">Alterações</th>
-                    <th className="px-4 py-3 text-center">Ações</th>
+                    <th className="px-4 py-3 text-center print:hidden">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -329,7 +425,7 @@ const ListaProcessosPage = () => {
                       <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {fmt(d.dados.imposto_pago)}</td>
                       <td className="px-4 py-3 text-right font-mono whitespace-nowrap">R$ {fmt(d.dados.ajuste_anual)}</td>
                       <td className="px-4 py-3 text-center">{(d.dados.alteracoes ?? []).length}</td>
-                      <td className="px-4 py-3 text-center space-x-2">
+                      <td className="px-4 py-3 text-center space-x-2 print:hidden">
                         <Button
                           size="sm"
                           variant="outline"
@@ -355,8 +451,35 @@ const ListaProcessosPage = () => {
               </table>
             </div>
           </div>
-        ))}
+          );
+        })}
+
+        {!isLoading && gruposExibidos.length > 0 && (
+          <div className="mt-8 mb-4">
+            <Paginacao
+              porPagina={porPagina}
+              onPorPaginaChange={setPorPagina}
+              paginaAtual={paginaAtual}
+              totalPaginas={totalPaginas}
+              onPrimeira={irPrimeira}
+              onAnterior={irAnterior}
+              onProxima={irProxima}
+              onUltima={irUltima}
+            />
+          </div>
+        )}
       </div>
+
+      {mostrarBotaoTopo && (
+        <Button
+          size="icon"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 rounded-full shadow-lg print:hidden z-50"
+          title="Voltar ao topo"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </Button>
+      )}
 
       <Dialog open={!!removerAlvo} onOpenChange={(open) => !open && setRemoverAlvo(null)}>
         <DialogContent>
