@@ -26,6 +26,7 @@ identificada).
 - [17 e 18/09/2026 — Correção da base de honorários e escalonamento por faixas (art. 85 do CPC)](#17-e-18092026--correção-da-base-de-honorários-e-escalonamento-por-faixas-art-85-do-cpc)
 - [18/09/2026 — Implementação do fluxo "Esqueceu a senha?" no acesso administrativo](#18092026--implementação-do-fluxo-esqueceu-a-senha-no-acesso-administrativo)
 - [22/09/2026 — Correção de perda de declarações ao recarregar uma Retificação](#22092026--correção-de-perda-de-declarações-ao-recarregar-uma-retificação)
+- [24/09/2026 — Correção da tolerância de arredondamento na validação de consistência](#24092026--correção-da-tolerância-de-arredondamento-na-validação-de-consistência)
 
 ---
 
@@ -483,4 +484,19 @@ declaração original de Ajuste Anual.
 - **Correção**: o preenchimento automático passa a esperar as duas consultas
   terminarem antes de decidir qual fonte usar. Documentado no
   [ADR 014](adr/014-corrigir-perda-de-declaracoes-ao-recarregar-retificacao.md).
+
+## 24/09/2026 — Correção da tolerância de arredondamento na validação de consistência
+
+**Corrigido e testado.**
+
+Relato da contadoria (DCAL): cadastro de uma declaração de 2019 recusado pelo sistema com o erro
+"Valores Inconsistentes", mesmo usando os dados exatos da planilha de referência (caso marcado como
+"CRITICA: OK" pela própria planilha).
+
+- **Causa raiz**: o Imposto Devido recalculado pelo sistema e a soma informada (Ajuste Anual + Imposto
+  Pago) divergiam em exatamente 1 centavo — arredondamento normal entre ferramentas independentes. A
+  validação já previa essa tolerância, mas comparava com `< 0.01` (estritamente menor) em vez de
+  `<= 0.01`, excluindo justamente o caso de diferença de 1 centavo exato.
+- **Correção**: tolerância ajustada para aceitar diferenças de até 1 centavo, inclusive. Documentado no
+  [ADR 016](adr/016-corrigir-tolerancia-de-arredondamento-na-validacao-de-consistencia.md).
 

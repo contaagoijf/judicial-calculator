@@ -190,7 +190,7 @@ export function validarConsistenciaAjusteAnual(
   const total_informado = round2(ajusteAnual + impostoPago);
   const diferenca = round2(impostoDevidoOriginal - total_informado);
   return {
-    consistente: Math.abs(diferenca) < 0.01,
+    consistente: Math.abs(diferenca) <= 0.01,
     imposto_devido_original: impostoDevidoOriginal,
     total_informado,
     diferenca,
