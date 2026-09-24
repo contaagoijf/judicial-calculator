@@ -41,3 +41,47 @@ recalculado pelo sistema e a soma de Ajuste Anual + Imposto Pago informada.
 - Caso relatado (ano-calendário 2019, dados acima) testado isoladamente com a função corrigida:
   `consistente` passa de `false` para `true`, sem alterar o valor do Imposto Devido calculado.
 - `npx tsc --noEmit`, `npm run test` e `npm run build` sem erros.
+
+## Por que a margem foi ajustada para aceitar diferenças até 1 centavo (em vez de perseguir a igualdade exata)
+
+A dúvida natural diante desse achado é: por que não fazer o sistema bater **exatamente** com a planilha da
+DCAL, em vez de só tolerar a diferença? A resposta curta é que **é possível eliminar a diferença por
+completo**, mas só descobrindo exatamente onde, no cálculo, a planilha da DCAL arredonda diferente do
+sistema — informação que não temos hoje.
+
+### Por que duas ferramentas corretas podem dar 1 centavo de diferença
+
+O cálculo do Imposto Devido, nesse caso, é `base de cálculo × alíquota − parcela a deduzir`. Com os
+números do caso relatado:
+
+```
+317.558,57 × 27,5% = 87.328,60675
+87.328,60675 − 10.432,32 = 76.896,28675
+```
+
+Esse valor (`76.896,28675`) tem mais de 2 casas decimais — em algum ponto, alguém precisa arredondar. A
+questão é **quando**:
+
+- O sistema carrega o valor com precisão total e só arredonda para 2 casas no resultado final → dá
+  `76.896,29`.
+- Se a planilha da DCAL arredonda **antes**, num passo intermediário (por exemplo, arredondando a base de
+  cálculo, ou o resultado da multiplicação pela alíquota, antes de subtrair a parcela a deduzir), o
+  resultado final pode sair `76.896,28` — 1 centavo diferente, mesmo com a fórmula sendo idêntica.
+
+Ambos os valores estão "certos" pela fórmula oficial — a diferença é só sobre **em que etapa** o
+arredondamento acontece, não um erro de cálculo de nenhum dos dois lados.
+
+### Como eliminar essa diferença de vez, se um dia fizer sentido
+
+Seria preciso descobrir o passo a passo exato da planilha da DCAL (ou do programa oficial da Receita
+Federal que ela usa como referência) — especificamente, em qual etapa e com quantas casas decimais cada
+valor intermediário é arredondado — e replicar exatamente essa mesma sequência no sistema.
+
+### Por que a tolerância foi a solução escolhida agora
+
+Perseguir a igualdade exata entre dois sistemas construídos independentemente é um problema conhecido em
+software financeiro/tributário — por isso é prática comum (não só neste sistema) aceitar uma margem
+pequena de conciliação em vez de tentar replicar bit a bit o arredondamento de outra ferramenta. Um
+centavo não tem impacto prático em nenhum caso real, e a alternativa (perseguir a igualdade exata) exigiria
+acesso a uma informação que hoje não temos (a metodologia de arredondamento célula a célula da planilha
+de referência).
