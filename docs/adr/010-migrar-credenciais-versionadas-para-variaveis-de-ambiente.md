@@ -224,8 +224,8 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
    Editor já vale imediatamente para qualquer cliente (app CalcJud, painel do Supabase, etc.). O ponto de
    atenção que existia — a Fase 1, item 4, sem a qual uma reexecução futura de `schema.sql` reverteria a
    senha de volta para o valor antigo — já foi corrigido antes desta rotação.
-4. Confirmar com a pessoa responsável que o login com a senha nova funciona (o comando da SQL foi
-   executado com sucesso; falta só a confirmação de login para marcar este item como concluído).
+4. ✅ **Concluído em 24/09/2026 — login com a senha nova testado com sucesso pela pessoa responsável.**
+   Fase 2 encerrada.
 
 ### Fase 3 — Reescrever o histórico do Git
 
@@ -287,7 +287,7 @@ não teve impacto negativo em produção:
       `backup/ajuste-calcjud-antes-delete-20260923`)
 - [x] 2.1 — Pessoa responsável por `contaagoijf@gmail.com` avisada
 - [x] 2.2 — Senha do admin de bootstrap rotacionada no Supabase via SQL Editor (24/09/2026)
-- [ ] 2.3 — Novo acesso confirmado pela pessoa responsável (SQL executado; falta a confirmação de login)
+- [x] 2.3 — Novo acesso confirmado pela pessoa responsável — login testado com sucesso (24/09/2026)
 - [ ] 3.1 — Backup de segurança da `main` atual criado
 - [ ] 3.2 — Histórico reescrito (`git filter-repo`) removendo senha antiga, `Co-Authored-By: Claude` e
       menções a IA
