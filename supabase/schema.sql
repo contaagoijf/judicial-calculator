@@ -59,6 +59,11 @@ CREATE TABLE IF NOT EXISTS public.calculos (
 
 CREATE INDEX IF NOT EXISTS idx_calculos_criado ON public.calculos(criado_em DESC);
 
+-- Impede duplicidade de declaracao de ajuste_anual para o mesmo processo/ano-calendario (ver ADR 017).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_calculos_ajuste_anual_unico
+ON public.calculos (numero_processo, ano_calendario)
+WHERE tipo_calculo = 'ajuste_anual';
+
 CREATE TABLE IF NOT EXISTS public.salario_minimo (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   data_ref DATE NOT NULL,

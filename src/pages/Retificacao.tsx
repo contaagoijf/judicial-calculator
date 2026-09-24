@@ -237,9 +237,19 @@ const RetificacaoPage = () => {
     autoFillProcessoRef.current = processo;
 
     if (temRetificacao) {
-      // Já existe uma Retificação anterior para este processo: carrega todos os dados dela.
+      // Já existe uma Retificação anterior para este processo: carrega os dados dela, mas também
+      // inclui automaticamente qualquer declaração de Ajuste Anual cadastrada DEPOIS dessa
+      // Retificação ter sido salva (anos que ainda não fazem parte dos períodos salvos) — sem isso,
+      // uma nova declaração ficaria "invisível" na Retificação até alguém adicioná-la manualmente.
       const entry = retificacoesAnteriores[0].dados_entrada as unknown as DadosEntradaRetificacao;
-      preencherFormulario(entry);
+      const anosNaRetificacao = new Set(entry.periodos.map((p) => p.ano_calendario));
+      const anosNovos = (declaracoesAjuste ?? [])
+        .filter((d) => !anosNaRetificacao.has(d.ano_calendario))
+        .sort((a, b) => a.ano_calendario - b.ano_calendario)
+        .map((row) => row.dados_entrada as unknown as DadosEntradaAjusteAnual);
+      preencherFormulario(anosNovos.length > 0
+        ? { ...entry, periodos: [...entry.periodos, ...anosNovos] }
+        : entry);
     } else {
       // Só existem declarações de Ajuste Anual: preenche autor e períodos com elas.
       if (!nomeAutor.trim()) setNomeAutor(declaracoesAjuste[0].nome_autor);

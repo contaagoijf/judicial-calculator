@@ -27,6 +27,7 @@ identificada).
 - [18/09/2026 — Implementação do fluxo "Esqueceu a senha?" no acesso administrativo](#18092026--implementação-do-fluxo-esqueceu-a-senha-no-acesso-administrativo)
 - [22/09/2026 — Correção de perda de declarações ao recarregar uma Retificação](#22092026--correção-de-perda-de-declarações-ao-recarregar-uma-retificação)
 - [24/09/2026 — Correção da tolerância de arredondamento na validação de consistência](#24092026--correção-da-tolerância-de-arredondamento-na-validação-de-consistência)
+- [24/09/2026 — Correção de declaração não mesclada na Retificação e duplicidade de Ajuste Anual](#24092026--correção-de-declaração-não-mesclada-na-retificação-e-duplicidade-de-ajuste-anual)
 
 ---
 
@@ -499,4 +500,23 @@ Relato da contadoria (DCAL): cadastro de uma declaração de 2019 recusado pelo 
   `<= 0.01`, excluindo justamente o caso de diferença de 1 centavo exato.
 - **Correção**: tolerância ajustada para aceitar diferenças de até 1 centavo, inclusive. Documentado no
   [ADR 016](adr/016-corrigir-tolerancia-de-arredondamento-na-validacao-de-consistencia.md).
+
+## 24/09/2026 — Correção de declaração não mesclada na Retificação e duplicidade de Ajuste Anual
+
+**Corrigido e testado; migração de banco pendente de aplicação manual.**
+
+Dois relatos da contadoria (DCAL) para o mesmo processo, investigados consultando os dados reais do
+processo no banco: um ano-calendário cadastrado no Ajuste Anual não aparecia na Retificação, e outro
+ano-calendário aparecia duplicado.
+
+- **Causa raiz (declaração não aparece)**: ao reabrir a Retificação de um processo que já tem uma
+  Retificação salva, o preenchimento automático carregava só os períodos daquela Retificação, ignorando
+  qualquer declaração de Ajuste Anual cadastrada depois. **Correção**: os períodos da Retificação salva
+  agora são mesclados com qualquer Ajuste Anual ainda não incluído.
+- **Causa raiz (duplicidade)**: a checagem de duplicidade antes de salvar um Ajuste Anual (`SELECT`
+  antes do `INSERT`) não é atômica — duplo clique ou duas abas abertas podiam inserir a mesma declaração
+  duas vezes. **Correção**: botão "Finalizar e Salvar" desabilitado durante o envio, mais uma nova
+  migração de banco (índice único, ainda não aplicada em produção) para fechar a corrida também no
+  banco de dados. Documentado no
+  [ADR 017](adr/017-corrigir-declaracao-nao-mesclada-e-duplicidade-de-ajuste-anual.md).
 

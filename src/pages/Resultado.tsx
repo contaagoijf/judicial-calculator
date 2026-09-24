@@ -18,6 +18,7 @@ const ResultadoPage = () => {
   const { toast } = useToast();
   const [anoDuplicadoOpen, setAnoDuplicadoOpen] = useState(false);
   const [idDeclaracaoExistente, setIdDeclaracaoExistente] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
   const state = location.state as {
     resultado: ResultadoCalculo;
@@ -57,6 +58,8 @@ const ResultadoPage = () => {
   };
 
   const handleFinalizar = async () => {
+    if (salvando) return;
+    setSalvando(true);
     try {
       // Garante que nenhuma declaração seja inserida em duplicidade para o
       // mesmo processo/ano-calendário, mesmo que a checagem feita na tela
@@ -96,6 +99,8 @@ const ResultadoPage = () => {
       navigate(`/relatorio/${data.id}?calculo_novo=sim`);
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setSalvando(false);
     }
   };
 
@@ -139,8 +144,8 @@ const ResultadoPage = () => {
           <Button variant="outline" onClick={handleEditar} className="gap-2">
             <Edit className="w-4 h-4" /> Editar
           </Button>
-          <Button onClick={handleFinalizar} className="gap-2">
-            <Check className="w-4 h-4" /> Finalizar e Salvar
+          <Button onClick={handleFinalizar} disabled={salvando} className="gap-2">
+            <Check className="w-4 h-4" /> {salvando ? 'Salvando...' : 'Finalizar e Salvar'}
           </Button>
         </div>
       </div>
