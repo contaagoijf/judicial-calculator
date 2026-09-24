@@ -279,12 +279,18 @@ EXECUTE FUNCTION public.handle_taxas_historicas_write();
 DO $$
 DECLARE
   initial_admin_id UUID := '7f2ac4f5-5342-4d6d-9e2b-4dcb67f4f1d0';
+  initial_admin_password TEXT;
 BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM auth.users
     WHERE email = 'contaagoijf@gmail.com'
   ) THEN
+    -- Senha inicial gerada aleatoriamente a cada instalacao nova do banco (nunca um valor fixo).
+    -- Trocar essa senha pelo painel do Supabase (Authentication -> Users) ou via SQL Editor logo
+    -- depois da instalacao; o valor so aparece uma vez, no aviso (RAISE NOTICE) desta execucao.
+    initial_admin_password := encode(extensions.gen_random_bytes(16), 'hex');
+
     INSERT INTO auth.users (
       instance_id,
       id,
@@ -308,7 +314,7 @@ BEGIN
       'authenticated',
       'authenticated',
       'contaagoijf@gmail.com',
-      extensions.crypt('agoiagoi', extensions.gen_salt('bf')),
+      extensions.crypt(initial_admin_password, extensions.gen_salt('bf')),
       now(),
       '{"provider":"email","providers":["email"]}',
       '{}',
@@ -319,13 +325,11 @@ BEGIN
       '',
       ''
     );
-  ELSE
-    UPDATE auth.users
-    SET encrypted_password = extensions.crypt('agoiagoi', extensions.gen_salt('bf')),
-        email_confirmed_at = COALESCE(email_confirmed_at, now()),
-        updated_at = now()
-    WHERE email = 'contaagoijf@gmail.com';
 
+    RAISE NOTICE 'Admin inicial criado (contaagoijf@gmail.com) com senha aleatoria: %. Troque essa senha imediatamente pelo painel (Authentication -> Users) ou pelo SQL Editor.', initial_admin_password;
+  ELSE
+    -- Admin ja existente: nao sobrescrever a senha atual (evita desfazer uma rotacao manual feita
+    -- pelo painel ou pelo SQL Editor a cada reexecucao deste script idempotente).
     SELECT id
     INTO initial_admin_id
     FROM auth.users

@@ -33,14 +33,26 @@ Trocar o `externalClient.ts` para ler de `import.meta.env` sem antes configurar 
 
 - Configurar `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no painel do Vercel (Settings → Environment Variables) e confirmar com um redeploy de verificação **antes** de qualquer mudança de código.
 - Só então alterar `src/integrations/supabase/externalClient.ts` para ler de `import.meta.env`, remover o arquivo `client.ts` (código morto) e corrigir `.env.example` para conter um placeholder genérico em vez do valor real.
-- Tratar a rotação da senha do administrador de bootstrap (`agoiagoi`) como prioridade independente e mais urgente: trocar a senha real no Supabase (Authentication → Users) e redigir/remover o valor dos arquivos `supabase/schema.sql` e da migração de `admin_access_controls`, deixando um placeholder ou instrução de geração de senha nova.
-- Decidir separadamente (fora do escopo imediato) se vale reescrever o histórico do Git para remover o rastro da senha antiga.
+- ~~Tratar a rotação da senha do administrador de bootstrap como prioridade independente e mais
+  urgente: trocar a senha real no Supabase (Authentication → Users) e redigir/remover o valor dos
+  arquivos `supabase/schema.sql` e da migração de `admin_access_controls`, deixando um placeholder ou
+  instrução de geração de senha nova.~~ ✅ concluído em 24/09/2026 — senha real rotacionada via SQL
+  Editor (o painel do Supabase não ofereceu mais uma opção de definir senha diretamente pela interface),
+  e os dois arquivos corrigidos para gerar uma senha aleatória apenas na criação inicial, sem repetir
+  nenhum valor fixo.
+- Decidir separadamente (fora do escopo imediato) se vale reescrever o histórico do Git para remover o
+  rastro da senha antiga — ver a Fase 3 do plano abaixo.
 
 ## Consequences
 
-- Enquanto este ADR estiver `Proposed`, a URL/chave pública do Supabase continua hardcoded no código-fonte (risco de organização, não de segurança real) e a senha do administrador de bootstrap continua em texto claro no repositório (risco de segurança real, mitigado apenas quando a senha for rotacionada no Supabase).
-- A migração da URL/chave depende de coordenação prévia com o painel do Vercel, não pode ser feita apenas no código, sob risco de derrubar a aplicação em produção.
-- A rotação da senha de bootstrap não depende da migração de variáveis de ambiente e pode/deve ser feita antes, independentemente do restante deste ADR.
+- A senha do administrador de bootstrap já foi rotacionada no Supabase e os arquivos `schema.sql`/
+  migração já não contêm mais nenhum valor fixo (24/09/2026) — o risco de segurança real desse achado
+  está mitigado no código e no banco atuais. O valor antigo ainda existe nos commits antigos do
+  histórico do Git; ver Fase 3 do plano abaixo.
+- A URL/chave pública do Supabase ainda está hardcoded no código-fonte (risco de organização, não de
+  segurança real, já que é uma chave protegida por RLS e visível no bundle publicado).
+- A migração da URL/chave depende de coordenação prévia com o painel do Vercel, não pode ser feita
+  apenas no código, sob risco de derrubar a aplicação em produção.
 
 ---
 
@@ -50,22 +62,23 @@ Trocar o `externalClient.ts` para ler de `import.meta.env` sem antes configurar 
 
 ## Resumo do que foi encontrado, por ordem de gravidade real
 
-### 1. Achado crítico — senha de administrador em texto puro
+### 1. Achado crítico — senha de administrador em texto puro (corrigido em 24/09/2026)
 
 Em **`supabase/schema.sql`** e **`supabase/migrations/20260428120000_admin_access_controls.sql`**
-(ambos versionados), o script de instalação do banco cria/reseta o admin
-`contaagoijf@gmail.com` com a senha em texto claro `agoiagoi`. Essa era uma
+(ambos versionados), o script de instalação do banco criava/resetava o admin
+`contaagoijf@gmail.com` com uma senha fixa em texto claro. Essa era uma
 pendência já conhecida (documentada em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md),
-linha 99), e a investigação confirmou que ela continua presente nos dois
-arquivos.
+linha 99), e a investigação confirmou que ela continuava presente nos dois
+arquivos — o valor real não é repetido aqui de propósito, já que essa senha foi rotacionada e os
+arquivos corrigidos (ver Fase 1 e 2 do plano abaixo).
 
-Isso **não se resolve movendo para `.env`** — é uma credencial de login da
+Isso **não se resolvia só movendo para `.env`** — era uma credencial de login da
 aplicação, gravada no banco de dados (tabela de usuários do Supabase Auth),
-não uma variável de build/deploy. A correção correta é trocar essa senha de
-verdade no Supabase e, à parte, redigir/remover o valor dos dois arquivos.
-Removê-la do arquivo **não a apaga do histórico do Git** — isso exigiria
-reescrever o histórico (`git filter-repo` ou similar), uma operação mais
-invasiva que precisa ser alinhada separadamente.
+não uma variável de build/deploy. A correção aplicada foi trocar essa senha de
+verdade no Supabase (via SQL Editor) e, à parte, corrigir os dois arquivos para gerar uma senha
+aleatória apenas na criação inicial do banco, nunca mais um valor fixo. Isso não apaga o valor antigo
+do histórico do Git — isso ainda exigiria reescrever o histórico (`git filter-repo` ou similar), uma
+operação mais invasiva tratada separadamente na Fase 3 do plano abaixo.
 
 ### 2. Achado sobre o pedido específico — URL e chave do Supabase hardcoded
 
@@ -163,19 +176,17 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 2. **Corrigir `supabase/config.toml`** — trocar a referência de `bydirbbhuhihxrgxvrlb` para
    `xitpsqtcxraejzlxvvmn` (projeto de produção), evitando que um `supabase db push` local atinja o
    projeto errado.
-3. **Redigir o valor literal da senha de bootstrap nos arquivos atuais** — trocar `agoiagoi` por um
-   placeholder/instrução de geração de senha nova em:
+3. ✅ **Concluído em 24/09/2026 — Redigir o valor literal da senha de bootstrap nos arquivos atuais**:
    - `supabase/schema.sql`
    - `supabase/migrations/20260428120000_admin_access_controls.sql`
-   - Este próprio ADR (a citação do achado deve continuar explicando o que foi encontrado, sem repetir o
-     valor literal, já que ele vai deixar de ser válido depois da Fase 2, mas continuaria "vazando" pelo
-     texto da documentação se não for redigido também).
-4. **Corrigir a lógica que reseta a senha a cada reexecução** — hoje, tanto `schema.sql` quanto a
-   migração fazem `UPDATE auth.users SET encrypted_password = crypt('agoiagoi', ...)` no branch `ELSE`
-   (ou seja, se o admin já existir, o script **sobrescreve a senha atual pela antiga toda vez que for
-   rodado de novo**). Isso precisa ser corrigido para não mexer mais na senha de um admin já existente
-   (gerar uma senha aleatória apenas na criação inicial, nunca um valor fixo) — **sem essa correção, uma
-   reexecução futura de `schema.sql` desfaz silenciosamente a rotação da Fase 2**, sem avisar ninguém.
+   - Este próprio ADR (a citação do achado explica o que foi encontrado, sem repetir o valor literal).
+4. ✅ **Concluído em 24/09/2026 — Corrigir a lógica que resetava a senha a cada reexecução**: tanto
+   `schema.sql` quanto a migração faziam `UPDATE auth.users SET encrypted_password = crypt(...)` no
+   branch `ELSE` (ou seja, se o admin já existisse, o script sobrescrevia a senha atual pela antiga toda
+   vez que fosse rodado de novo). Corrigido para não mexer mais na senha de um admin já existente — a
+   senha só é gerada (de forma aleatória, nunca um valor fixo) na criação inicial do usuário, e um
+   `RAISE NOTICE` mostra esse valor uma única vez, na hora da instalação, para quem estiver rodando o
+   script pela primeira vez.
 5. **Confirmar que não sobra nenhuma menção a IA no `main` atual** — rodar
    `git grep -liE "claude|anthropic|co-authored-by"` (fora do `.gitignore`, que menciona `CLAUDE.md` de
    propósito) e conferir manualmente qualquer resultado antes de seguir para a Fase 3.
@@ -191,24 +202,30 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 
 ### Fase 2 — Rotacionar a senha do administrador de bootstrap (Supabase)
 
-1. **Avisar a pessoa que hoje usa o login `contaagoijf@gmail.com` antes de trocar a senha** — a troca
-   feita pelo painel do Supabase é imediata e invalida a senha atual assim que aplicada; como essa
-   pessoa (não você) é quem efetivamente usa esse login para acessar o CalcJud, ela precisa saber que vai
-   trocar e como vai receber a nova senha.
-2. Trocar a senha real da conta `contaagoijf@gmail.com` no painel do Supabase, em
-   **Authentication → Users**. Duas formas possíveis:
-   - **Preferível:** usar a opção **"Send password recovery"** do próprio painel — o Supabase envia um
-     e-mail (usando o serviço de e-mail padrão do Supabase, independente do SMTP customizado ainda
-     pendente do ADR 013) para `contaagoijf@gmail.com`, e a própria pessoa define a senha nova. Ninguém
-     precisa gerar nem repassar uma senha por fora.
-   - **Alternativa:** definir uma senha nova diretamente pelo painel e repassá-la para a pessoa por um
-     canal seguro (nunca por e-mail em texto puro).
-3. **Não é necessária nenhuma ação adicional de "sincronização" na configuração do Supabase** — a tabela
-   `auth.users` é a única fonte de verdade, lida a cada tentativa de login; a troca pelo painel já vale
-   imediatamente para qualquer cliente (app CalcJud, painel do Supabase, etc.). O único ponto de atenção
-   real é o item 1.4 da Fase 1: sem corrigir o script, uma reexecução futura de `schema.sql` reverteria a
-   senha de volta para o valor antigo sem avisar ninguém — por isso a Fase 1 vem antes desta.
-4. Confirmar com a pessoa responsável que o novo acesso funciona antes de considerar este item concluído.
+1. ✅ **Concluído — pessoa responsável avisada antes da troca.** Quem efetivamente usa o login
+   `contaagoijf@gmail.com` para acessar o CalcJud foi avisado antes da troca, já que ela é imediata e
+   invalida a senha atual assim que aplicada.
+2. ✅ **Concluído em 24/09/2026 — senha real rotacionada.** As opções do próprio painel
+   (**Authentication → Users**) acabaram não servindo neste caso: "Send password recovery" e "Send magic
+   link" só mandam um e-mail com **link**, mas a tela de "Esqueceu a senha?" do CalcJud só sabe
+   processar um **código de 6 dígitos** digitado manualmente — não existe nenhuma página na aplicação
+   preparada para receber esses links, então clicar neles não leva a lugar nenhum. As versões atuais do
+   Studio também não têm mais um campo para digitar a senha nova direto na lista de usuários. A forma que
+   funcionou foi rodar diretamente no **SQL Editor** do painel (mesmo mecanismo que os arquivos de
+   instalação do banco usam):
+   ```sql
+   UPDATE auth.users
+   SET encrypted_password = extensions.crypt('<senha-nova>', extensions.gen_salt('bf')),
+       updated_at = now()
+   WHERE email = 'contaagoijf@gmail.com';
+   ```
+3. **Não foi necessária nenhuma ação adicional de "sincronização" na configuração do Supabase** — a
+   tabela `auth.users` é a única fonte de verdade, lida a cada tentativa de login; a troca pelo SQL
+   Editor já vale imediatamente para qualquer cliente (app CalcJud, painel do Supabase, etc.). O ponto de
+   atenção que existia — a Fase 1, item 4, sem a qual uma reexecução futura de `schema.sql` reverteria a
+   senha de volta para o valor antigo — já foi corrigido antes desta rotação.
+4. Confirmar com a pessoa responsável que o login com a senha nova funciona (o comando da SQL foi
+   executado com sucesso; falta só a confirmação de login para marcar este item como concluído).
 
 ### Fase 3 — Reescrever o histórico do Git
 
@@ -261,15 +278,16 @@ não teve impacto negativo em produção:
 
 - [ ] 1.1 — `externalClient.ts` corrigido para ler de variáveis de ambiente e deploy conferido
 - [ ] 1.2 — `supabase/config.toml` corrigido para apontar para o projeto de produção
-- [ ] 1.3 — Valor literal `agoiagoi` redigido em `schema.sql`/migração/este ADR
-- [ ] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida (não sobrescrever mais)
+- [x] 1.3 — Valor literal da senha antiga redigido em `schema.sql`/migração/este ADR (24/09/2026)
+- [x] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida — senha aleatória só na
+      criação inicial, nunca mais sobrescrita (24/09/2026)
 - [x] 1.5a — `.env.example` corrigido para placeholder genérico (16/09/2026)
 - [ ] 1.5b — Confirmado (`git grep`) que `main` não tem menções a IA
 - [x] 1.6 — Branch `ajuste-calcjud` apagada do GitHub e do local (23/09/2026; backup local em
       `backup/ajuste-calcjud-antes-delete-20260923`)
-- [ ] 2.1 — Pessoa responsável por `contaagoijf@gmail.com` avisada
-- [ ] 2.2 — Senha do admin de bootstrap rotacionada no Supabase
-- [ ] 2.3 — Novo acesso confirmado pela pessoa responsável
+- [x] 2.1 — Pessoa responsável por `contaagoijf@gmail.com` avisada
+- [x] 2.2 — Senha do admin de bootstrap rotacionada no Supabase via SQL Editor (24/09/2026)
+- [ ] 2.3 — Novo acesso confirmado pela pessoa responsável (SQL executado; falta a confirmação de login)
 - [ ] 3.1 — Backup de segurança da `main` atual criado
 - [ ] 3.2 — Histórico reescrito (`git filter-repo`) removendo senha antiga, `Co-Authored-By: Claude` e
       menções a IA
