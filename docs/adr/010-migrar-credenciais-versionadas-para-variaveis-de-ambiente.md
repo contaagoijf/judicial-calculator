@@ -149,8 +149,8 @@ arquivos do repositório:
 ## Passo a passo do que precisa ser feito
 
 **Escopo ampliado (23/09/2026):** além da URL/chave do Supabase e da senha de bootstrap, a limpeza
-passou a incluir reescrever o histórico do Git para remover todo o rastro de: a senha antiga
-(`agoiagoi`), qualquer credencial versionada, assinaturas `Co-Authored-By: Claude` (ou variações), e
+passou a incluir reescrever o histórico do Git para remover todo o rastro da senha antiga, qualquer
+credencial versionada, assinaturas `Co-Authored-By: Claude` (ou variações), e
 menções a "Claude", "Anthropic", "Claude Code", "Agents", "Skills" ou termos equivalentes de ferramentas
 de IA em mensagens de commit, descrições de PR, código-fonte, comentários ou qualquer arquivo
 versionado — conforme a regra fixa do projeto sobre não mencionar IA no repositório público.
@@ -236,7 +236,7 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
    for reescrito, por causa das credenciais que ainda estão nele.
 3. **Rodar a reescrita** (`git filter-repo`, preferível a `filter-branch`) removendo de todos os commits
    antigos do `main` (e de `ajuste-calcjud`, se ela for mantida — ver Fase 1, item 6):
-   - o valor literal `agoiagoi`;
+   - o valor literal da senha antiga;
    - qualquer trailer `Co-Authored-By: Claude ...` (e variações) de mensagens de commit;
    - qualquer menção a "Claude", "Anthropic", "Claude Code", "Agents", "Skills" ou equivalentes de
      ferramentas de IA, tanto em mensagens de commit quanto em conteúdo de arquivos antigos (ex.: os
@@ -267,7 +267,7 @@ não teve impacto negativo em produção:
 4. **Login do admin de bootstrap:** a pessoa responsável por `contaagoijf@gmail.com` confirma que
    conseguiu entrar com a senha nova.
 5. **Nenhum rastro restante:** `git grep` (ou uma busca equivalente do GitHub) confirma que não há mais
-   `agoiagoi`, `Co-Authored-By: Claude` nem menções a IA em nenhum commit de nenhuma branch publicada.
+   rastro da senha antiga, `Co-Authored-By: Claude` nem menções a IA em nenhum commit de nenhuma branch publicada.
 6. **GitHub são:** issues, pull requests e links para commits antigos (se algum já tiver sido
    compartilhado por hash) podem quebrar depois do force-push, já que os hashes mudam — conferir se
    existe algum link externo importante que precise ser atualizado.
