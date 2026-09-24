@@ -39,6 +39,7 @@ type GrupoProcesso = {
   nome_autor: string;
   data_ajuizamento?: string;
   declaracoes: Declaracao[];
+  totalRegistros: number;
 };
 
 const ListaProcessosPage = () => {
@@ -48,6 +49,8 @@ const ListaProcessosPage = () => {
   const { data: calculos, isLoading, refetch } = useTodosCalculos();
   const [removerAlvo, setRemoverAlvo] = useState<{ id: string; label: string } | null>(null);
   const [removendo, setRemovendo] = useState(false);
+  const [excluirProcessoAlvo, setExcluirProcessoAlvo] = useState<{ numero_processo: string; total: number } | null>(null);
+  const [excluindoProcesso, setExcluindoProcesso] = useState(false);
   const [buscaProcesso, setBuscaProcesso] = useState('');
   const [buscaAutor, setBuscaAutor] = useState('');
   const [buscaData, setBuscaData] = useState('');
@@ -118,6 +121,7 @@ const ListaProcessosPage = () => {
         nome_autor: maisRecente.nome_autor,
         data_ajuizamento: dataAjuizamento,
         declaracoes,
+        totalRegistros: rows.length,
       });
     }
 
@@ -167,6 +171,27 @@ const ListaProcessosPage = () => {
       refetch();
     }
     setRemoverAlvo(null);
+  };
+
+  const handleExcluirProcesso = async () => {
+    if (!excluirProcessoAlvo) return;
+    setExcluindoProcesso(true);
+    const { error } = await supabase
+      .from('calculos')
+      .delete()
+      .eq('numero_processo', excluirProcessoAlvo.numero_processo);
+    setExcluindoProcesso(false);
+    if (error) {
+      toast({
+        title: 'Não foi possível excluir o processo',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({ title: 'Processo excluído com sucesso' });
+      refetch();
+    }
+    setExcluirProcessoAlvo(null);
   };
 
   return (
@@ -257,7 +282,19 @@ const ListaProcessosPage = () => {
 
         {gruposExibidos.map((grupo) => (
           <div key={grupo.numero_processo} className="form-section mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Dados do Processo</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Dados do Processo</h2>
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setExcluirProcessoAlvo({ numero_processo: grupo.numero_processo, total: grupo.totalRegistros })}
+                  className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Excluir Processo
+                </Button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-x-8 gap-y-1 text-sm mb-6">
               <span>Número do processo: <strong className="text-foreground">{grupo.numero_processo}</strong></span>
               <span>Nome do autor: <strong className="text-foreground">{grupo.nome_autor}</strong></span>
@@ -333,6 +370,25 @@ const ListaProcessosPage = () => {
             <Button variant="outline" onClick={() => setRemoverAlvo(null)} disabled={removendo}>Cancelar</Button>
             <Button variant="destructive" onClick={handleRemover} disabled={removendo}>
               {removendo ? 'Removendo...' : 'Remover'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!excluirProcessoAlvo} onOpenChange={(open) => !open && setExcluirProcessoAlvo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir processo</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o processo {excluirProcessoAlvo?.numero_processo}? Essa ação vai
+              remover {excluirProcessoAlvo?.total} {excluirProcessoAlvo?.total === 1 ? 'declaração cadastrada' : 'declarações cadastradas'} para
+              este processo (Ajuste Anual e Retificação). Essa ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExcluirProcessoAlvo(null)} disabled={excluindoProcesso}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleExcluirProcesso} disabled={excluindoProcesso}>
+              {excluindoProcesso ? 'Excluindo...' : 'Excluir Processo'}
             </Button>
           </DialogFooter>
         </DialogContent>

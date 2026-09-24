@@ -44,6 +44,23 @@ que a primeira Retificação é salva para um processo, novas declarações de A
 depois nunca mais aparecem automaticamente na Retificação, a não ser que alguém adicione o ano
 manualmente pelo botão "+ Adicionar ano" — o que não é um comportamento óbvio para quem usa o sistema.
 
+### 3. Botão "Remover" da Listagem de Processos não apagava de verdade (resolvido em produção)
+
+Ao tentar remover a declaração duplicada de 2020 pela tela `/calculo/listaprocessos`, o botão "Remover"
+mostrava sucesso, mas a declaração continuava aparecendo depois de recarregar a página.
+
+**Causa raiz confirmada**: a política de segurança (RLS) que libera `DELETE` na tabela `calculos` para
+administradores (`"Admin delete calculos"`) existe no repositório desde 11/09/2026
+(`supabase/migrations/20260911000000_admin_manage_calculos.sql`), mas nunca tinha sido aplicada
+manualmente no banco de produção — mesma limitação de acesso administrativo já registrada no
+[ADR 008](008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md). Sem essa política, o
+`DELETE` era bloqueado pelo RLS silenciosamente: o Supabase não retorna erro quando uma política impede
+a exclusão (só "0 linhas afetadas"), e a tela não conferia quantas linhas foram de fato removidas — só se
+houve erro — por isso mostrava "removido com sucesso" mesmo sem apagar nada.
+
+**Resolvido em 24/09/2026**: a migração foi aplicada manualmente no SQL Editor de produção pela DCAL. O
+botão "Remover" da Listagem de Processos passou a funcionar corretamente depois disso.
+
 ## Decision
 
 - **`src/pages/Retificacao.tsx`**: o preenchimento automático passa a mesclar os períodos da Retificação
@@ -56,6 +73,10 @@ manualmente pelo botão "+ Adicionar ano" — o que não é um comportamento ób
   fechando a condição de corrida a nível de banco (a segunda inserção concorrente passa a falhar de
   verdade, em vez de depender só da checagem da aplicação). Replicada também em `supabase/schema.sql`
   para instalações novas do banco.
+- **`src/pages/ListaProcessos.tsx`**: adicionado o botão "Excluir Processo" (visível só para
+  administradores) no cabeçalho de cada processo listado, com modal de confirmação, removendo de uma vez
+  todas as declarações (Ajuste Anual e Retificação) daquele processo — útil para limpar um caso de teste
+  inteiro sem precisar remover declaração por declaração.
 
 ## Consequences
 

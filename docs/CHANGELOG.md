@@ -28,6 +28,7 @@ identificada).
 - [22/09/2026 — Correção de perda de declarações ao recarregar uma Retificação](#22092026--correção-de-perda-de-declarações-ao-recarregar-uma-retificação)
 - [24/09/2026 — Correção da tolerância de arredondamento na validação de consistência](#24092026--correção-da-tolerância-de-arredondamento-na-validação-de-consistência)
 - [24/09/2026 — Correção de declaração não mesclada na Retificação e duplicidade de Ajuste Anual](#24092026--correção-de-declaração-não-mesclada-na-retificação-e-duplicidade-de-ajuste-anual)
+- [24/09/2026 — Botão "Remover" corrigido em produção e novo botão "Excluir Processo"](#24092026--botão-remover-corrigido-em-produção-e-novo-botão-excluir-processo)
 
 ---
 
@@ -518,5 +519,19 @@ ano-calendário aparecia duplicado.
   duas vezes. **Correção**: botão "Finalizar e Salvar" desabilitado durante o envio, mais uma nova
   migração de banco (índice único, ainda não aplicada em produção) para fechar a corrida também no
   banco de dados. Documentado no
+  [ADR 017](adr/017-corrigir-declaracao-nao-mesclada-e-duplicidade-de-ajuste-anual.md).
+
+## 24/09/2026 — Botão "Remover" corrigido em produção e novo botão "Excluir Processo"
+
+**Corrigido e testado.**
+
+- **Botão "Remover" da Listagem de Processos não apagava de verdade**: mostrava sucesso, mas a
+  declaração continuava no sistema. Causa: a política de segurança (RLS) que libera `DELETE` para
+  administradores existia no repositório desde 11/09/2026, mas nunca tinha sido aplicada no banco de
+  produção — o Supabase bloqueava a exclusão sem retornar erro, e a tela não conferia quantas linhas
+  foram realmente removidas. Corrigido aplicando a migração pendente em produção.
+- **Novo botão "Excluir Processo"**: adicionado na Listagem de Processos, visível só para
+  administradores, com confirmação — remove de uma vez todas as declarações (Ajuste Anual e
+  Retificação) de um processo. Detalhes no
   [ADR 017](adr/017-corrigir-declaracao-nao-mesclada-e-duplicidade-de-ajuste-anual.md).
 
