@@ -29,6 +29,7 @@ identificada).
 - [24/09/2026 — Correção da tolerância de arredondamento na validação de consistência](#24092026--correção-da-tolerância-de-arredondamento-na-validação-de-consistência)
 - [24/09/2026 — Correção de declaração não mesclada na Retificação e duplicidade de Ajuste Anual](#24092026--correção-de-declaração-não-mesclada-na-retificação-e-duplicidade-de-ajuste-anual)
 - [24/09/2026 — Botão "Remover" corrigido em produção e novo botão "Excluir Processo"](#24092026--botão-remover-corrigido-em-produção-e-novo-botão-excluir-processo)
+- [24/09/2026 — Paginação, impressão e botão de voltar ao topo na Listagem de Processos](#24092026--paginação-impressão-e-botão-de-voltar-ao-topo-na-listagem-de-processos)
 
 ---
 
@@ -534,4 +535,17 @@ ano-calendário aparecia duplicado.
   administradores, com confirmação — remove de uma vez todas as declarações (Ajuste Anual e
   Retificação) de um processo. Detalhes no
   [ADR 017](adr/017-corrigir-declaracao-nao-mesclada-e-duplicidade-de-ajuste-anual.md).
+
+## 24/09/2026 — Paginação, impressão e botão de voltar ao topo na Listagem de Processos
+
+**Implementado e testado.**
+
+- **Paginação**: botões de ícone (Primeira/Anterior/Próxima/Última) e um seletor de quantidade de
+  processos por página (15/30/50/100, padrão 15), repetidos no topo e no final da lista em
+  `/calculo/listaprocessos`. A página volta para a primeira automaticamente ao mudar a busca ou a
+  quantidade por página.
+- **Botão "Imprimir"**: ao lado de "Limpar", imprime a lista completa de processos e declarações
+  (ignora a paginação e oculta campos de busca/paginação/ações na impressão), em vez de imprimir só a
+  página exibida na tela.
+- **Botão flutuante de voltar ao topo**: aparece depois de rolar a página e some ao voltar ao início.
 
