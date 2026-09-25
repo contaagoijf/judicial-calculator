@@ -57,6 +57,34 @@ const defaultAlteracao = (): AlteracaoRetificacao => ({
   motivo: '',
 });
 
+// Quando uma declaração vem do Ajuste Anual (campos simples de rend_somar/rend_sub etc.,
+// sem data nem folha), a tabela "Alterações da Declaração" da Retificação ficava vazia
+// mesmo com o valor já aplicado no cálculo — converte esses campos numa linha visível ali.
+const periodoComAlteracaoDoAjusteAnual = (
+  row: { id: string; criado_em: string; dados_entrada: unknown }
+): DadosEntradaAjusteAnual => {
+  const dados = row.dados_entrada as unknown as DadosEntradaAjusteAnual;
+  const temAjusteSimples = dados.rend_somar || dados.rend_sub || dados.ded_somar || dados.ded_sub
+    || dados.incentivo_somar || dados.incentivo_sub || dados.rra_somar || dados.rra_sub;
+  if (!temAjusteSimples || (dados.alteracoes && dados.alteracoes.length > 0)) return dados;
+  return {
+    ...dados,
+    alteracoes: [{
+      id: row.id,
+      data_alt: row.criado_em.slice(0, 10),
+      rend_somar: dados.rend_somar,
+      rend_sub: dados.rend_sub,
+      ded_somar: dados.ded_somar,
+      ded_sub: dados.ded_sub,
+      incentivo_somar: dados.incentivo_somar,
+      incentivo_sub: dados.incentivo_sub,
+      rra_somar: dados.rra_somar,
+      rra_sub: dados.rra_sub,
+      motivo: 'Alteração informada no Ajuste Anual original',
+    }],
+  };
+};
+
 const defaultPeriodo = (anoCalendario: number | null): DadosEntradaAjusteAnual => ({
   tipo_declaracao: 'completa',
   ano_calendario: anoCalendario ?? new Date().getFullYear(),
@@ -246,7 +274,7 @@ const RetificacaoPage = () => {
       const anosNovos = (declaracoesAjuste ?? [])
         .filter((d) => !anosNaRetificacao.has(d.ano_calendario))
         .sort((a, b) => a.ano_calendario - b.ano_calendario)
-        .map((row) => row.dados_entrada as unknown as DadosEntradaAjusteAnual);
+        .map((row) => periodoComAlteracaoDoAjusteAnual(row));
       preencherFormulario(anosNovos.length > 0
         ? { ...entry, periodos: [...entry.periodos, ...anosNovos] }
         : entry);
@@ -255,7 +283,7 @@ const RetificacaoPage = () => {
       if (!nomeAutor.trim()) setNomeAutor(declaracoesAjuste[0].nome_autor);
       const periodosEncontrados = [...declaracoesAjuste]
         .sort((a, b) => a.ano_calendario - b.ano_calendario)
-        .map((row) => row.dados_entrada as unknown as DadosEntradaAjusteAnual);
+        .map((row) => periodoComAlteracaoDoAjusteAnual(row));
       setPeriodos(periodosEncontrados);
     }
 
