@@ -126,9 +126,14 @@ const RelatorioPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="page-container">
-        <Button variant="ghost" onClick={() => navigate('/')} className="mb-6 gap-2">
-          <ArrowLeft className="w-4 h-4" /> Início
-        </Button>
+        <div className="flex gap-2 mb-6">
+          <Button variant="ghost" onClick={handleRefazer} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Início
+          </Button>
+        </div>
 
         <h1 className="text-2xl font-bold mb-2">
           Relatório Final — {isRetificacao ? 'Retificação' : 'Ajuste Anual'} IRPF
