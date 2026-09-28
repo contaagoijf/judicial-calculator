@@ -40,6 +40,10 @@ src/script/
 # Material de apoio para reuniões com o contador (nunca versionado, qualquer extensão)
 docs/contadoria/
 
+# Material temporário/de apoio (nunca versionado, qualquer extensão) — documentação
+# permanente vai sempre em docs/adr/
+docs/history/
+
 # Arquivos .txt, .docx e .pdf não são versionados (documentos gerados
 # localmente), exceto o robots.txt, que é servido de fato pela aplicação em
 # produção.
