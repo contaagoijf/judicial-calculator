@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       requestPasswordRecovery: async (email) => {
         // Envia o código de recuperação por e-mail (template "Reset Password"
         // do Supabase Auth, configurado para incluir {{ .Token }} — um código
-        // numérico de 6 dígitos gerado e invalidado automaticamente pelo
+        // numérico de 8 dígitos gerado e invalidado automaticamente pelo
         // próprio Supabase a cada novo pedido, nunca repetindo o anterior).
         const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email));
 

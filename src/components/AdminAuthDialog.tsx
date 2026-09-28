@@ -93,7 +93,7 @@ export function AdminAuthDialog({ compact = false }: Props) {
       await requestPasswordRecovery(forgotEmail);
       toast({
         title: 'Código enviado',
-        description: 'Confira o e-mail informado e digite o código de 6 dígitos recebido.',
+        description: 'Confira o e-mail informado e digite o código de 8 dígitos recebido.',
       });
       setForgotStep('code');
     } catch (error: any) {
@@ -324,7 +324,7 @@ export function AdminAuthDialog({ compact = false }: Props) {
             <DialogDescription>
               {forgotStep === 'email'
                 ? 'Informe o e-mail cadastrado para receber um código de verificação.'
-                : 'Digite o código de 6 dígitos enviado para o seu e-mail.'}
+                : 'Digite o código de 8 dígitos enviado para o seu e-mail.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -354,10 +354,10 @@ export function AdminAuthDialog({ compact = false }: Props) {
                 <Label>Código recebido por e-mail</Label>
                 <Input
                   value={recoveryCode}
-                  onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, '').slice(0, 8))}
                   inputMode="numeric"
-                  maxLength={6}
-                  placeholder="000000"
+                  maxLength={8}
+                  placeholder="00000000"
                   className="font-mono tracking-widest"
                 />
               </div>
@@ -365,7 +365,7 @@ export function AdminAuthDialog({ compact = false }: Props) {
                 <Button variant="outline" className="flex-1" onClick={() => setForgotOpen(false)}>
                   Cancelar
                 </Button>
-                <Button className="flex-1" disabled={recoveryCode.length !== 6 || loading} onClick={handleVerificarCodigoRecuperacao}>
+                <Button className="flex-1" disabled={recoveryCode.length !== 8 || loading} onClick={handleVerificarCodigoRecuperacao}>
                   Verificar
                 </Button>
               </div>
