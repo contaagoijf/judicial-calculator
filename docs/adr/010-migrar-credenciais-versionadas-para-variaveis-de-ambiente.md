@@ -2,7 +2,8 @@
 
 **Date:** 10/09/2026
 
-**Status:** Proposed — nenhuma mudança de código aplicada ainda; plano de ação para execução posterior
+**Status:** Accepted — correções de código e migração de banco aplicadas em produção; reescrita de
+histórico (Fase 3) decidida como não executada (29/09/2026, ver justificativa na Fase 3)
 
 **Tribunal Regional Federal da 2ª Região (TRF2)**
 
@@ -228,7 +229,29 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 4. ✅ **Concluído em 24/09/2026 — login com a senha nova testado com sucesso pela pessoa responsável.**
    Fase 2 encerrada.
 
-### Fase 3 — Reescrever o histórico do Git
+### Fase 3 — Reescrever o histórico do Git (decisão: não executar por ora — 29/09/2026)
+
+**Decidido não executar esta fase.** A reescrita mudaria o hash de praticamente todo o histórico —
+a senha antiga está presente desde 28/04/2026 (`6635f1f`) até a correção em 24/09/2026 (`9c831d0`), 95
+commits de diferença, e qualquer commit posterior a esse intervalo herda hash novo. Isso inclui **todos
+os 25 chamados já abertos no SGC e registrados no GLPI**, cujo commit mais antigo é de 28/08/2026 — ou
+seja, a reescrita invalidaria o hash de commit citado em todos eles, sem exceção.
+
+Na prática, isso não chega a ser um problema: os chamados do GLPI já fechados não podem mais ser
+editados, e a evidência anexada a cada um é um **print da página do commit**, não a URL em si — a prova
+já está capturada e não depende do link continuar resolvendo. Reescrever o histórico só para atender a
+essa pendência traria mais risco (25 commits órfãos de uma vez, sem forma de atualizar o `commit_url`
+nos chamados já criados — ver investigação de 25-29/09/2026) do que benefício real, já que a senha
+antiga não tem mais uso (foi rotacionada na Fase 2) e as poucas menções de IA que restam na Fase 1 já
+foram limpas do conteúdo atual (ver item 1.5b).
+
+**Regra daqui em diante, sem exceção**: nenhum commit novo, mensagem de commit, código-fonte, comentário,
+documentação ou qualquer outro arquivo versionado deste projeto pode citar ferramentas de IA (nome de
+produto, fabricante, trailer de coautoria automático ou termo equivalente) — a regra já existente no
+projeto para isso passa a ser tratada como definitiva e sem contrapartida de "corrigir depois reescrevendo
+histórico", já que essa correção se mostrou cara demais uma vez que os commits já viraram chamado.
+
+Passo a passo original, preservado caso a decisão acima mude no futuro:
 
 1. **Confirmar que é seguro reescrever**: ninguém mais tem um clone local de `main` com trabalho
    pendente que dependeria dos commits atuais (trabalho solo neste projeto até o momento).
@@ -251,10 +274,11 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
    (elas nunca foram enviadas ao GitHub, então não afetam a exposição pública, mas continuam existindo
    localmente).
 
-### Fase 4 — Verificação pós-limpeza (resumo de que a produção não foi afetada)
+### Fase 4 — Verificação pós-limpeza (não se aplica — depende da Fase 3, que não será executada)
 
-Registrar o resultado de cada item abaixo (data e conferido por quem) como evidência de que a limpeza
-não teve impacto negativo em produção:
+Passo a passo original, preservado caso a decisão da Fase 3 mude no futuro. Registrar o resultado de
+cada item abaixo (data e conferido por quem) como evidência de que a limpeza não teve impacto negativo
+em produção:
 
 1. **Conteúdo idêntico:** `git diff <branch-de-backup> main --stat` (ou `HEAD` após a reescrita) retorna
    vazio para qualquer intervalo em que só o histórico mudou — confirma que a reescrita alterou apenas
@@ -285,15 +309,13 @@ não teve impacto negativo em produção:
 - [x] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida — senha aleatória só na
       criação inicial, nunca mais sobrescrita (24/09/2026)
 - [x] 1.5a — `.env.example` corrigido para placeholder genérico (16/09/2026)
-- [ ] 1.5b — Confirmado (`git grep`) que `main` não tem menções a IA
+- [x] 1.5b — Confirmado (`git grep`) que `main` não tem menções a IA (29/09/2026)
 - [x] 1.6 — Branch `ajuste-calcjud` apagada do GitHub e do local (23/09/2026; backup local em
       `backup/ajuste-calcjud-antes-delete-20260923`)
 - [x] 2.1 — Pessoa responsável por `contaagoijf@gmail.com` avisada
 - [x] 2.2 — Senha do admin de bootstrap rotacionada no Supabase via SQL Editor (24/09/2026)
 - [x] 2.3 — Novo acesso confirmado pela pessoa responsável — login testado com sucesso (24/09/2026)
-- [ ] 3.1 — Backup de segurança da `main` atual criado
-- [ ] 3.2 — Histórico reescrito (`git filter-repo`) removendo senha antiga, trailers de coautoria de
-      ferramenta de IA e menções a IA
-- [ ] 3.3 — `ajuste-calcjud` reescrita ou apagada do GitHub
-- [ ] 3.4 — Force-push com `--force-with-lease` feito
-- [ ] 4.1 — Verificação pós-limpeza registrada (Fase 4 completa, sem impacto negativo em produção)
+- [x] 3.x — Decidido não reescrever o histórico (29/09/2026) — ver justificativa no início da Fase 3.
+      Regra de não citar IA em nenhum arquivo versionado passa a ser definitiva e sem plano de correção
+      retroativa via reescrita de histórico.
+- N/A — 4.1 — Não se aplica, decisão da Fase 3 tornou a verificação pós-limpeza desnecessária por ora
