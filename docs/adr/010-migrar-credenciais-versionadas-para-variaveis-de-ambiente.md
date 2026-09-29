@@ -150,10 +150,10 @@ arquivos do repositório:
 
 **Escopo ampliado (23/09/2026):** além da URL/chave do Supabase e da senha de bootstrap, a limpeza
 passou a incluir reescrever o histórico do Git para remover todo o rastro da senha antiga, qualquer
-credencial versionada, assinaturas `Co-Authored-By: Claude` (ou variações), e
-menções a "Claude", "Anthropic", "Claude Code", "Agents", "Skills" ou termos equivalentes de ferramentas
-de IA em mensagens de commit, descrições de PR, código-fonte, comentários ou qualquer arquivo
-versionado — conforme a regra fixa do projeto sobre não mencionar IA no repositório público.
+credencial versionada, assinaturas de coautoria de ferramentas de IA (e variações), e menções a
+ferramentas de IA ou termos equivalentes em mensagens de commit, descrições de PR, código-fonte,
+comentários ou qualquer arquivo versionado — conforme a regra fixa do projeto sobre não mencionar IA no
+repositório público.
 
 A ordem abaixo existe para uma razão específica: **reescrever o histórico antes de corrigir o
 código/documentação atuais não adianta nada** — o próximo commit reintroduziria o mesmo conteúdo no
@@ -187,9 +187,10 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
    senha só é gerada (de forma aleatória, nunca um valor fixo) na criação inicial do usuário, e um
    `RAISE NOTICE` mostra esse valor uma única vez, na hora da instalação, para quem estiver rodando o
    script pela primeira vez.
-5. **Confirmar que não sobra nenhuma menção a IA no `main` atual** — rodar
-   `git grep -liE "claude|anthropic|co-authored-by"` (fora do `.gitignore`, que menciona `CLAUDE.md` de
-   propósito) e conferir manualmente qualquer resultado antes de seguir para a Fase 3.
+5. **Confirmar que não sobra nenhuma menção a IA no `main` atual** — rodar um `git grep` com os termos
+   definidos na regra fixa do projeto sobre não mencionar IA (fora do arquivo de instruções locais, que
+   é gitignored de propósito e referencia esses termos por natureza) e conferir manualmente qualquer
+   resultado antes de seguir para a Fase 3.
 6. **Decidir o que fazer com a branch `ajuste-calcjud`** (publicada também em
    `origin/ajuste-calcjud` no GitHub) — ela diverge de `main` desde 16/09/2026 e tem, hoje, **13 dos seus
    22 commits** com menções a "agente de IA"/`SKILL.md`, expostas publicamente no GitHub agora mesmo
@@ -237,11 +238,10 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 3. **Rodar a reescrita** (`git filter-repo`, preferível a `filter-branch`) removendo de todos os commits
    antigos do `main` (e de `ajuste-calcjud`, se ela for mantida — ver Fase 1, item 6):
    - o valor literal da senha antiga;
-   - qualquer trailer `Co-Authored-By: Claude ...` (e variações) de mensagens de commit;
-   - qualquer menção a "Claude", "Anthropic", "Claude Code", "Agents", "Skills" ou equivalentes de
-     ferramentas de IA, tanto em mensagens de commit quanto em conteúdo de arquivos antigos (ex.: os
-     arquivos de tooling de agente de IA já removidos do `main` atual, mas cujo conteúdo ainda existe em
-     blobs de commits antigos).
+   - qualquer trailer de coautoria de ferramenta de IA (e variações) de mensagens de commit;
+   - qualquer menção a ferramentas de IA ou equivalentes, tanto em mensagens de commit quanto em
+     conteúdo de arquivos antigos (ex.: os arquivos de tooling de agente de IA já removidos do `main`
+     atual, mas cujo conteúdo ainda existe em blobs de commits antigos).
 4. Se `ajuste-calcjud` for considerada obsoleta (Fase 1, item 6): apagar a branch local e a remota
    (`git push origin --delete ajuste-calcjud`) em vez de reescrevê-la.
 5. **Force-push com `--force-with-lease`** (nunca `--force` puro) de `main` para o GitHub — e de
@@ -267,7 +267,8 @@ não teve impacto negativo em produção:
 4. **Login do admin de bootstrap:** a pessoa responsável por `contaagoijf@gmail.com` confirma que
    conseguiu entrar com a senha nova.
 5. **Nenhum rastro restante:** `git grep` (ou uma busca equivalente do GitHub) confirma que não há mais
-   rastro da senha antiga, `Co-Authored-By: Claude` nem menções a IA em nenhum commit de nenhuma branch publicada.
+   rastro da senha antiga, trailers de coautoria de ferramenta de IA nem menções a IA em nenhum commit
+   de nenhuma branch publicada.
 6. **GitHub são:** issues, pull requests e links para commits antigos (se algum já tiver sido
    compartilhado por hash) podem quebrar depois do force-push, já que os hashes mudam — conferir se
    existe algum link externo importante que precise ser atualizado.
@@ -276,8 +277,10 @@ não teve impacto negativo em produção:
 
 ## Status
 
-- [ ] 1.1 — `externalClient.ts` corrigido para ler de variáveis de ambiente e deploy conferido
-- [ ] 1.2 — `supabase/config.toml` corrigido para apontar para o projeto de produção
+- [x] 1.1 — `externalClient.ts` corrigido para ler de variáveis de ambiente e deploy conferido
+      (29/09/2026 — `client.ts` morto removido junto; build local, testes e produção conferidos sem
+      erro)
+- [x] 1.2 — `supabase/config.toml` corrigido para apontar para o projeto de produção (29/09/2026)
 - [x] 1.3 — Valor literal da senha antiga redigido em `schema.sql`/migração/este ADR (24/09/2026)
 - [x] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida — senha aleatória só na
       criação inicial, nunca mais sobrescrita (24/09/2026)
@@ -289,8 +292,8 @@ não teve impacto negativo em produção:
 - [x] 2.2 — Senha do admin de bootstrap rotacionada no Supabase via SQL Editor (24/09/2026)
 - [x] 2.3 — Novo acesso confirmado pela pessoa responsável — login testado com sucesso (24/09/2026)
 - [ ] 3.1 — Backup de segurança da `main` atual criado
-- [ ] 3.2 — Histórico reescrito (`git filter-repo`) removendo senha antiga, `Co-Authored-By: Claude` e
-      menções a IA
+- [ ] 3.2 — Histórico reescrito (`git filter-repo`) removendo senha antiga, trailers de coautoria de
+      ferramenta de IA e menções a IA
 - [ ] 3.3 — `ajuste-calcjud` reescrita ou apagada do GitHub
 - [ ] 3.4 — Force-push com `--force-with-lease` feito
 - [ ] 4.1 — Verificação pós-limpeza registrada (Fase 4 completa, sem impacto negativo em produção)
