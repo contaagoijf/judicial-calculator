@@ -148,7 +148,12 @@ const ResultadoRetificacaoPage = () => {
         </Button>
 
         <h1 className="text-2xl font-bold mb-2">Simulação de Retificação — IRPF</h1>
-        <p className="text-muted-foreground mb-6">Processo: {processo} · Autor: {nomeAutor}</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground mb-6">
+          <span>Processo: <strong className="text-foreground">{processo}</strong></span>
+          <span>Autor: <strong className="text-foreground">{nomeAutor}</strong></span>
+          <span>Réu: <strong className="text-foreground">{dadosEntrada.reu || '—'}</strong></span>
+          <span>ID: <strong className="text-foreground font-mono text-xs">— (gerado ao salvar)</strong></span>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           <Card className="md:col-span-2">

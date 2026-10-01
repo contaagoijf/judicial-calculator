@@ -141,7 +141,7 @@ const RelatorioPage = () => {
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground mb-6">
           <span>Processo: <strong className="text-foreground">{calculo.numero_processo}</strong></span>
           <span>Autor: <strong className="text-foreground">{calculo.nome_autor}</strong></span>
-          {isRetificacao && dadosEntrada?.reu && <span>Réu: <strong className="text-foreground">{dadosEntrada.reu}</strong></span>}
+          {isRetificacao && <span>Réu: <strong className="text-foreground">{dadosEntrada?.reu || '—'}</strong></span>}
           {!isRetificacao && <span>Ano: <strong className="text-foreground">{calculo.ano_calendario}</strong></span>}
           <span>ID: <strong className="text-foreground font-mono text-xs">{calculo.id}</strong></span>
         </div>
