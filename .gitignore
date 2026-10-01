@@ -6,7 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
 node_modules
 dist
 dist-ssr
@@ -55,6 +54,5 @@ docs/history/
 # Arquivos e pastas de tooling de agente de IA (nunca versionados)
 AGENTS.md
 .agents/
-docs/adr/template.md
 .claude/
 CLAUDE.md
