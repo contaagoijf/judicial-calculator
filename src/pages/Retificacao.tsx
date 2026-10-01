@@ -156,6 +156,19 @@ const RetificacaoPage = () => {
     }
   };
 
+  const handleColarReu = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      setReu(texto);
+    } catch {
+      toast({
+        title: 'Não foi possível colar',
+        description: 'Permita o acesso à área de transferência para usar este botão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const [nomeAutor, setNomeAutor] = useState('');
   const [reu, setReu] = useState('');
   const [dataAjuizamento, setDataAjuizamento] = useState('');
@@ -502,41 +515,25 @@ const RetificacaoPage = () => {
         <div className="form-section mb-6">
           <h2 className="text-lg font-semibold mb-4 text-foreground">Dados do Processo</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label>Número do processo *</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={processo}
-                  onChange={(e) => setProcesso(formatNumeroProcesso(e.target.value))}
-                  onBlur={handleProcessoBlur}
-                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                  placeholder="0000000-00.0000.0.00.0000"
-                  inputMode="numeric"
-                  className="min-w-0"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleColarProcesso}
-                  title="Colar número do processo da área de transferência"
-                  className="shrink-0"
-                >
-                  <ClipboardPaste className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Nome do autor *</Label>
+                <Label>Número do processo *</Label>
                 <div className="flex gap-2">
-                  <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" className="min-w-0" />
+                  <Input
+                    value={processo}
+                    onChange={(e) => setProcesso(formatNumeroProcesso(e.target.value))}
+                    onBlur={handleProcessoBlur}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                    placeholder="0000000-00.0000.0.00.0000"
+                    inputMode="numeric"
+                    className="min-w-0"
+                  />
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={handleColarNomeAutor}
-                    title="Colar nome do autor da área de transferência"
+                    onClick={handleColarProcesso}
+                    title="Colar número do processo da área de transferência"
                     className="shrink-0"
                   >
                     <ClipboardPaste className="w-4 h-4" />
@@ -544,13 +541,41 @@ const RetificacaoPage = () => {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Réu</Label>
-                <Input value={reu} onChange={(e) => setReu(e.target.value)} placeholder="Nome do réu" className="min-w-0" />
+                <Label>Data do ajuizamento *</Label>
+                <Input type="date" value={dataAjuizamento} onChange={(e) => setDataAjuizamento(e.target.value)} className="max-w-[220px]" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Data do ajuizamento *</Label>
-              <Input type="date" value={dataAjuizamento} onChange={(e) => setDataAjuizamento(e.target.value)} className="max-w-[220px]" />
+              <Label>Nome do autor *</Label>
+              <div className="flex gap-2">
+                <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" className="min-w-0" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarNomeAutor}
+                  title="Colar nome do autor da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Réu</Label>
+              <div className="flex gap-2">
+                <Input value={reu} onChange={(e) => setReu(e.target.value)} placeholder="Nome do réu" className="min-w-0" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleColarReu}
+                  title="Colar nome do réu da área de transferência"
+                  className="shrink-0"
+                >
+                  <ClipboardPaste className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

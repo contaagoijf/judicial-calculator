@@ -100,6 +100,9 @@ export function gerarRelatorioPDF(
   doc.setFont('helvetica', 'normal');
   doc.text(`Processo: ${dados.numero_processo}`, 14, y); y += 6;
   doc.text(`Autor: ${dados.nome_autor}`, 14, y); y += 6;
+  if (isRetificacao && dados.dados_entrada?.reu) {
+    doc.text(`Réu: ${dados.dados_entrada.reu}`, 14, y); y += 6;
+  }
   if (!isRetificacao && dados.ano_calendario) {
     doc.text(`Ano Calendário: ${dados.ano_calendario}`, 14, y); y += 6;
   }

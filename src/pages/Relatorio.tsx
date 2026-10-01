@@ -141,6 +141,7 @@ const RelatorioPage = () => {
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground mb-6">
           <span>Processo: <strong className="text-foreground">{calculo.numero_processo}</strong></span>
           <span>Autor: <strong className="text-foreground">{calculo.nome_autor}</strong></span>
+          {isRetificacao && dadosEntrada?.reu && <span>Réu: <strong className="text-foreground">{dadosEntrada.reu}</strong></span>}
           {!isRetificacao && <span>Ano: <strong className="text-foreground">{calculo.ano_calendario}</strong></span>}
           <span>ID: <strong className="text-foreground font-mono text-xs">{calculo.id}</strong></span>
         </div>
@@ -180,29 +181,29 @@ const RelatorioPage = () => {
                     <tr className="bg-white">
                       <td className="border px-3 py-2 font-semibold">PRINCIPAL</td>
                       <td className="border px-3 py-2">{fmtDate(r.data_dist)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_principal_ad)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">{fmtFator(r.fator_cm_fim)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.principal_ad)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">{fmtPct(r.fator_juros_fim)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.juros_ad)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.principal_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_principal_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtFator(r.fator_cm_fim)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.principal_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtPct(r.fator_juros_fim)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.principal_juros_ad)}</td>
                     </tr>
                     <tr className="bg-slate-50">
                       <td className="border px-3 py-2 font-semibold">JUROS</td>
                       <td className="border px-3 py-2">{fmtDate(r.data_dist)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">{fmtFator(1)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtFator(1)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_ad)}</td>
                       <td className="border px-3 py-2 text-right">—</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_ad)}</td>
                     </tr>
                     <tr className="bg-slate-200 font-semibold">
                       <td className="border px-3 py-2" colSpan={4}>TOTAL:</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_principal_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_principal_ad)}</td>
                       <td className="border px-3 py-2"></td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.juros_ad + r.total_juros_ad)}</td>
-                      <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.principal_juros_ad + r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.juros_ad + r.total_juros_ad)}</td>
+                      <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.principal_juros_ad + r.total_juros_ad)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -233,20 +234,20 @@ const RelatorioPage = () => {
                         <tr key={`pos-${l.ano_calendario}-${l.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
                           <td className="border px-3 py-2">{l.ano_calendario}</td>
                           <td className="border px-3 py-2">{fmtDate(l.inicio_correcao)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_devido)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">{fmtFator(l.fator_cm)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_cm)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">{fmtPct(l.fator_juros)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_juros)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.total_com_juros)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_devido)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtFator(l.fator_cm)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_cm)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtPct(l.fator_juros)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_juros)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.total_com_juros)}</td>
                         </tr>
                       ))}
                       <tr className="bg-slate-200 font-semibold">
                         <td className="border px-3 py-2" colSpan={4}>TOTAL:</td>
-                        <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_cm_dif_fim)}</td>
+                        <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_cm_dif_fim)}</td>
                         <td className="border px-3 py-2"></td>
-                        <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_dif_fim)}</td>
-                        <td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_cm_dif_fim + r.total_juros_dif_fim)}</td>
+                        <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_dif_fim)}</td>
+                        <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_cm_dif_fim + r.total_juros_dif_fim)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -260,19 +261,19 @@ const RelatorioPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
                 <div>
                   <p className="text-muted-foreground">Principal devido</p>
-                  <p className="font-mono text-lg">R$ {fmt(r.principal_devido)}</p>
+                  <p className="font-mono text-lg whitespace-nowrap">R$ {fmt(r.principal_devido)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Juros devido</p>
-                  <p className="font-mono text-lg">R$ {fmt(r.juros_devido)}</p>
+                  <p className="font-mono text-lg whitespace-nowrap">R$ {fmt(r.juros_devido)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Honorários</p>
-                  <p className="font-mono text-lg">R$ {fmt(honorariosValue)}</p>
+                  <p className="font-mono text-lg whitespace-nowrap">R$ {fmt(honorariosValue)}</p>
                 </div>
                 <div className="md:border-l md:pl-3">
                   <p className="text-muted-foreground font-semibold">Total da execução</p>
-                  <p className="font-mono text-xl font-bold">R$ {fmt(r.total_execucao)}</p>
+                  <p className="font-mono text-xl font-bold whitespace-nowrap">R$ {fmt(r.total_execucao)}</p>
                 </div>
               </div>
             </div>
@@ -281,7 +282,7 @@ const RelatorioPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-muted-foreground">{dadosEntrada.escalonar_honorarios ? 'Modo de cálculo' : 'Percentual aplicado'}</p>
-                  <p className="font-mono">
+                  <p className="font-mono whitespace-nowrap">
                     {dadosEntrada.escalonar_honorarios
                       ? 'Escalonado — art. 85, §3º do CPC'
                       : `${dadosEntrada.percentual_honorarios.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
@@ -289,7 +290,7 @@ const RelatorioPage = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Honorários totais</p>
-                  <p className="font-mono">R$ {fmt(honorariosValue)}</p>
+                  <p className="font-mono whitespace-nowrap">R$ {fmt(honorariosValue)}</p>
                 </div>
               </div>
             </div>
@@ -330,12 +331,12 @@ const RelatorioPage = () => {
                         <tr key={`ad-${l.ano_calendario}-${l.tipo_declaracao}`} className="odd:bg-white even:bg-slate-50">
                           <td className="border px-3 py-2">{l.ano_calendario}</td>
                           <td className="border px-3 py-2">{fmtDate(l.inicio_correcao)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_devido)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">{fmtFator(l.fator_cm)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_cm)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">{fmtPct(l.fator_juros)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.valor_juros)}</td>
-                          <td className="border px-3 py-2 text-right font-mono">R$ {fmt(l.total_com_juros)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_devido)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtFator(l.fator_cm)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_cm)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{fmtPct(l.fator_juros)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.valor_juros)}</td>
+                          <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(l.total_com_juros)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -345,13 +346,13 @@ const RelatorioPage = () => {
                 <div className="overflow-x-auto rounded-md border bg-card mb-4">
                   <table className="w-full border-collapse text-sm">
                     <tbody>
-                      <tr className="bg-white"><td className="border px-3 py-2">Valor total do principal até a distribuição</td><td className="border px-3 py-2 text-right font-mono w-56">R$ {fmt(r.total_cm_dif_ad)}</td></tr>
-                      <tr className="bg-slate-50"><td className="border px-3 py-2">Valor total dos juros até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_dif_ad)}</td></tr>
-                      <tr className="bg-white"><td className="border px-3 py-2">Valor total das parcelas vencidas até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.totais_dif_ad)}</td></tr>
-                      <tr className="bg-slate-50"><td className="border px-3 py-2">Teto máximo dos juizados especiais na data da distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.val_teto)}</td></tr>
-                      <tr className="bg-white"><td className="border px-3 py-2">Valor final do principal até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_principal_ad)}</td></tr>
-                      <tr className="bg-slate-50"><td className="border px-3 py-2">Valor final dos juros até a distribuição</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_juros_ad)}</td></tr>
-                      <tr className="bg-white font-semibold"><td className="border px-3 py-2">Valor devido na data da distribuição ({fmtMesAno(r.data_dist)})</td><td className="border px-3 py-2 text-right font-mono">R$ {fmt(r.total_devido_ad)}</td></tr>
+                      <tr className="bg-white"><td className="border px-3 py-2">Valor total do principal até a distribuição</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap w-56">R$ {fmt(r.total_cm_dif_ad)}</td></tr>
+                      <tr className="bg-slate-50"><td className="border px-3 py-2">Valor total dos juros até a distribuição</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_dif_ad)}</td></tr>
+                      <tr className="bg-white"><td className="border px-3 py-2">Valor total das parcelas vencidas até a distribuição</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.totais_dif_ad)}</td></tr>
+                      <tr className="bg-slate-50"><td className="border px-3 py-2">Teto máximo dos juizados especiais na data da distribuição</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.val_teto)}</td></tr>
+                      <tr className="bg-white"><td className="border px-3 py-2">Valor final do principal até a distribuição</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_principal_ad)}</td></tr>
+                      <tr className="bg-slate-50"><td className="border px-3 py-2">Valor final dos juros até a distribuição</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_juros_ad)}</td></tr>
+                      <tr className="bg-white font-semibold"><td className="border px-3 py-2">Valor devido na data da distribuição ({fmtMesAno(r.data_dist)})</td><td className="border px-3 py-2 text-right font-mono whitespace-nowrap">R$ {fmt(r.total_devido_ad)}</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -384,8 +385,8 @@ const RelatorioPage = () => {
                         return (
                           <tr key={a.id} className="odd:bg-white even:bg-slate-50">
                             <td className="border px-3 py-2">{fmtMesAno(a.data_alt)}</td>
-                            <td className="border px-3 py-2 text-right font-mono">{retirar > 0 ? `R$ ${fmt(retirar)}` : ''}</td>
-                            <td className="border px-3 py-2 text-right font-mono">{acrescer > 0 ? `R$ ${fmt(acrescer)}` : ''}</td>
+                            <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{retirar > 0 ? `R$ ${fmt(retirar)}` : ''}</td>
+                            <td className="border px-3 py-2 text-right font-mono whitespace-nowrap">{acrescer > 0 ? `R$ ${fmt(acrescer)}` : ''}</td>
                             <td className="border px-3 py-2 text-muted-foreground">{a.motivo ?? ''}</td>
                           </tr>
                         );
@@ -436,7 +437,7 @@ const RelatorioPage = () => {
                           ].map(([label, val], idx) => (
                             <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                               <td className="border px-3 py-1.5">{label as string}</td>
-                              <td className="border px-3 py-1.5 text-right font-mono">
+                              <td className="border px-3 py-1.5 text-right font-mono whitespace-nowrap">
                                 {typeof val === 'number' ? `R$ ${fmt(val)}` : val}
                               </td>
                             </tr>
@@ -462,12 +463,12 @@ const RelatorioPage = () => {
                               .sort((a, b) => a.limite_inferior - b.limite_inferior)
                               .map((f, i) => (
                                 <tr key={i} className="odd:bg-white even:bg-slate-50">
-                                  <td className="border px-2 py-1 font-mono">R$ {fmt(f.limite_inferior)}</td>
-                                  <td className="border px-2 py-1 font-mono">{f.limite_superior ? `R$ ${fmt(f.limite_superior)}` : '—'}</td>
-                                  <td className="border px-2 py-1 text-right font-mono">
+                                  <td className="border px-2 py-1 font-mono whitespace-nowrap">R$ {fmt(f.limite_inferior)}</td>
+                                  <td className="border px-2 py-1 font-mono whitespace-nowrap">{f.limite_superior ? `R$ ${fmt(f.limite_superior)}` : '—'}</td>
+                                  <td className="border px-2 py-1 text-right font-mono whitespace-nowrap">
                                     {(f.aliquota <= 1 ? f.aliquota * 100 : f.aliquota).toLocaleString('pt-BR', { minimumFractionDigits: 1 })}%
                                   </td>
-                                  <td className="border px-2 py-1 text-right font-mono">R$ {fmt(f.deducao)}</td>
+                                  <td className="border px-2 py-1 text-right font-mono whitespace-nowrap">R$ {fmt(f.deducao)}</td>
                                 </tr>
                               ))}
                           </tbody>
