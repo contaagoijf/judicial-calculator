@@ -100,16 +100,11 @@ export function gerarRelatorioPDF(
   doc.setFont('helvetica', 'normal');
   doc.text(`Processo: ${dados.numero_processo}`, 14, y); y += 6;
   doc.text(`Autor: ${dados.nome_autor}`, 14, y); y += 6;
-  if (isRetificacao && dados.anos && dados.anos.length > 0) {
-    doc.text(`Período: ${Math.min(...dados.anos)} - ${Math.max(...dados.anos)}`, 14, y); y += 6;
-  } else if (dados.ano_calendario) {
+  if (!isRetificacao && dados.ano_calendario) {
     doc.text(`Ano Calendário: ${dados.ano_calendario}`, 14, y); y += 6;
   }
   doc.text(`Tipo de Declaração: ${dados.tipo_declaracao === 'completa' ? 'Completa' : 'Simplificada'}`, 14, y); y += 6;
   doc.text(`ID do Cálculo: ${dados.calculo_id}`, 14, y); y += 6;
-  if (dados.inicio_correcao) {
-    doc.text(`Data de Início da Correção: ${formatDateBR(dados.inicio_correcao)}`, 14, y); y += 6;
-  }
   y += 4;
 
   if (isRetificacao) {

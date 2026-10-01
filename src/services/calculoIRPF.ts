@@ -285,6 +285,7 @@ export const FAIXAS_HONORARIOS_ART_85_PADRAO: FaixaHonorarios[] = [
 export interface DadosEntradaRetificacao {
   numero_processo: string;
   nome_autor: string;
+  reu?: string;
   data_ajuizamento: string;
   tipo_correcao: TipoCorrecao;
   percentual_honorarios: number;
@@ -635,7 +636,7 @@ export function calcularRetificacao(
         fator_juros = round8(1 + somarJurosSelic(
           ctx.taxas, regraInicio?.id_indice_juros ?? null, inicio_correcao, data_dist
         ) / 100);
-        valor_juros = round2(valor_cm * fator_juros);
+        valor_juros = round2(valor_cm * (fator_juros - 1));
         total_com_juros = round2(valor_cm + valor_juros);
       } else {
         // Parte VII (CM) e Parte IX (CM novamente, juros entre INICIO_CORRECAO e FIM)
@@ -649,7 +650,7 @@ export function calcularRetificacao(
               { fimEhDataFinalCalculo: true }
             ) / 100)
           : round8(1.01);
-        valor_juros = round2(valor_cm * fator_juros);
+        valor_juros = round2(valor_cm * (fator_juros - 1));
         total_com_juros = round2(valor_cm + valor_juros);
       }
     } else {

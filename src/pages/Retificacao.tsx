@@ -157,6 +157,7 @@ const RetificacaoPage = () => {
   };
 
   const [nomeAutor, setNomeAutor] = useState('');
+  const [reu, setReu] = useState('');
   const [dataAjuizamento, setDataAjuizamento] = useState('');
   const [tipoCorrecao, setTipoCorrecao] = useState<TipoCorrecao>('SEM_CORRECAO');
   const [percentHonorarios, setPercentHonorarios] = useState(0);
@@ -206,6 +207,7 @@ const RetificacaoPage = () => {
   const preencherFormulario = (draft: DadosEntradaRetificacao) => {
     setProcesso(draft.numero_processo);
     setNomeAutor(draft.nome_autor);
+    setReu(draft.reu ?? '');
     setDataAjuizamento(draft.data_ajuizamento);
     setTipoCorrecao(draft.tipo_correcao);
     setPercentHonorarios(draft.percentual_honorarios);
@@ -456,6 +458,7 @@ const RetificacaoPage = () => {
       const dadosEntrada: DadosEntradaRetificacao = {
         numero_processo: processo.trim(),
         nome_autor: nomeAutor.trim(),
+        reu: reu.trim() || undefined,
         data_ajuizamento: dataAjuizamento,
         tipo_correcao: tipoCorrecao,
         percentual_honorarios: percentHonorarios,
@@ -523,20 +526,26 @@ const RetificacaoPage = () => {
                 </Button>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Nome do autor *</Label>
-              <div className="flex gap-2">
-                <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" className="min-w-0" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleColarNomeAutor}
-                  title="Colar nome do autor da área de transferência"
-                  className="shrink-0"
-                >
-                  <ClipboardPaste className="w-4 h-4" />
-                </Button>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Nome do autor *</Label>
+                <div className="flex gap-2">
+                  <Input value={nomeAutor} onChange={(e) => setNomeAutor(e.target.value)} placeholder="Nome completo" className="min-w-0" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleColarNomeAutor}
+                    title="Colar nome do autor da área de transferência"
+                    className="shrink-0"
+                  >
+                    <ClipboardPaste className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Réu</Label>
+                <Input value={reu} onChange={(e) => setReu(e.target.value)} placeholder="Nome do réu" className="min-w-0" />
               </div>
             </div>
             <div className="space-y-1.5">
