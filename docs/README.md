@@ -16,8 +16,8 @@
 
 Este arquivo é o manual funcional e técnico completo do CalcJud. O restante de `docs/` está organizado por tipo de conteúdo:
 
-- [`docs/adr/`](adr/) — **pasta padrão de documentação do projeto**: decisões de arquitetura e correções relevantes já tomadas, uma por arquivo numerado (`NNN-descricao.md`), no formato Contexto/Decisão/Consequências. Comece por [`docs/adr/001-registros-de-decisao-arquitetural-adrs.md`](adr/001-registros-de-decisao-arquitetural-adrs.md); use [`docs/adr/template.md`](adr/template.md) para registrar uma decisão nova.
-- [`docs/reference/`](reference/) — planilhas de referência da DCAL em [`docs/reference/planilhas/`](reference/planilhas/). Os manuais, guias de referência e investigações/atas de reunião (banco de dados, validação contábil, testes de cálculo, atualização de taxas, honorários, recuperação de senha) foram todos reorganizados como ADRs em `docs/adr/002` em diante.
+- [`docs/adr/`](adr/) — **pasta padrão de documentação do projeto**: decisões de arquitetura e correções relevantes já tomadas, uma por arquivo numerado (`NNN-descricao.md`), no formato Contexto/Decisão/Consequências. Comece por [`docs/adr/001-registros-de-decisao-arquitetural-adrs.md`](adr/001-registros-de-decisao-arquitetural-adrs.md).
+- [`docs/reference/planilhas/`](reference/planilhas/) — planilhas de referência da DCAL. Os manuais, guias de referência e investigações/atas de reunião (banco de dados, validação contábil, testes de cálculo, atualização de taxas, honorários, recuperação de senha) foram todos reorganizados como ADRs em `docs/adr/002` em diante.
 - [`docs/history/`](history/) — arquivos temporários de análise e teste de funcionalidades (uso local); documentação permanente do projeto deve ir para `docs/adr/`, não ficar aqui.
 - [`docs/CHANGELOG.md`](CHANGELOG.md) — histórico cronológico de funcionalidades e correções desde que o projeto foi clonado para desenvolvimento local.
 

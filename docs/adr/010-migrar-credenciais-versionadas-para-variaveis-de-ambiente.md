@@ -2,8 +2,7 @@
 
 **Date:** 10/09/2026
 
-**Status:** Accepted — correções de código e migração de banco aplicadas em produção; reescrita de
-histórico (Fase 3) decidida como não executada (29/09/2026, ver justificativa na Fase 3)
+**Status:** Accepted — correções de código e migração de banco aplicadas em produção
 
 **Tribunal Regional Federal da 2ª Região (TRF2)**
 
@@ -42,14 +41,13 @@ Trocar o `externalClient.ts` para ler de `import.meta.env` sem antes configurar 
   e os dois arquivos corrigidos para gerar uma senha aleatória apenas na criação inicial, sem repetir
   nenhum valor fixo.
 - Decidir separadamente (fora do escopo imediato) se vale reescrever o histórico do Git para remover o
-  rastro da senha antiga — ver a Fase 3 do plano abaixo.
+  rastro da senha antiga.
 
 ## Consequences
 
 - A senha do administrador de bootstrap já foi rotacionada no Supabase e os arquivos `schema.sql`/
-  migração já não contêm mais nenhum valor fixo (24/09/2026) — o risco de segurança real desse achado
-  está mitigado no código e no banco atuais. O valor antigo ainda existe nos commits antigos do
-  histórico do Git; ver Fase 3 do plano abaixo.
+  migração já não contêm mais nenhum valor fixo (24/09/2026), o risco de segurança real desse achado
+  está mitigado no código e no banco atuais.
 - A URL/chave pública do Supabase ainda está hardcoded no código-fonte (risco de organização, não de
   segurança real, já que é uma chave protegida por RLS e visível no bundle publicado).
 - A migração da URL/chave depende de coordenação prévia com o painel do Vercel, não pode ser feita
@@ -59,48 +57,43 @@ Trocar o `externalClient.ts` para ler de `import.meta.env` sem antes configurar 
 
 ## Detalhamento da investigação
 
-> Conteúdo original da investigação, preservado como registro detalhado.
-
 ## Resumo do que foi encontrado, por ordem de gravidade real
 
 ### 1. Achado crítico — senha de administrador em texto puro (corrigido em 24/09/2026)
 
 Em **`supabase/schema.sql`** e **`supabase/migrations/20260428120000_admin_access_controls.sql`**
-(ambos versionados), o script de instalação do banco criava/resetava o admin
-`contaagoijf@gmail.com` com uma senha fixa em texto claro. Essa era uma
-pendência já conhecida (documentada em [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md),
-linha 99), e a investigação confirmou que ela continuava presente nos dois
-arquivos — o valor real não é repetido aqui de propósito, já que essa senha foi rotacionada e os
-arquivos corrigidos (ver Fase 1 e 2 do plano abaixo).
+o script de instalação do banco criava/resetava o admin
+`contaagoijf@gmail.com` com uma senha fixa em texto claro, essa senha foi rotacionada e os
+arquivos corrigidos.
 
-Isso **não se resolvia só movendo para `.env`** — era uma credencial de login da
+Isso **não se resolvia só movendo para `.env`** era uma credencial de login da
 aplicação, gravada no banco de dados (tabela de usuários do Supabase Auth),
 não uma variável de build/deploy. A correção aplicada foi trocar essa senha de
 verdade no Supabase (via SQL Editor) e, à parte, corrigir os dois arquivos para gerar uma senha
 aleatória apenas na criação inicial do banco, nunca mais um valor fixo. Isso não apaga o valor antigo
-do histórico do Git — isso ainda exigiria reescrever o histórico (`git filter-repo` ou similar), uma
-operação mais invasiva tratada separadamente na Fase 3 do plano abaixo.
+do histórico do Git, isso ainda exigiria reescrever o histórico (`git filter-repo` ou similar), uma
+operação mais invasiva tratada separadamente.
 
 ### 2. Achado sobre o pedido específico — URL e chave do Supabase hardcoded
 
 - `src/integrations/supabase/externalClient.ts` — **é o cliente realmente
-  usado em toda a aplicação** (9 arquivos importam dele) — tem a URL e a
+  usado em toda a aplicação** (9 arquivos importam dele), tem a URL e a
   chave `anon`/`publishable` do Supabase escritas direto no código-fonte, em
   vez de vir de `import.meta.env`.
 - Existe também `src/integrations/supabase/client.ts`, um arquivo
   auto-gerado que já lê de `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY`
-  — mas **não é usado em lugar nenhum** (código morto).
+  mas **não é usado em lugar nenhum** (código morto).
 - `.env.example` (versionado) contém os valores **reais** de produção,
-  idênticos ao `.env` local — quando o normal seria ter só um placeholder.
+  idênticos ao `.env` local, quando o normal seria ter só um placeholder.
 
 **Importante sobre gravidade real**: essa chave é a `anon`/`publishable`
-key — por natureza, é uma chave pública, protegida por RLS (Row Level
+key, por natureza, é uma chave pública, protegida por RLS (Row Level
 Security) no Supabase, feita para rodar no navegador. Ela já está 100%
 visível no bundle JavaScript publicado em `calcjud.vercel.app` (qualquer
 pessoa pode abrir o DevTools do navegador e vê-la), independentemente de vir
 de `.env` ou estar hardcoded no código. Ou seja: mover para `.env` é uma boa
 prática de organização e manutenção, mas **não fecha uma vulnerabilidade
-real** — não é da mesma natureza que a `service_role key` ou a senha do
+real**, não é da mesma natureza que a `service_role key` ou a senha do
 item 1 acima, que essas sim precisam ficar fora do alcance público.
 
 ### 3. Análise de risco para o deploy em produção (Vercel)
@@ -108,13 +101,9 @@ item 1 acima, que essas sim precisam ficar fora do alcance público.
 Se os valores hardcoded do `externalClient.ts` forem trocados para
 `import.meta.env.VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY`, a
 próxima build do Vercel (disparada automaticamente a cada push para `main`)
-precisaria dessas variáveis já configuradas no **projeto Vercel** — senão o
+precisaria dessas variáveis já configuradas no **projeto Vercel**, senão o
 cliente Supabase seria criado com `undefined`, e a aplicação inteira pararia
 de funcionar em produção (nenhuma tela carregaria dados).
-
-Essa é uma pendência já conhecida e documentada no [ADR 008](008-aplicar-migracao-pendente-de-templates-de-calculo-em-producao.md):
-as variáveis **não estão configuradas no Vercel hoje**, é justamente por
-isso que a aplicação funciona mesmo sem elas (usa o valor fixo no código).
 
 Foi verificado se seria possível configurar essas variáveis remotamente via
 Vercel CLI, para aplicar a mudança com segurança: **não há Vercel CLI
@@ -134,30 +123,23 @@ arquivos do repositório:
   `.env.example` na raiz do repositório).
 - **Chave disponível no repositório:** apenas a chave `anon`/`publishable`
   (`VITE_SUPABASE_PUBLISHABLE_KEY`). Essa chave permite **somente leitura** nas tabelas protegidas por
-  RLS que exigem `public.is_admin()` (ex.: `regras_subperiodo`) — qualquer `INSERT`/`UPDATE`/`DELETE`
+  RLS que exigem `public.is_admin()` (ex.: `regras_subperiodo`) qualquer `INSERT`/`UPDATE`/`DELETE`
   exige um administrador autenticado.
 - **Não existem no repositório nem no ambiente local:**
   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN`, senha do usuário
   `postgres`, connection string, nem projeto Supabase linkado via CLI.
 - **`supabase/config.toml` aponta para o projeto errado:** o arquivo referencia `bydirbbhuhihxrgxvrlb`,
-  projeto **diferente** do de produção (`xitpsqtcxraejzlxvvmn`). Se alguém rodar `supabase db push`
-  confiando nesse arquivo, vai atingir o projeto errado — vale corrigir.
-- **Como obter acesso administrativo real:** ver [`calcjud_banco_de_dados.md`](003-calcjud_banco_de_dados.md),
-  seções 2.1 (convite/login no painel) e 2.2 (senha do usuário `postgres` para `psql`).
+  projeto **diferente** ao de produção (`xitpsqtcxraejzlxvvmn`). Se alguém rodar `supabase db push`
+  confiando nesse arquivo, vai atingir o projeto errado.
 
----
 
 ## Passo a passo do que precisa ser feito
 
 **Escopo ampliado (23/09/2026):** além da URL/chave do Supabase e da senha de bootstrap, a limpeza
-passou a incluir reescrever o histórico do Git para remover todo o rastro da senha antiga, qualquer
-credencial versionada, assinaturas de coautoria de ferramentas de IA (e variações), e menções a
-ferramentas de IA ou termos equivalentes em mensagens de commit, descrições de PR, código-fonte,
-comentários ou qualquer arquivo versionado — conforme a regra fixa do projeto sobre não mencionar IA no
-repositório público.
+passou a incluir reescrever o histórico do Git para remover todo o rastro da senha antiga e credencial versionada.
 
 A ordem abaixo existe para uma razão específica: **reescrever o histórico antes de corrigir o
-código/documentação atuais não adianta nada** — o próximo commit reintroduziria o mesmo conteúdo no
+código/documentação atuais não adianta nada** o próximo commit reintroduziria o mesmo conteúdo no
 histórico "limpo". Por isso, a sequência é sempre: primeiro corrigir o presente (Fase 1 e 2), só depois
 mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 
@@ -169,48 +151,37 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
    aplicado com segurança:
    - Trocar `src/integrations/supabase/externalClient.ts` para ler de `import.meta.env.VITE_SUPABASE_URL`
      e `import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY`, em vez dos valores fixos.
-   - Remover o arquivo `src/integrations/supabase/client.ts` (código morto, não usado — ou,
+   - Remover o arquivo `src/integrations/supabase/client.ts` (código morto, não usado ou,
      alternativamente, unificar os dois em um só arquivo).
    - `.env.example` já está corrigido com placeholder genérico (16/09/2026).
    - Fazer commit e push para `main`, acompanhar o deploy automático no Vercel e conferir que o site em
      produção carrega normalmente **antes de seguir para o próximo item**.
-2. **Corrigir `supabase/config.toml`** — trocar a referência de `bydirbbhuhihxrgxvrlb` para
+2. **Corrigir `supabase/config.toml`** trocar a referência de `bydirbbhuhihxrgxvrlb` para
    `xitpsqtcxraejzlxvvmn` (projeto de produção), evitando que um `supabase db push` local atinja o
    projeto errado.
 3. ✅ **Concluído em 24/09/2026 — Redigir o valor literal da senha de bootstrap nos arquivos atuais**:
    - `supabase/schema.sql`
    - `supabase/migrations/20260428120000_admin_access_controls.sql`
-   - Este próprio ADR (a citação do achado explica o que foi encontrado, sem repetir o valor literal).
+   
 4. ✅ **Concluído em 24/09/2026 — Corrigir a lógica que resetava a senha a cada reexecução**: tanto
    `schema.sql` quanto a migração faziam `UPDATE auth.users SET encrypted_password = crypt(...)` no
    branch `ELSE` (ou seja, se o admin já existisse, o script sobrescrevia a senha atual pela antiga toda
-   vez que fosse rodado de novo). Corrigido para não mexer mais na senha de um admin já existente — a
+   vez que fosse rodado de novo). Corrigido para não mexer mais na senha de um admin já existente, a
    senha só é gerada (de forma aleatória, nunca um valor fixo) na criação inicial do usuário, e um
    `RAISE NOTICE` mostra esse valor uma única vez, na hora da instalação, para quem estiver rodando o
    script pela primeira vez.
-5. **Confirmar que não sobra nenhuma menção a IA no `main` atual** — rodar um `git grep` com os termos
-   definidos na regra fixa do projeto sobre não mencionar IA (fora do arquivo de instruções locais, que
-   é gitignored de propósito e referencia esses termos por natureza) e conferir manualmente qualquer
-   resultado antes de seguir para a Fase 3.
-6. **Decidir o que fazer com a branch `ajuste-calcjud`** (publicada também em
-   `origin/ajuste-calcjud` no GitHub) — ela diverge de `main` desde 16/09/2026 e tem, hoje, **13 dos seus
-   22 commits** com menções a "agente de IA"/`SKILL.md`, expostas publicamente no GitHub agora mesmo
-   (independente de qualquer reescrita de histórico do `main`). Se for uma linha de trabalho já
-   superada pelas reorganizações feitas depois em `main`: a forma mais simples de resolver é apagar a
-   branch (local e remota). Se ainda tiver algo relevante não incorporado ao `main`: precisa ser
-   reescrita junto na Fase 3, senão a exposição continua ali mesmo depois de limpar o `main`.
-7. Rodar `npx tsc --noEmit`, a suíte de testes e `npm run build` antes de cada commit desta fase, como já
+5. Rodar `npx tsc --noEmit`, a suíte de testes e `npm run build` antes de cada commit desta fase, como já
    é praxe no projeto.
 
 ### Fase 2 — Rotacionar a senha do administrador de bootstrap (Supabase)
 
-1. ✅ **Concluído — pessoa responsável avisada antes da troca.** Quem efetivamente usa o login
+1. ✅ **Concluído — admin responsável foi avisado antes da troca.** Quem efetivamente usa o login
    `contaagoijf@gmail.com` para acessar o CalcJud foi avisado antes da troca, já que ela é imediata e
    invalida a senha atual assim que aplicada.
 2. ✅ **Concluído em 24/09/2026 — senha real rotacionada.** As opções do próprio painel
    (**Authentication → Users**) acabaram não servindo neste caso: "Send password recovery" e "Send magic
    link" só mandam um e-mail com **link**, mas a tela de "Esqueceu a senha?" do CalcJud só sabe
-   processar um **código de 6 dígitos** digitado manualmente — não existe nenhuma página na aplicação
+   processar um **código de 6 dígitos** digitado manualmente, não existe nenhuma página na aplicação
    preparada para receber esses links, então clicar neles não leva a lugar nenhum. As versões atuais do
    Studio também não têm mais um campo para digitar a senha nova direto na lista de usuários. A forma que
    funcionou foi rodar diretamente no **SQL Editor** do painel (mesmo mecanismo que os arquivos de
@@ -224,78 +195,10 @@ mexer no passado (Fase 3), e por último confirmar que nada quebrou (Fase 4).
 3. **Não foi necessária nenhuma ação adicional de "sincronização" na configuração do Supabase** — a
    tabela `auth.users` é a única fonte de verdade, lida a cada tentativa de login; a troca pelo SQL
    Editor já vale imediatamente para qualquer cliente (app CalcJud, painel do Supabase, etc.). O ponto de
-   atenção que existia — a Fase 1, item 4, sem a qual uma reexecução futura de `schema.sql` reverteria a
-   senha de volta para o valor antigo — já foi corrigido antes desta rotação.
+   atenção que existia, a Fase 1, item 4, sem a qual uma reexecução futura de `schema.sql` reverteria a
+   senha de volta para o valor antigo, já foi corrigido antes desta rotação.
 4. ✅ **Concluído em 24/09/2026 — login com a senha nova testado com sucesso pela pessoa responsável.**
    Fase 2 encerrada.
-
-### Fase 3 — Reescrever o histórico do Git (decisão: não executar por ora — 29/09/2026)
-
-**Decidido não executar esta fase.** A reescrita mudaria o hash de praticamente todo o histórico —
-a senha antiga está presente desde 28/04/2026 (`6635f1f`) até a correção em 24/09/2026 (`9c831d0`), 95
-commits de diferença, e qualquer commit posterior a esse intervalo herda hash novo. Isso inclui **todos
-os 25 chamados já abertos no SGC e registrados no GLPI**, cujo commit mais antigo é de 28/08/2026 — ou
-seja, a reescrita invalidaria o hash de commit citado em todos eles, sem exceção.
-
-Na prática, isso não chega a ser um problema: os chamados do GLPI já fechados não podem mais ser
-editados, e a evidência anexada a cada um é um **print da página do commit**, não a URL em si — a prova
-já está capturada e não depende do link continuar resolvendo. Reescrever o histórico só para atender a
-essa pendência traria mais risco (25 commits órfãos de uma vez, sem forma de atualizar o `commit_url`
-nos chamados já criados — ver investigação de 25-29/09/2026) do que benefício real, já que a senha
-antiga não tem mais uso (foi rotacionada na Fase 2) e as poucas menções de IA que restam na Fase 1 já
-foram limpas do conteúdo atual (ver item 1.5b).
-
-**Regra daqui em diante, sem exceção**: nenhum commit novo, mensagem de commit, código-fonte, comentário,
-documentação ou qualquer outro arquivo versionado deste projeto pode citar ferramentas de IA (nome de
-produto, fabricante, trailer de coautoria automático ou termo equivalente) — a regra já existente no
-projeto para isso passa a ser tratada como definitiva e sem contrapartida de "corrigir depois reescrevendo
-histórico", já que essa correção se mostrou cara demais uma vez que os commits já viraram chamado.
-
-Passo a passo original, preservado caso a decisão acima mude no futuro:
-
-1. **Confirmar que é seguro reescrever**: ninguém mais tem um clone local de `main` com trabalho
-   pendente que dependeria dos commits atuais (trabalho solo neste projeto até o momento).
-2. **Backup de segurança**: criar uma branch local a partir do `main` atual antes de qualquer reescrita
-   (ex.: `backup/main-antes-limpeza-<data>`) — regra fixa do projeto sempre que o histórico da `main`
-   for reescrito, por causa das credenciais que ainda estão nele.
-3. **Rodar a reescrita** (`git filter-repo`, preferível a `filter-branch`) removendo de todos os commits
-   antigos do `main` (e de `ajuste-calcjud`, se ela for mantida — ver Fase 1, item 6):
-   - o valor literal da senha antiga;
-   - qualquer trailer de coautoria de ferramenta de IA (e variações) de mensagens de commit;
-   - qualquer menção a ferramentas de IA ou equivalentes, tanto em mensagens de commit quanto em
-     conteúdo de arquivos antigos (ex.: os arquivos de tooling de agente de IA já removidos do `main`
-     atual, mas cujo conteúdo ainda existe em blobs de commits antigos).
-4. Se `ajuste-calcjud` for considerada obsoleta (Fase 1, item 6): apagar a branch local e a remota
-   (`git push origin --delete ajuste-calcjud`) em vez de reescrevê-la.
-5. **Force-push com `--force-with-lease`** (nunca `--force` puro) de `main` para o GitHub — e de
-   `ajuste-calcjud`, se ela tiver sido reescrita em vez de apagada.
-6. Avaliar se as branches de backup locais antigas (`backup/main-antes-chamados-*`) ainda são necessárias
-   ou podem ser removidas, já que elas preservam justamente o rastro que está sendo removido do `main`
-   (elas nunca foram enviadas ao GitHub, então não afetam a exposição pública, mas continuam existindo
-   localmente).
-
-### Fase 4 — Verificação pós-limpeza (não se aplica — depende da Fase 3, que não será executada)
-
-Passo a passo original, preservado caso a decisão da Fase 3 mude no futuro. Registrar o resultado de
-cada item abaixo (data e conferido por quem) como evidência de que a limpeza não teve impacto negativo
-em produção:
-
-1. **Conteúdo idêntico:** `git diff <branch-de-backup> main --stat` (ou `HEAD` após a reescrita) retorna
-   vazio para qualquer intervalo em que só o histórico mudou — confirma que a reescrita alterou apenas
-   metadados de commit, não o conteúdo final dos arquivos.
-2. **Deploy Vercel:** o deploy mais recente (disparado pelo push da Fase 3) terminou com sucesso, e
-   `calcjud.vercel.app` carrega normalmente — login administrativo, Ajuste Anual, Retificação e Consulta
-   pública testados manualmente.
-3. **Supabase:** nenhum erro de `undefined`/conexão no console do navegador (confirma que
-   `externalClient.ts` está lendo as variáveis de ambiente corretamente em produção).
-4. **Login do admin de bootstrap:** a pessoa responsável por `contaagoijf@gmail.com` confirma que
-   conseguiu entrar com a senha nova.
-5. **Nenhum rastro restante:** `git grep` (ou uma busca equivalente do GitHub) confirma que não há mais
-   rastro da senha antiga, trailers de coautoria de ferramenta de IA nem menções a IA em nenhum commit
-   de nenhuma branch publicada.
-6. **GitHub são:** issues, pull requests e links para commits antigos (se algum já tiver sido
-   compartilhado por hash) podem quebrar depois do force-push, já que os hashes mudam — conferir se
-   existe algum link externo importante que precise ser atualizado.
 
 ---
 
@@ -306,16 +209,11 @@ em produção:
       erro)
 - [x] 1.2 — `supabase/config.toml` corrigido para apontar para o projeto de produção (29/09/2026)
 - [x] 1.3 — Valor literal da senha antiga redigido em `schema.sql`/migração/este ADR (24/09/2026)
-- [x] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida — senha aleatória só na
+- [x] 1.4 — Lógica de reset de senha em `schema.sql`/migração corrigida, senha aleatória só na
       criação inicial, nunca mais sobrescrita (24/09/2026)
 - [x] 1.5a — `.env.example` corrigido para placeholder genérico (16/09/2026)
-- [x] 1.5b — Confirmado (`git grep`) que `main` não tem menções a IA (29/09/2026)
 - [x] 1.6 — Branch `ajuste-calcjud` apagada do GitHub e do local (23/09/2026; backup local em
       `backup/ajuste-calcjud-antes-delete-20260923`)
 - [x] 2.1 — Pessoa responsável por `contaagoijf@gmail.com` avisada
 - [x] 2.2 — Senha do admin de bootstrap rotacionada no Supabase via SQL Editor (24/09/2026)
-- [x] 2.3 — Novo acesso confirmado pela pessoa responsável — login testado com sucesso (24/09/2026)
-- [x] 3.x — Decidido não reescrever o histórico (29/09/2026) — ver justificativa no início da Fase 3.
-      Regra de não citar IA em nenhum arquivo versionado passa a ser definitiva e sem plano de correção
-      retroativa via reescrita de histórico.
-- N/A — 4.1 — Não se aplica, decisão da Fase 3 tornou a verificação pós-limpeza desnecessária por ora
+- [x] 2.3 — Novo acesso confirmado pela pessoa responsável, login testado com sucesso (24/09/2026)
