@@ -256,6 +256,8 @@ Glossário das siglas e termos técnicos usados neste documento e nos relatório
 
 **DCAL** — Divisão de Cálculos do TRF2/JFRJ, a área que hoje mantém e usa manualmente as duas planilhas Excel ([`irpfanual.xlt`](reference/planilhas/irpfanual.xlt) e [`ir-recalculo.xlt`](reference/planilhas/ir-recalculo.xlt)) que o CALCJUD pretende substituir.
 
+**COSADM** — Coordenadoria de Sistemas Administrativos do TRF2, unidade da Subsecretaria de Sistemas de Informação (SINF) responsável pelos sistemas administrativos internos do Tribunal.
+
 **IRPF** — Imposto de Renda Pessoa Física. É o imposto recalculado pelo CALCJUD nos módulos de Ajuste Anual e Retificação.
 
 **IR** — forma abreviada de IRPF, usada em expressões como "faixas de IR" (as faixas de alíquota progressiva do imposto, com a parcela a deduzir de cada uma).
