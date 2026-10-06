@@ -182,9 +182,7 @@ const RetificacaoPage = () => {
   const [limitaAjuiz, setLimitaAjuiz] = useState<TipoLimitaAjuiz>('NAO');
   const [dataFim, setDataFim] = useState('');
   const [informacoes, setInformacoes] = useState('');
-  const [periodos, setPeriodos] = useState<DadosEntradaAjusteAnual[]>([
-    defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear()),
-  ]);
+  const [periodos, setPeriodos] = useState<DadosEntradaAjusteAnual[]>([]);
 
   const [periodoDialogOpen, setPeriodoDialogOpen] = useState(false);
   const [editingPeriodoIndex, setEditingPeriodoIndex] = useState<number | null>(null);
@@ -232,7 +230,7 @@ const RetificacaoPage = () => {
     setLimitaAjuiz(draft.limita_ajuiz ?? 'NAO');
     setDataFim(draft.data_fim ?? '');
     setInformacoes(draft.informacoes ?? '');
-    setPeriodos(draft.periodos.length > 0 ? draft.periodos : [defaultPeriodo(parametros?.[0]?.ano_calendario ?? new Date().getFullYear())]);
+    setPeriodos(draft.periodos);
   };
 
   useEffect(() => {
